@@ -105,3 +105,11 @@
 - [x] Fix #8: Add database indexes and push migration
 - [x] Fix #9: Optimize dashboard N+1 queries
 - [x] Verify all existing tests still pass after fixes
+
+## CSRF Token Protection
+- [x] Create server-side CSRF token generation and validation middleware
+- [x] Add CSRF token endpoint (GET /api/csrf-token)
+- [x] Apply CSRF validation to all tRPC mutation endpoints
+- [x] Wire CSRF token into tRPC client headers for all mutations
+- [x] Write vitest tests for CSRF protection
+- [x] Verify all existing tests still pass
