@@ -14,6 +14,7 @@ import Seasonal from "./pages/Seasonal";
 import ExportPage from "./pages/ExportPage";
 import AdminPanel from "./pages/AdminPanel";
 import DashboardLayout from "./components/DashboardLayout";
+import Settings from "./pages/Settings";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 
@@ -68,6 +69,7 @@ function AuthenticatedRoutes() {
           <Route path={"/seasonal"} component={Seasonal} />
           <Route path={"/export"} component={ExportRoute} />
           <Route path={"/admin"} component={AdminRoute} />
+          <Route path={"/settings"} component={Settings} />
           <Route path={"/404"} component={NotFound} />
           <Route component={NotFound} />
         </Switch>

@@ -120,6 +120,35 @@ vi.mock("./scheduler", () => ({
   }),
 }));
 
+// Mock notifications module
+vi.mock("./notifications", () => ({
+  getNotifications: vi.fn().mockReturnValue([
+    { id: "notif_1", type: "info", title: "User Login", message: "Admin logged in from IP 127.0.0.1", category: "login", timestamp: new Date(), read: false },
+    { id: "notif_2", type: "success", title: "Scrape Job Completed", message: "Found 50 listings in 30s. No errors.", category: "scrape", timestamp: new Date(), read: true },
+  ]),
+  getUnreadCount: vi.fn().mockReturnValue(1),
+  markAsRead: vi.fn().mockReturnValue(true),
+  markAllAsRead: vi.fn().mockReturnValue(2),
+  notifyNewLogin: vi.fn(),
+  notifySuspiciousActivity: vi.fn(),
+  notifyScrapeComplete: vi.fn(),
+  notifyScrapeFailure: vi.fn(),
+  notifySchedulerChange: vi.fn(),
+  notifyExport: vi.fn(),
+  notifyUserAction: vi.fn(),
+  addNotification: vi.fn(),
+}));
+
+// Mock report generator
+vi.mock("./report-generator", () => ({
+  generatePitchReport: vi.fn().mockResolvedValue({
+    html: "<html><body>CoBNB Report</body></html>",
+    title: "Property Acquisition Analysis: Al Olaya",
+    neighborhood: "Al Olaya",
+    generatedAt: new Date().toISOString(),
+  }),
+}));
+
 // ─── Context Helpers ───
 
 function createPublicContext(): TrpcContext {
@@ -571,5 +600,118 @@ describe("OTA Sources & Scrape Jobs", () => {
     expect(result).toHaveLength(1);
     expect(result[0].status).toBe("completed");
     expect(result[0].listingsFound).toBe(50);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// Notifications API
+// ═══════════════════════════════════════════════════════════════
+
+describe("Notifications API", () => {
+  it("returns notifications for authenticated user", async () => {
+    const caller = appRouter.createCaller(createUserContext("viewer"));
+    const result = await caller.notifications.list({ limit: 20 });
+    expect(result).toHaveLength(2);
+    expect(result[0].title).toBe("User Login");
+    expect(result[1].category).toBe("scrape");
+  });
+
+  it("returns unread count", async () => {
+    const caller = appRouter.createCaller(createUserContext("admin"));
+    const result = await caller.notifications.unreadCount();
+    expect(result.count).toBe(1);
+  });
+
+  it("marks a notification as read", async () => {
+    const caller = appRouter.createCaller(createUserContext("admin"));
+    const result = await caller.notifications.markRead({ notificationId: "notif_1" });
+    expect(result.success).toBe(true);
+  });
+
+  it("marks all notifications as read", async () => {
+    const caller = appRouter.createCaller(createUserContext("admin"));
+    const result = await caller.notifications.markAllRead();
+    expect(result.success).toBe(true);
+    expect(result.count).toBe(2);
+  });
+
+  it("rejects unauthenticated access to notifications", async () => {
+    const caller = appRouter.createCaller(createPublicContext());
+    await expect(caller.notifications.list({ limit: 10 })).rejects.toThrow();
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// Change Password
+// ═══════════════════════════════════════════════════════════════
+
+describe("Auth: Change Password", () => {
+  it("rejects unauthenticated change password", async () => {
+    const caller = appRouter.createCaller(createPublicContext());
+    await expect(
+      caller.auth.changePassword({ currentPassword: "old", newPassword: "newpassword123" })
+    ).rejects.toThrow();
+  });
+
+  it("rejects short new password", async () => {
+    const caller = appRouter.createCaller(createUserContext("user"));
+    await expect(
+      caller.auth.changePassword({ currentPassword: "old", newPassword: "short" })
+    ).rejects.toThrow();
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// Report Generation
+// ═══════════════════════════════════════════════════════════════
+
+describe("Reports API", () => {
+  it("generates a pitch report for user role", async () => {
+    const caller = appRouter.createCaller(createUserContext("user"));
+    const result = await caller.reports.generatePitch({
+      neighborhoodId: 1,
+      includeCompetitors: true,
+      includeSeasonalPatterns: true,
+      includePropertyBreakdown: true,
+    });
+    expect(result.html).toContain("CoBNB Report");
+    expect(result.title).toContain("Al Olaya");
+    expect(result.neighborhood).toBe("Al Olaya");
+  });
+
+  it("generates a pitch report for admin role", async () => {
+    const caller = appRouter.createCaller(createUserContext("admin"));
+    const result = await caller.reports.generatePitch({
+      neighborhoodId: 1,
+    });
+    expect(result.html).toBeDefined();
+    expect(result.generatedAt).toBeDefined();
+  });
+
+  it("rejects viewer from generating reports", async () => {
+    const caller = appRouter.createCaller(createUserContext("viewer"));
+    await expect(
+      caller.reports.generatePitch({ neighborhoodId: 1 })
+    ).rejects.toThrow(/Viewers cannot export/);
+  });
+
+  it("rejects unauthenticated report generation", async () => {
+    const caller = appRouter.createCaller(createPublicContext());
+    await expect(
+      caller.reports.generatePitch({ neighborhoodId: 1 })
+    ).rejects.toThrow();
+  });
+
+  it("logs report generation in audit log", async () => {
+    const dbMod = await import("./db");
+    (dbMod.insertAuditLog as any).mockClear();
+    const caller = appRouter.createCaller(createUserContext("admin"));
+    await caller.reports.generatePitch({ neighborhoodId: 1 });
+    expect(dbMod.insertAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "report_generate",
+        target: "neighborhood:1",
+      })
+    );
   });
 });

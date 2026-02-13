@@ -32,8 +32,19 @@ import {
   LogOut,
   PanelLeft,
   TrendingUp,
+  Bell,
+  KeyRound,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
+import { trpc } from "@/lib/trpc";
+import { Badge } from "@/components/ui/badge";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 
@@ -45,6 +56,7 @@ const baseMenuItems = [
   { icon: CalendarRange, label: "Seasonal Patterns", path: "/seasonal" },
   { icon: Download, label: "Export Data", path: "/export", minRole: "user" as const },
   { icon: Settings, label: "Admin Panel", path: "/admin", minRole: "admin" as const },
+  { icon: KeyRound, label: "Settings", path: "/settings" },
 ];
 
 function getMenuItems(role?: string) {
@@ -118,6 +130,16 @@ function DashboardLayoutContent({
   const menuItems = getMenuItems(user?.role);
   const activeMenuItem = menuItems.find((item) => item.path === location);
   const isMobile = useIsMobile();
+
+  // Notification bell
+  const { data: unreadData } = trpc.notifications.unreadCount.useQuery(undefined, {
+    refetchInterval: 30000, // poll every 30s
+  });
+  const { data: notifList, refetch: refetchNotifs } = trpc.notifications.list.useQuery({ limit: 20 });
+  const markAllRead = trpc.notifications.markAllRead.useMutation({
+    onSuccess: () => { refetchNotifs(); },
+  });
+  const unreadCount = unreadData?.count || 0;
 
   useEffect(() => {
     if (isCollapsed) {
@@ -224,6 +246,13 @@ function DashboardLayoutContent({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem
+                  onClick={() => setLocation("/settings")}
+                  className="cursor-pointer"
+                >
+                  <KeyRound className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
                   onClick={logout}
                   className="cursor-pointer text-destructive focus:text-destructive"
                 >
@@ -259,7 +288,58 @@ function DashboardLayoutContent({
             </div>
           </div>
         )}
-        <main className="flex-1 p-4 md:p-6">{children}</main>
+        {/* Top bar with notification bell */}
+        <div className="flex items-center justify-end gap-2 px-4 pt-3 md:px-6 md:pt-4">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="relative h-9 w-9">
+                <Bell className="h-4 w-4" />
+                {unreadCount > 0 && (
+                  <Badge className="absolute -top-1 -right-1 h-5 min-w-5 px-1 text-[10px] bg-primary text-primary-foreground">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </Badge>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-80 p-0">
+              <div className="flex items-center justify-between px-4 py-3 border-b">
+                <span className="font-semibold text-sm">Notifications</span>
+                {unreadCount > 0 && (
+                  <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => markAllRead.mutate()}>
+                    Mark all read
+                  </Button>
+                )}
+              </div>
+              <ScrollArea className="max-h-80">
+                {notifList && notifList.length > 0 ? (
+                  <div className="divide-y">
+                    {notifList.map((n: any) => (
+                      <div key={n.id} className={`px-4 py-3 text-sm ${!n.read ? 'bg-primary/5' : ''}`}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`h-2 w-2 rounded-full shrink-0 ${
+                            n.type === 'error' ? 'bg-red-500' :
+                            n.type === 'warning' ? 'bg-yellow-500' :
+                            n.type === 'success' ? 'bg-green-500' : 'bg-blue-500'
+                          }`} />
+                          <span className="font-medium truncate">{n.title}</span>
+                        </div>
+                        <p className="text-muted-foreground text-xs leading-relaxed">{n.message}</p>
+                        <p className="text-muted-foreground/60 text-[10px] mt-1">
+                          {new Date(n.timestamp).toLocaleString()}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="px-4 py-8 text-center text-muted-foreground text-sm">
+                    No notifications yet
+                  </div>
+                )}
+              </ScrollArea>
+            </PopoverContent>
+          </Popover>
+        </div>
+        <main className="flex-1 p-4 md:p-6 pt-2 md:pt-2">{children}</main>
       </SidebarInset>
     </>
   );

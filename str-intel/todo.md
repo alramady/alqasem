@@ -159,3 +159,34 @@
 ### Delivery
 - [x] Export to ZIP
 - [x] Push to GitHub
+
+## Phase 11: New Features (Change Password, Notifications, PDF Reports)
+
+### Change Password
+- [x] Add "Settings" page with Change Password form
+- [x] Backend: auth.changePassword tRPC endpoint (verify old password, hash new)
+- [x] Add Settings link in sidebar navigation
+- [x] Password strength validation (min 8 chars)
+
+### Email Notification System
+- [x] Build notification service module (server/notifications.ts)
+- [x] Admin alert: new user first login
+- [x] Admin alert: suspicious activity (5+ failed login attempts)
+- [x] Admin alert: new user created
+- [x] Notification preferences in Admin Panel
+- [x] Use built-in notifyOwner for notifications
+- [x] In-app notification bell with recent alerts
+
+### Branded PDF Report Generator
+- [x] Build PDF generation service (server/report-generator.ts)
+- [x] Neighborhood pitch report template with CoBNB branding
+- [x] Include ADR benchmarks, occupancy data, competitor positioning
+- [x] Revenue projection calculations
+- [x] Market opportunity scoring
+- [x] Add "Generate Report" button on Neighborhood Detail page
+- [x] Add Reports page listing generated reports (via neighborhood detail)
+- [x] Download PDF functionality (print-to-PDF via browser)
+
+### Delivery
+- [x] Export to ZIP
+- [x] Push to GitHub

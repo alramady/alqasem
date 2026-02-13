@@ -1,0 +1,1 @@
+Login page screenshot: CoBNB Market Intelligence branding with teal accent, dark theme, username/password fields, Sign in button. No TypeScript errors. All frontend changes compiled successfully.

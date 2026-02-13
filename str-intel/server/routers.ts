@@ -6,9 +6,11 @@ import { z } from "zod";
 import * as db from "./db";
 import { getOrchestrator } from "./scrapers/orchestrator";
 import { generateExcelReport } from "./excel-export";
+import { generatePitchReport } from "./report-generator";
 import { getScheduler } from "./scheduler";
 import { TRPCError } from "@trpc/server";
 import bcrypt from "bcryptjs";
+import * as notifications from "./notifications";
 
 // ─── Role-based middleware ───
 const viewerProcedure = protectedProcedure;
@@ -54,6 +56,27 @@ export const appRouter = router({
         });
         return { success: true };
       }),
+  }),
+
+  // ─── Notifications (protected) ───
+  notifications: router({
+    list: viewerProcedure
+      .input(z.object({ limit: z.number().optional() }))
+      .query(({ input, ctx }) => {
+        return notifications.getNotifications(ctx.user.id, ctx.user.role, input.limit || 50);
+      }),
+    unreadCount: viewerProcedure.query(({ ctx }) => {
+      return { count: notifications.getUnreadCount(ctx.user.id, ctx.user.role) };
+    }),
+    markRead: viewerProcedure
+      .input(z.object({ notificationId: z.string() }))
+      .mutation(({ input }) => {
+        return { success: notifications.markAsRead(input.notificationId) };
+      }),
+    markAllRead: viewerProcedure.mutation(({ ctx }) => {
+      const count = notifications.markAllAsRead(ctx.user.id, ctx.user.role);
+      return { success: true, count };
+    }),
   }),
 
   // ─── Dashboard (protected — any authenticated user) ───
@@ -178,8 +201,15 @@ export const appRouter = router({
         });
         promise.then(result => {
           console.log(`[ScrapeJob] Completed: ${result.totalListings} listings, ${result.totalErrors} errors, ${result.duration}ms`);
+          notifications.notifyScrapeComplete({
+            totalListings: result.totalListings,
+            totalErrors: result.totalErrors,
+            duration: result.duration,
+            otaSources: input.otaSlugs,
+          });
         }).catch(err => {
           console.error("[ScrapeJob] Failed:", err);
+          notifications.notifyScrapeFailure(String(err));
         });
         return { started: true, message: "Scrape job started. Check the jobs list for progress." };
       }),
@@ -202,6 +232,7 @@ export const appRouter = router({
           metadata: input,
           ipAddress: ctx.req.ip,
         });
+        notifications.notifyExport("csv", ctx.user.displayName || ctx.user.name || ctx.user.username || "User");
         return db.getExportData({
           neighborhoodIds: input.neighborhoodIds,
           propertyTypes: input.propertyTypes,
@@ -229,12 +260,39 @@ export const appRouter = router({
           metadata: input,
           ipAddress: ctx.req.ip,
         });
+        notifications.notifyExport("excel", ctx.user.displayName || ctx.user.name || ctx.user.username || "User");
         const buffer = await generateExcelReport(input);
         return {
           filename: `CoBNB_Market_Intelligence_Riyadh_${new Date().toISOString().split("T")[0]}.xlsx`,
           data: buffer.toString("base64"),
           mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         };
+      }),
+  }),
+
+  // ─── Reports (user + admin) ───
+  reports: router({
+    generatePitch: exportProcedure
+      .input(z.object({
+        neighborhoodId: z.number(),
+        includeCompetitors: z.boolean().optional(),
+        includeSeasonalPatterns: z.boolean().optional(),
+        includePropertyBreakdown: z.boolean().optional(),
+        customNotes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        await db.insertAuditLog({
+          userId: ctx.user.id,
+          action: "report_generate",
+          target: `neighborhood:${input.neighborhoodId}`,
+          metadata: input,
+          ipAddress: ctx.req.ip,
+        });
+        const report = await generatePitchReport({
+          ...input,
+          generatedBy: ctx.user.displayName || ctx.user.name || ctx.user.username || "CoBNB Team",
+        });
+        return report;
       }),
   }),
 
@@ -257,6 +315,7 @@ export const appRouter = router({
         });
         const scheduler = getScheduler();
         scheduler.start(input.frequency || "weekly");
+        notifications.notifySchedulerChange("start", input.frequency || "weekly", ctx.user.displayName || ctx.user.name || ctx.user.username || "Admin");
         return { started: true, frequency: input.frequency || "weekly" };
       }),
     stop: adminProcedure.mutation(async ({ ctx }) => {
@@ -265,9 +324,10 @@ export const appRouter = router({
         action: "scheduler_stop",
         ipAddress: ctx.req.ip,
       });
-      const scheduler = getScheduler();
-      scheduler.stop();
-      return { stopped: true };
+        const scheduler = getScheduler();
+        scheduler.stop();
+        notifications.notifySchedulerChange("stop", undefined, ctx.user.displayName || ctx.user.name || ctx.user.username || "Admin");
+        return { stopped: true };
     }),
   }),
 

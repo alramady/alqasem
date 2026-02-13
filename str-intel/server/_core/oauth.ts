@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import * as db from "../db";
 import { getSessionCookieOptions } from "./cookies";
 import { sdk } from "./sdk";
+import { notifyNewLogin, notifySuspiciousActivity } from "../notifications";
 
 // In-memory rate limiting store
 const loginAttempts = new Map<string, { count: number; firstAttempt: number }>();
@@ -81,6 +82,12 @@ export function registerOAuthRoutes(app: Express) {
       const valid = await bcrypt.compare(password, user.passwordHash);
       if (!valid) {
         recordFailedAttempt(username);
+        const record = loginAttempts.get(username);
+        // Notify on suspicious activity (3+ failed attempts)
+        if (record && record.count >= 3) {
+          const clientIp = req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() || req.ip || "";
+          notifySuspiciousActivity(username, record.count, clientIp).catch(() => {});
+        }
         res.status(401).json({ error: "Invalid username or password" });
         return;
       }
@@ -107,6 +114,10 @@ export function registerOAuthRoutes(app: Express) {
         target: username,
         ipAddress: clientIp,
       });
+
+      // Check if first login (lastSignedIn close to createdAt means first time)
+      const isFirstLogin = !user.lastSignedIn || (user.lastSignedIn.getTime() - user.createdAt.getTime() < 60000);
+      notifyNewLogin({ id: user.id, username: user.username, displayName: user.displayName, role: user.role }, clientIp, isFirstLogin).catch(() => {});
 
       // Set cookie
       const cookieOptions = getSessionCookieOptions(req);

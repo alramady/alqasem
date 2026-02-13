@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, MapPin, DollarSign, Percent, TrendingUp, Building2, Star, Users } from "lucide-react";
+import { ArrowLeft, MapPin, DollarSign, Percent, TrendingUp, Building2, Star, Users, FileText, Loader2 } from "lucide-react";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { toast } from "sonner";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, AreaChart, Area } from "recharts";
 import { useLocation, useParams } from "wouter";
 import { useMemo, useState } from "react";
@@ -17,6 +19,9 @@ export default function NeighborhoodDetail() {
   const params = useParams<{ slug: string }>();
   const [, setLocation] = useLocation();
   const [selectedPT, setSelectedPT] = useState<string>("all");
+  const [generatingReport, setGeneratingReport] = useState(false);
+  const { user } = useAuth();
+  const generateReport = trpc.reports.generatePitch.useMutation();
 
   const { data: neighborhoods } = trpc.neighborhoods.list.useQuery();
   const neighborhood = neighborhoods?.find(n => n.slug === params.slug);
@@ -89,6 +94,37 @@ export default function NeighborhoodDetail() {
           </div>
           <p className="text-sm text-muted-foreground mt-1">{neighborhood.city} — Detailed Market Analysis</p>
         </div>
+        {user?.role !== "viewer" && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-auto gap-2"
+            disabled={generatingReport}
+            onClick={async () => {
+              setGeneratingReport(true);
+              try {
+                const report = await generateReport.mutateAsync({
+                  neighborhoodId: neighborhood.id,
+                  includeCompetitors: true,
+                  includeSeasonalPatterns: true,
+                  includePropertyBreakdown: true,
+                });
+                // Open report in new tab
+                const blob = new Blob([report.html], { type: "text/html" });
+                const url = URL.createObjectURL(blob);
+                window.open(url, "_blank");
+                toast.success("Report generated successfully");
+              } catch (err: any) {
+                toast.error(err.message || "Failed to generate report");
+              } finally {
+                setGeneratingReport(false);
+              }
+            }}
+          >
+            {generatingReport ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+            Generate Pitch Report
+          </Button>
+        )}
       </div>
 
       {/* KPI Cards */}
