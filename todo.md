@@ -113,3 +113,16 @@
 - [x] Wire CSRF token into tRPC client headers for all mutations
 - [x] Write vitest tests for CSRF protection
 - [x] Verify all existing tests still pass
+
+## V2 Audit Remaining Fixes
+- [x] Fix #1A: Sanitize submitProperty mutation inputs
+- [x] Fix #1B: Sanitize submitPropertyRequest mutation inputs
+- [x] Fix #1C: Sanitize createPage and updatePage (HTML content + text fields)
+- [x] Fix #1D: Sanitize updateHomepageSection title/subtitle
+- [x] Fix #1E: Sanitize addInquiryNote
+- [x] Fix #1F: Sanitize sendMessage subject/body
+- [x] Fix #2: Rate-limit public.submitProperty and public.submitPropertyRequest
+- [x] Fix #3: Fix CORS to use allowlist instead of reflecting any origin
+- [x] Fix #4: Wire PropertyDetail inquiry form with tRPC mutation
+- [x] Fix #5: Verify and add composite database indexes in schema
+- [x] Run all tests and verify fixes

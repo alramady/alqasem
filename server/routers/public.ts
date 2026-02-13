@@ -389,10 +389,20 @@ export const publicRouter = router({
       rent: "rent",
     };
 
+    // Sanitize string inputs
+    const s = {
+      name: sanitizeText(input.name),
+      phone: sanitizeText(input.phone),
+      email: input.email ? sanitizeText(input.email) : null,
+      city: sanitizeText(input.city),
+      district: input.district ? sanitizeText(input.district) : null,
+      description: input.description ? sanitizeText(input.description) : null,
+    };
+
     // Create property as draft
     const result = await db.insert(properties).values({
-      title: `عقار جديد - ${input.type === "villa" ? "فيلا" : input.type === "apartment" ? "شقة" : input.type === "land" ? "أرض" : "تجاري"} في ${input.city}`,
-      description: input.description || null,
+      title: `عقار جديد - ${input.type === "villa" ? "فيلا" : input.type === "apartment" ? "شقة" : input.type === "land" ? "أرض" : "تجاري"} في ${s.city}`,
+      description: s.description,
       type: typeMap[input.type] || "villa",
       listingType: listingMap[input.purpose] || "sale",
       status: "draft",
@@ -400,19 +410,19 @@ export const publicRouter = router({
       area: input.area || null,
       rooms: input.rooms ? parseInt(input.rooms) : null,
       bathrooms: input.bathrooms ? parseInt(input.bathrooms) : null,
-      city: input.city,
-      district: input.district || null,
+      city: s.city,
+      district: s.district,
     });
 
     const propertyId = Number(result[0].insertId);
 
     // Also create an inquiry linked to this property
     await db.insert(inquiries).values({
-      name: input.name,
-      phone: input.phone,
-      email: input.email || null,
+      name: s.name,
+      phone: s.phone,
+      email: s.email,
       inquiryType: input.purpose === "rent" ? "rent" : "sell",
-      message: `طلب إضافة عقار جديد - ${input.type === "villa" ? "فيلا" : input.type === "apartment" ? "شقة" : input.type === "land" ? "أرض" : "تجاري"} في ${input.city}${input.district ? `، حي ${input.district}` : ""}${input.area ? ` - المساحة: ${input.area} م²` : ""}${input.price ? ` - السعر: ${input.price} ر.س` : ""}`,
+      message: `طلب إضافة عقار جديد - ${input.type === "villa" ? "فيلا" : input.type === "apartment" ? "شقة" : input.type === "land" ? "أرض" : "تجاري"} في ${s.city}${s.district ? `، حي ${s.district}` : ""}${input.area ? ` - المساحة: ${input.area} م²` : ""}${input.price ? ` - السعر: ${input.price} ر.س` : ""}`,
       propertyId,
       source: "add_property_form",
       status: "new",
@@ -456,21 +466,31 @@ export const publicRouter = router({
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "خطأ في الاتصال بقاعدة البيانات" });
 
+    // Sanitize string inputs
+    const s = {
+      name: sanitizeText(input.name),
+      phone: sanitizeText(input.phone),
+      email: input.email ? sanitizeText(input.email) : null,
+      city: input.city ? sanitizeText(input.city) : undefined,
+      district: input.district ? sanitizeText(input.district) : undefined,
+      details: input.details ? sanitizeText(input.details) : undefined,
+    };
+
     const typeLabel = input.type === "villa" ? "فيلا" : input.type === "apartment" ? "شقة" : input.type === "land" ? "أرض" : input.type === "commercial" ? "تجاري" : "أي نوع";
     const purposeLabel = input.purpose === "buy" ? "شراء" : input.purpose === "rent" ? "إيجار" : "غير محدد";
 
     let message = `طلب عقار - ${typeLabel} ${purposeLabel}`;
-    if (input.city) message += ` في ${input.city}`;
-    if (input.district) message += `، حي ${input.district}`;
+    if (s.city) message += ` في ${s.city}`;
+    if (s.district) message += `، حي ${s.district}`;
     if (input.minPrice || input.maxPrice) message += ` | الميزانية: ${input.minPrice || "0"} - ${input.maxPrice || "غير محدد"} ر.س`;
     if (input.rooms) message += ` | ${input.rooms} غرف`;
     if (input.minArea) message += ` | الحد الأدنى للمساحة: ${input.minArea} م²`;
-    if (input.details) message += `\n${input.details}`;
+    if (s.details) message += `\n${s.details}`;
 
     const result = await db.insert(inquiries).values({
-      name: input.name,
-      phone: input.phone,
-      email: input.email || null,
+      name: s.name,
+      phone: s.phone,
+      email: s.email,
       inquiryType: input.purpose === "rent" ? "rent" : "buy",
       message,
       source: "property_request_form",

@@ -18,7 +18,20 @@ export default function PropertyDetail({ id }: { id: string }) {
 
   const [activeImage, setActiveImage] = useState(0);
   const [isFav, setIsFav] = useState(false);
+  const [inquiryName, setInquiryName] = useState("");
+  const [inquiryPhone, setInquiryPhone] = useState("");
+  const [inquiryMessage, setInquiryMessage] = useState("");
+  const [inquirySubmitted, setInquirySubmitted] = useState(false);
   const mapRef = useRef<google.maps.Map | null>(null);
+
+  const submitInquiry = trpc.public.submitInquiry.useMutation({
+    onSuccess: () => {
+      setInquirySubmitted(true);
+      setInquiryName("");
+      setInquiryPhone("");
+      setInquiryMessage("");
+    },
+  });
 
   // Derived data from DB property
   const images: string[] = Array.isArray(property?.images) ? (property.images as string[]) : [];
@@ -245,12 +258,33 @@ export default function PropertyDetail({ id }: { id: string }) {
               </div>
               <div className="border-t border-gray-100 pt-5">
                 <h4 className="font-bold text-[#0f1b33] mb-3 text-sm">{isAr ? "أرسل استفسارك" : "Send Your Inquiry"}</h4>
-                <form className="space-y-3" onSubmit={(e) => e.preventDefault()}>
-                  <input type="text" placeholder={t("contact.name")} className="w-full px-4 py-2.5 bg-[#f8f5f0] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30" />
-                  <input type="tel" placeholder={t("contact.phone")} className="w-full px-4 py-2.5 bg-[#f8f5f0] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30" dir="ltr" />
-                  <textarea placeholder={isAr ? "رسالتك..." : "Your message..."} rows={3} className="w-full px-4 py-2.5 bg-[#f8f5f0] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30 resize-none" />
-                  <button type="submit" className="w-full bg-[#c8a45e] hover:bg-[#b8944e] text-[#0f1b33] font-semibold py-3 rounded-lg transition-colors">{isAr ? "إرسال الاستفسار" : "Send Inquiry"}</button>
-                </form>
+                {inquirySubmitted ? (
+                  <div className="text-center py-4">
+                    <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-2" />
+                    <p className="text-green-700 font-semibold text-sm">{isAr ? "تم إرسال استفسارك بنجاح!" : "Inquiry sent successfully!"}</p>
+                    <button onClick={() => setInquirySubmitted(false)} className="text-[#c8a45e] text-xs mt-2 underline">{isAr ? "إرسال استفسار آخر" : "Send another inquiry"}</button>
+                  </div>
+                ) : (
+                  <form className="space-y-3" onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!inquiryName.trim() || !inquiryPhone.trim()) return;
+                    submitInquiry.mutate({
+                      name: inquiryName.trim(),
+                      phone: inquiryPhone.trim(),
+                      message: inquiryMessage.trim() || `استفسار عن عقار: ${title}`,
+                      subject: `استفسار عن عقار #${property.id}`,
+                      source: "property_detail",
+                    });
+                  }}>
+                    <input type="text" value={inquiryName} onChange={(e) => setInquiryName(e.target.value)} placeholder={t("contact.name")} required className="w-full px-4 py-2.5 bg-[#f8f5f0] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30" />
+                    <input type="tel" value={inquiryPhone} onChange={(e) => setInquiryPhone(e.target.value)} placeholder={t("contact.phone")} required className="w-full px-4 py-2.5 bg-[#f8f5f0] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30" dir="ltr" />
+                    <textarea value={inquiryMessage} onChange={(e) => setInquiryMessage(e.target.value)} placeholder={isAr ? "رسالتك..." : "Your message..."} rows={3} className="w-full px-4 py-2.5 bg-[#f8f5f0] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30 resize-none" />
+                    {submitInquiry.error && <p className="text-red-500 text-xs">{isAr ? "حدث خطأ، حاول مرة أخرى" : "An error occurred, please try again"}</p>}
+                    <button type="submit" disabled={submitInquiry.isPending} className="w-full bg-[#c8a45e] hover:bg-[#b8944e] text-[#0f1b33] font-semibold py-3 rounded-lg transition-colors disabled:opacity-60">
+                      {submitInquiry.isPending ? (isAr ? "جاري الإرسال..." : "Sending...") : (isAr ? "إرسال الاستفسار" : "Send Inquiry")}
+                    </button>
+                  </form>
+                )}
               </div>
             </motion.div>
           </div>

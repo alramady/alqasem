@@ -780,7 +780,8 @@ export const adminRouter = router({
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
     const [existing] = await db.select({ internalNotes: inquiries.internalNotes }).from(inquiries).where(eq(inquiries.id, input.id));
-    const updatedNotes = (existing?.internalNotes || "") + `\n[${new Date().toLocaleString("ar-SA")}] ${ctx.user.name || "مستخدم"}: ${input.note}`;
+    const sanitizedNote = sanitizeText(input.note);
+    const updatedNotes = (existing?.internalNotes || "") + `\n[${new Date().toLocaleString("ar-SA")}] ${ctx.user.name || "مستخدم"}: ${sanitizedNote}`;
     await db.update(inquiries).set({ internalNotes: updatedNotes }).where(eq(inquiries.id, input.id));
     await logAudit(ctx.user.id, ctx.user.name || null, "update", "inquiry", input.id, { action: "note_added" });
     return { success: true };
@@ -820,11 +821,14 @@ export const adminRouter = router({
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
     await db.insert(pages).values({
-      title: input.title, slug: input.slug, content: input.content || null,
+      title: sanitizeText(input.title), slug: input.slug,
+      content: input.content ? sanitizeHtml(input.content) : null,
       sections: input.sections || null, pageType: (input.pageType || "static") as any,
       status: (input.status || "draft") as any,
-      seoTitle: input.seoTitle || null, seoDescription: input.seoDescription || null,
-      seoKeywords: input.seoKeywords || null, template: input.template || "default",
+      seoTitle: input.seoTitle ? sanitizeText(input.seoTitle) : null,
+      seoDescription: input.seoDescription ? sanitizeText(input.seoDescription) : null,
+      seoKeywords: input.seoKeywords ? sanitizeText(input.seoKeywords) : null,
+      template: input.template || "default",
       createdBy: ctx.user.id,
     });
     await logAudit(ctx.user.id, ctx.user.name || null, "create", "page", null, { title: input.title, slug: input.slug });
@@ -841,15 +845,15 @@ export const adminRouter = router({
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
     const [oldPage] = await db.select().from(pages).where(eq(pages.id, input.id));
     const updateData: any = {};
-    if (input.title !== undefined) updateData.title = input.title;
+    if (input.title !== undefined) updateData.title = sanitizeText(input.title);
     if (input.slug !== undefined) updateData.slug = input.slug;
-    if (input.content !== undefined) updateData.content = input.content;
+    if (input.content !== undefined) updateData.content = input.content ? sanitizeHtml(input.content) : null;
     if (input.sections !== undefined) updateData.sections = input.sections;
     if (input.pageType !== undefined) updateData.pageType = input.pageType;
     if (input.status !== undefined) updateData.status = input.status;
-    if (input.seoTitle !== undefined) updateData.seoTitle = input.seoTitle;
-    if (input.seoDescription !== undefined) updateData.seoDescription = input.seoDescription;
-    if (input.seoKeywords !== undefined) updateData.seoKeywords = input.seoKeywords;
+    if (input.seoTitle !== undefined) updateData.seoTitle = input.seoTitle ? sanitizeText(input.seoTitle) : null;
+    if (input.seoDescription !== undefined) updateData.seoDescription = input.seoDescription ? sanitizeText(input.seoDescription) : null;
+    if (input.seoKeywords !== undefined) updateData.seoKeywords = input.seoKeywords ? sanitizeText(input.seoKeywords) : null;
     if (input.template !== undefined) updateData.template = input.template;
     await db.update(pages).set(updateData).where(eq(pages.id, input.id));
     await logAudit(ctx.user.id, ctx.user.name || null, "update", "page", input.id, {}, oldPage, updateData);
@@ -878,8 +882,8 @@ export const adminRouter = router({
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
     const updateData: any = { updatedBy: ctx.user.id };
-    if (input.title !== undefined) updateData.title = input.title;
-    if (input.subtitle !== undefined) updateData.subtitle = input.subtitle;
+    if (input.title !== undefined) updateData.title = sanitizeText(input.title);
+    if (input.subtitle !== undefined) updateData.subtitle = sanitizeText(input.subtitle);
     if (input.content !== undefined) updateData.content = input.content;
     if (input.isVisible !== undefined) updateData.isVisible = input.isVisible;
     if (input.displayOrder !== undefined) updateData.displayOrder = input.displayOrder;
@@ -1062,7 +1066,7 @@ export const adminRouter = router({
     await db.insert(messages).values({
       threadId, senderId: ctx.user.id, senderName: ctx.user.name || ctx.user.fullName || "مستخدم",
       recipientId: input.recipientId, recipientName: recipient.name || recipient.fullName || "مستخدم",
-      subject: input.subject || null, body: input.body,
+      subject: input.subject ? sanitizeText(input.subject) : null, body: sanitizeText(input.body),
     });
     await createNotification(input.recipientId, "رسالة جديدة", `رسالة من ${ctx.user.name || "مستخدم"}: ${input.subject || "بدون عنوان"}`, "message", "/admin/messages");
     return { success: true, threadId };

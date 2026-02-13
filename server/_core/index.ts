@@ -36,10 +36,21 @@ async function startServer() {
   // Trust proxy for rate limiting behind reverse proxy
   app.set("trust proxy", 1);
 
-  // CORS configuration
+  // CORS configuration — allowlist-based
+  const allowedOrigins = new Set([
+    // Production domains
+    "https://alqasem.manus.space",
+    "https://www.alqasem.com.sa",
+    "https://alqasem.com.sa",
+  ]);
+  // In development, also allow the dev server origin
+  if (process.env.NODE_ENV === "development") {
+    allowedOrigins.add("http://localhost:3000");
+    allowedOrigins.add("http://localhost:5173");
+  }
   app.use((req, res, next) => {
     const origin = req.headers.origin;
-    if (origin) {
+    if (origin && (allowedOrigins.has(origin) || origin.endsWith(".manus.computer") || origin.endsWith(".manus.space"))) {
       res.setHeader("Access-Control-Allow-Origin", origin);
       res.setHeader("Access-Control-Allow-Credentials", "true");
       res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
@@ -81,6 +92,8 @@ async function startServer() {
     message: { error: "Too many form submissions, please try again later." },
   });
   app.use("/api/trpc/public.submitInquiry", formLimiter);
+  app.use("/api/trpc/public.submitProperty", formLimiter);
+  app.use("/api/trpc/public.submitPropertyRequest", formLimiter);
 
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
