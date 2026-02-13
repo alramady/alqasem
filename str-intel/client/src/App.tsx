@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Route, Switch, Redirect } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
@@ -12,6 +12,27 @@ import Seasonal from "./pages/Seasonal";
 import ExportPage from "./pages/ExportPage";
 import AdminPanel from "./pages/AdminPanel";
 import DashboardLayout from "./components/DashboardLayout";
+import { useAuth } from "@/_core/hooks/useAuth";
+
+/** Route guard: redirects non-admins away from /admin */
+function AdminRoute() {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user || user.role !== "admin") {
+    return <Redirect to="/" />;
+  }
+  return <AdminPanel />;
+}
+
+/** Route guard: blocks viewers from export page */
+function ExportRoute() {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user || user.role === "viewer") {
+    return <Redirect to="/" />;
+  }
+  return <ExportPage />;
+}
 
 function Router() {
   return (
@@ -22,8 +43,8 @@ function Router() {
         <Route path={"/competitors"} component={Competitors} />
         <Route path={"/listings"} component={Listings} />
         <Route path={"/seasonal"} component={Seasonal} />
-        <Route path={"/export"} component={ExportPage} />
-        <Route path={"/admin"} component={AdminPanel} />
+        <Route path={"/export"} component={ExportRoute} />
+        <Route path={"/admin"} component={AdminRoute} />
         <Route path={"/404"} component={NotFound} />
         <Route component={NotFound} />
       </Switch>

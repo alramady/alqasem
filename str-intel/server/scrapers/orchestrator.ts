@@ -380,14 +380,26 @@ export class ScraperOrchestrator {
             priceConditions.push(eq(listings.propertyType, pt as any));
           }
 
+          // Proper percentile calculation using MySQL subqueries
           const [priceResult] = await db.select({
             avgPrice: sql<number>`AVG(CAST(nightlyRate AS DECIMAL(10,2)))`,
-            medianPrice: sql<number>`AVG(CAST(nightlyRate AS DECIMAL(10,2)))`, // Approximate
-            p25: sql<number>`AVG(CAST(nightlyRate AS DECIMAL(10,2))) * 0.75`,
-            p75: sql<number>`AVG(CAST(nightlyRate AS DECIMAL(10,2))) * 1.25`,
+            priceCount: sql<number>`COUNT(*)`,
           }).from(priceSnapshots)
             .innerJoin(listings, eq(priceSnapshots.listingId, listings.id))
             .where(and(...priceConditions));
+
+          // Get all prices sorted for proper median and percentile calculation
+          const allPrices = await db.select({
+            nightlyRate: sql<number>`CAST(nightlyRate AS DECIMAL(10,2))`,
+          }).from(priceSnapshots)
+            .innerJoin(listings, eq(priceSnapshots.listingId, listings.id))
+            .where(and(...priceConditions, sql`nightlyRate IS NOT NULL AND nightlyRate > 0`))
+            .orderBy(sql`CAST(nightlyRate AS DECIMAL(10,2)) ASC`);
+
+          const prices = allPrices.map(p => Number(p.nightlyRate)).filter(p => p > 0);
+          const medianPrice = prices.length > 0 ? calculatePercentile(prices, 50) : 0;
+          const p25 = prices.length > 0 ? calculatePercentile(prices, 25) : 0;
+          const p75 = prices.length > 0 ? calculatePercentile(prices, 75) : 0;
 
           // Trailing ADR (30/60/90 days)
           const getTrailingAdr = async (days: number) => {
@@ -424,10 +436,21 @@ export class ScraperOrchestrator {
             ));
 
           const totalDays = (occResult?.avgBooked || 0) + (occResult?.avgAvailable || 0);
-          const occupancyRate = totalDays > 0 ? ((occResult?.avgBooked || 0) / totalDays) * 100 : 65; // Default estimate
+          const hasRealOccupancy = totalDays > 0;
+          const occupancyRate = hasRealOccupancy ? ((occResult?.avgBooked || 0) / totalDays) * 100 : 65; // Default estimate
 
           const adr = priceResult?.avgPrice || 0;
           const revpar = adr * (occupancyRate / 100);
+
+          // Determine data confidence level
+          const hasPriceData = prices.length > 0;
+          const hasOccupancyData = hasRealOccupancy;
+          let dataConfidence: "real" | "estimated" | "default" = "default";
+          if (hasPriceData && hasOccupancyData) {
+            dataConfidence = "real";
+          } else if (hasPriceData || hasOccupancyData) {
+            dataConfidence = "estimated";
+          }
 
           // Insert metric
           await db.insert(metrics).values({
@@ -444,9 +467,10 @@ export class ScraperOrchestrator {
             totalListings: countResult?.count || 0,
             newListings: newResult?.count || 0,
             avgRating: String(Number(ratingResult?.avg || 0).toFixed(2)),
-            medianPrice: String(Math.round(priceResult?.medianPrice || 0)),
-            priceP25: String(Math.round(priceResult?.p25 || 0)),
-            priceP75: String(Math.round(priceResult?.p75 || 0)),
+            medianPrice: String(Math.round(medianPrice)),
+            priceP25: String(Math.round(p25)),
+            priceP75: String(Math.round(p75)),
+            dataConfidence,
           });
         } catch (e) {
           console.error(`[Orchestrator] Metrics update failed for ${nb.name}/${pt}:`, e);
@@ -454,6 +478,23 @@ export class ScraperOrchestrator {
       }
     }
   }
+}
+
+/**
+ * Calculate a percentile from a sorted array of numbers.
+ * Uses linear interpolation between closest ranks.
+ */
+function calculatePercentile(sortedValues: number[], percentile: number): number {
+  if (sortedValues.length === 0) return 0;
+  if (sortedValues.length === 1) return sortedValues[0];
+
+  const index = (percentile / 100) * (sortedValues.length - 1);
+  const lower = Math.floor(index);
+  const upper = Math.ceil(index);
+  const weight = index - lower;
+
+  if (upper >= sortedValues.length) return sortedValues[sortedValues.length - 1];
+  return sortedValues[lower] * (1 - weight) + sortedValues[upper] * weight;
 }
 
 // Singleton instance

@@ -125,7 +125,7 @@ export default function ExportPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `str-intel-export-${new Date().toISOString().split("T")[0]}.csv`;
+      a.download = `cobnb-market-intelligence-${new Date().toISOString().split("T")[0]}.csv`;
       a.click();
       URL.revokeObjectURL(url);
       toast.success("CSV exported successfully");

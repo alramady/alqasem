@@ -199,7 +199,7 @@ export default function Home() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Market Overview</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Riyadh Short-Term Rental Market Intelligence
+            CoBNB Market Intelligence — Riyadh
           </p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -220,7 +220,7 @@ export default function Home() {
             Market Overview
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Riyadh Short-Term Rental Market Intelligence
+            CoBNB Market Intelligence — Riyadh
           </p>
         </div>
         {summary?.lastScrapeJob && (

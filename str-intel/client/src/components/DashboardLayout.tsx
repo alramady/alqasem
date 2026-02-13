@@ -38,14 +38,23 @@ import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Button } from "./ui/button";
 
-const menuItems = [
+const baseMenuItems = [
   { icon: LayoutDashboard, label: "Market Overview", path: "/" },
   { icon: Building2, label: "Listings", path: "/listings" },
   { icon: Users, label: "Competitors", path: "/competitors" },
   { icon: CalendarRange, label: "Seasonal Patterns", path: "/seasonal" },
-  { icon: Download, label: "Export Data", path: "/export" },
-  { icon: Settings, label: "Admin Panel", path: "/admin" },
+  { icon: Download, label: "Export Data", path: "/export", minRole: "user" as const },
+  { icon: Settings, label: "Admin Panel", path: "/admin", minRole: "admin" as const },
 ];
+
+function getMenuItems(role?: string) {
+  return baseMenuItems.filter(item => {
+    if (!item.minRole) return true;
+    if (item.minRole === "admin") return role === "admin";
+    if (item.minRole === "user") return role === "user" || role === "admin";
+    return true;
+  });
+}
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
 const DEFAULT_WIDTH = 260;
@@ -80,7 +89,7 @@ export default function DashboardLayout({
               <TrendingUp className="h-10 w-10 text-primary" />
               <div>
                 <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                  STR Intelligence
+                  CoBNB Market Intelligence
                 </h1>
                 <p className="text-xs text-muted-foreground font-medium tracking-wider uppercase">
                   CoBNB KSA
@@ -136,6 +145,7 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const menuItems = getMenuItems(user?.role);
   const activeMenuItem = menuItems.find((item) => item.path === location);
   const isMobile = useIsMobile();
 
@@ -191,7 +201,7 @@ function DashboardLayoutContent({
                 <div className="flex items-center gap-2 min-w-0">
                   <TrendingUp className="h-5 w-5 text-primary shrink-0" />
                   <span className="font-semibold tracking-tight truncate text-sm">
-                    STR Intelligence
+                    CoBNB Market Intelligence
                   </span>
                 </div>
               ) : null}

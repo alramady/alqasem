@@ -54,7 +54,7 @@
 - [x] Summary report generation per refresh cycle
 
 ## Phase 7: Documentation & Testing
-- [x] Vitest tests for API endpoints (30 tests passing)
+- [x] Vitest tests for API endpoints (38 tests passing)
 - [x] Feasibility documentation (scraping approaches, legal, refresh limits)
 - [x] API vs scraping trade-offs documentation
 - [x] Saudi PDPL compliance notes
@@ -68,5 +68,33 @@
 - [x] Excel (.xlsx) export with formatted sheets and multiple tabs (Summary, Metrics, Listings, Competitors, Price Snapshots, Seasonal)
 - [x] Automated cron-based refresh scheduling with daily/weekly/biweekly/monthly options
 - [x] Admin panel updated with scraper trigger controls and scheduler management
-- [ ] Export project to ZIP file
-- [ ] Push updated code to GitHub repository
+- [x] Export project to ZIP file
+- [x] Push updated code to GitHub repository (branch: str-intelligence)
+
+## Phase 9: Priority Fixes
+
+### Security (Critical)
+- [x] Change all data routes from publicProcedure to protectedProcedure
+- [x] Change scrapeJobs.trigger, scheduler.start/stop to adminProcedure
+- [x] Add frontend route guard: Admin Panel only visible for admin role
+- [x] Redirect non-admins from /admin route
+
+### User Management (Critical)
+- [x] Add audit_log database table (userId, action, target, metadata, ipAddress, createdAt)
+- [x] Update role enum to include "viewer" (viewer, user, admin)
+- [x] Add admin.users.list tRPC route (adminProcedure)
+- [x] Add admin.users.updateRole tRPC route (adminProcedure)
+- [x] Add admin.users.deactivate tRPC route (adminProcedure)
+- [x] Add Users tab in Admin Panel with user list table
+- [x] Log all scrape triggers, exports, role changes, and login events
+- [x] Role-based access: viewer (read-only), user (read + export), admin (full access)
+
+### Data Accuracy
+- [x] Fix median calculation in orchestrator.ts — use proper percentile logic
+- [x] Fix P25/P75 — replace incorrect AVG * factor with real percentile
+- [x] Add data confidence flag to metrics: "real" vs "estimated" vs "default"
+- [x] Mark default 65% occupancy clearly as estimated
+
+### Branding
+- [x] Rename "STR Intelligence" to "CoBNB Market Intelligence" throughout
+- [x] Update color scheme to CoBNB brand (teal primary #00BFA6, dark background)

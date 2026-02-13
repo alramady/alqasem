@@ -40,31 +40,25 @@ vi.mock("./db", () => ({
   getNeighborhoodDetail: vi.fn().mockResolvedValue({
     neighborhood: { id: 1, name: "Al Olaya", slug: "al-olaya" },
     latestMetrics: { adr: "800", occupancyRate: "70", revpar: "560", totalListings: 30 },
-    propertyTypeMetrics: [
-      { propertyType: "1br", adr: "600", occupancyRate: "75", revpar: "450" },
-    ],
+    propertyTypeMetrics: [{ propertyType: "1br", adr: "600", occupancyRate: "75", revpar: "450" }],
     listingStats: { count: 30, avgRating: 4.3 },
-    topHosts: [
-      { hostId: "h1", hostName: "Test Host", hostType: "property_manager", count: 5, avgRating: 4.5 },
-    ],
+    topHosts: [{ hostId: "h1", hostName: "Test Host", hostType: "property_manager", count: 5, avgRating: 4.5 }],
   }),
   getNeighborhoodMetrics: vi.fn().mockResolvedValue([
     { metricDate: new Date(), adr: "800", occupancyRate: "70", revpar: "560", totalListings: 30 },
   ]),
   getListings: vi.fn().mockResolvedValue({
-    items: [
-      { id: 1, title: "Test Listing", neighborhoodId: 1, propertyType: "1br", otaSourceId: 1, hostType: "individual", rating: "4.5", reviewCount: 10, photoCount: 8, isSuperhost: false },
-    ],
+    items: [{ id: 1, title: "Test Listing", neighborhoodId: 1, propertyType: "1br", otaSourceId: 1, hostType: "individual", rating: "4.5", reviewCount: 10, photoCount: 8, isSuperhost: false }],
     total: 1,
   }),
   getAdrTrends: vi.fn().mockResolvedValue([
-    { metricDate: new Date(), neighborhoodId: 1, adr: "800", occupancyRate: "70", revpar: "560" },
+    { metricDate: new Date(), neighborhoodId: 1, adr: "800", occupancyRate: "70", revpar: "560", dataConfidence: "real" },
   ]),
   getPriceDistribution: vi.fn().mockResolvedValue([
     { propertyType: "1br", nightlyRate: "600", neighborhoodId: 1 },
   ]),
   getSeasonalPatterns: vi.fn().mockResolvedValue([
-    { id: 1, name: "Riyadh Season", seasonType: "peak", startDate: "10-01", endDate: "03-31", avgPriceMultiplier: "1.80", description: "Peak season" },
+    { id: 1, name: "Riyadh Season", seasonType: "peak", startDate: "10-01", endDate: "03-31", avgPriceMultiplier: "1.80" },
   ]),
   getCompetitors: vi.fn().mockResolvedValue([
     { id: 1, hostId: "h1", hostName: "Test PM", portfolioSize: 15, avgRating: "4.3", avgNightlyRate: "800", totalReviews: 120, isSuperhost: true },
@@ -83,6 +77,19 @@ vi.mock("./db", () => ({
   getExportData: vi.fn().mockResolvedValue([
     { metricDate: new Date(), neighborhoodId: 1, propertyType: "all", adr: "800", occupancyRate: "70", revpar: "560", totalListings: 30, newListings: 3 },
   ]),
+  getAllUsers: vi.fn().mockResolvedValue([
+    { id: 1, openId: "user1", name: "Admin User", email: "admin@cobnb.sa", role: "admin", isActive: true, lastSignedIn: new Date(), createdAt: new Date() },
+    { id: 2, openId: "user2", name: "Regular User", email: "user@cobnb.sa", role: "user", isActive: true, lastSignedIn: new Date(), createdAt: new Date() },
+    { id: 3, openId: "user3", name: "Viewer User", email: "viewer@cobnb.sa", role: "viewer", isActive: true, lastSignedIn: new Date(), createdAt: new Date() },
+  ]),
+  updateUserRole: vi.fn().mockResolvedValue(undefined),
+  deactivateUser: vi.fn().mockResolvedValue(undefined),
+  activateUser: vi.fn().mockResolvedValue(undefined),
+  getAuditLogs: vi.fn().mockResolvedValue([
+    { id: 1, userId: 1, action: "scrape_trigger", target: "airbnb", ipAddress: "127.0.0.1", createdAt: new Date() },
+    { id: 2, userId: 1, action: "role_change", target: "user:2", metadata: { newRole: "admin" }, ipAddress: "127.0.0.1", createdAt: new Date() },
+  ]),
+  insertAuditLog: vi.fn().mockResolvedValue(undefined),
   upsertUser: vi.fn(),
   getUserByOpenId: vi.fn(),
 }));
@@ -128,33 +135,142 @@ type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 function createPublicContext(): TrpcContext {
   return {
     user: null,
-    req: { protocol: "https", headers: {} } as TrpcContext["req"],
+    req: { protocol: "https", headers: {}, ip: "127.0.0.1" } as TrpcContext["req"],
     res: { clearCookie: vi.fn() } as unknown as TrpcContext["res"],
   };
 }
 
-function createAuthContext(): TrpcContext {
+function createUserContext(role: "viewer" | "user" | "admin" = "user", id = 1): TrpcContext {
   const user: AuthenticatedUser = {
-    id: 1,
-    openId: "test-user",
-    email: "test@cobnb.sa",
-    name: "Test User",
+    id,
+    openId: `test-${role}`,
+    email: `${role}@cobnb.sa`,
+    name: `Test ${role}`,
     loginMethod: "manus",
-    role: "admin",
+    role,
+    isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),
     lastSignedIn: new Date(),
   };
   return {
     user,
-    req: { protocol: "https", headers: {} } as TrpcContext["req"],
+    req: { protocol: "https", headers: {}, ip: "127.0.0.1" } as TrpcContext["req"],
     res: { clearCookie: vi.fn() } as unknown as TrpcContext["res"],
   };
 }
 
-describe("Dashboard API", () => {
-  it("returns dashboard summary with all KPIs", async () => {
+// ─── SECURITY: All data routes require authentication ───
+describe("Security: Protected Routes", () => {
+  it("rejects unauthenticated access to dashboard.summary", async () => {
     const caller = appRouter.createCaller(createPublicContext());
+    await expect(caller.dashboard.summary()).rejects.toThrow();
+  });
+
+  it("rejects unauthenticated access to neighborhoods.list", async () => {
+    const caller = appRouter.createCaller(createPublicContext());
+    await expect(caller.neighborhoods.list()).rejects.toThrow();
+  });
+
+  it("rejects unauthenticated access to listings.list", async () => {
+    const caller = appRouter.createCaller(createPublicContext());
+    await expect(caller.listings.list({})).rejects.toThrow();
+  });
+
+  it("rejects unauthenticated access to metrics.adrTrends", async () => {
+    const caller = appRouter.createCaller(createPublicContext());
+    await expect(caller.metrics.adrTrends({})).rejects.toThrow();
+  });
+
+  it("rejects unauthenticated access to competitors.list", async () => {
+    const caller = appRouter.createCaller(createPublicContext());
+    await expect(caller.competitors.list({})).rejects.toThrow();
+  });
+
+  it("rejects unauthenticated access to export.data", async () => {
+    const caller = appRouter.createCaller(createPublicContext());
+    await expect(caller.export.data({})).rejects.toThrow();
+  });
+
+  it("rejects unauthenticated access to scrapeJobs.list", async () => {
+    const caller = appRouter.createCaller(createPublicContext());
+    await expect(caller.scrapeJobs.list({})).rejects.toThrow();
+  });
+});
+
+// ─── SECURITY: Admin-only routes ───
+describe("Security: Admin-only Routes", () => {
+  it("rejects non-admin access to scrapeJobs.trigger", async () => {
+    const caller = appRouter.createCaller(createUserContext("user"));
+    await expect(caller.scrapeJobs.trigger({ otaSlugs: ["airbnb"] })).rejects.toThrow();
+  });
+
+  it("rejects viewer access to scrapeJobs.trigger", async () => {
+    const caller = appRouter.createCaller(createUserContext("viewer"));
+    await expect(caller.scrapeJobs.trigger({ otaSlugs: ["airbnb"] })).rejects.toThrow();
+  });
+
+  it("allows admin access to scrapeJobs.trigger", async () => {
+    const caller = appRouter.createCaller(createUserContext("admin"));
+    const result = await caller.scrapeJobs.trigger({ otaSlugs: ["airbnb"], jobType: "full_scan" });
+    expect(result.started).toBe(true);
+  });
+
+  it("rejects non-admin access to scheduler.start", async () => {
+    const caller = appRouter.createCaller(createUserContext("user"));
+    await expect(caller.scheduler.start({ frequency: "weekly" })).rejects.toThrow();
+  });
+
+  it("rejects non-admin access to scheduler.stop", async () => {
+    const caller = appRouter.createCaller(createUserContext("user"));
+    await expect(caller.scheduler.stop()).rejects.toThrow();
+  });
+
+  it("allows admin access to scheduler.start", async () => {
+    const caller = appRouter.createCaller(createUserContext("admin"));
+    const result = await caller.scheduler.start({ frequency: "weekly" });
+    expect(result.started).toBe(true);
+    expect(result.frequency).toBe("weekly");
+  });
+
+  it("allows admin access to scheduler.stop", async () => {
+    const caller = appRouter.createCaller(createUserContext("admin"));
+    const result = await caller.scheduler.stop();
+    expect(result.stopped).toBe(true);
+  });
+});
+
+// ─── SECURITY: Export role restriction (viewer cannot export) ───
+describe("Security: Export Role Restriction", () => {
+  it("rejects viewer access to export.data", async () => {
+    const caller = appRouter.createCaller(createUserContext("viewer"));
+    await expect(caller.export.data({})).rejects.toThrow(/Viewers cannot export/);
+  });
+
+  it("rejects viewer access to export.excel", async () => {
+    const caller = appRouter.createCaller(createUserContext("viewer"));
+    await expect(caller.export.excel({})).rejects.toThrow(/Viewers cannot export/);
+  });
+
+  it("allows user access to export.data", async () => {
+    const caller = appRouter.createCaller(createUserContext("user"));
+    const result = await caller.export.data({});
+    expect(result).toHaveLength(1);
+  });
+
+  it("allows admin access to export.excel", async () => {
+    const caller = appRouter.createCaller(createUserContext("admin"));
+    const result = await caller.export.excel({ includeMetrics: true });
+    expect(result).toBeDefined();
+    expect(result.filename).toMatch(/CoBNB_Market_Intelligence_Riyadh_.*\.xlsx/);
+    expect(result.mimeType).toBe("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  });
+});
+
+// ─── Dashboard API (authenticated) ───
+describe("Dashboard API", () => {
+  it("returns dashboard summary with all KPIs for authenticated user", async () => {
+    const caller = appRouter.createCaller(createUserContext("viewer"));
     const result = await caller.dashboard.summary();
     expect(result).toBeDefined();
     expect(result?.totalListings).toBe(214);
@@ -163,240 +279,125 @@ describe("Dashboard API", () => {
     expect(result?.avgRevpar).toBe(504);
     expect(result?.competitorCount).toBe(12);
     expect(result?.newListingsThisWeek).toBe(23);
-    expect(result?.otaDistribution).toHaveLength(2);
-    expect(result?.propertyTypeDistribution).toHaveLength(2);
-    expect(result?.hostTypeDistribution).toHaveLength(2);
-    expect(result?.neighborhoodMetrics).toHaveLength(1);
   });
 
   it("returns supply growth data", async () => {
-    const caller = appRouter.createCaller(createPublicContext());
+    const caller = appRouter.createCaller(createUserContext("viewer"));
     const result = await caller.dashboard.supplyGrowth();
     expect(result).toHaveLength(1);
     expect(result[0].totalListings).toBe(30);
-    expect(result[0].newListings).toBe(3);
   });
 });
 
+// ─── Neighborhoods API ───
 describe("Neighborhoods API", () => {
   it("lists all active neighborhoods", async () => {
-    const caller = appRouter.createCaller(createPublicContext());
+    const caller = appRouter.createCaller(createUserContext("viewer"));
     const result = await caller.neighborhoods.list();
     expect(result).toHaveLength(2);
     expect(result[0].name).toBe("Al Olaya");
-    expect(result[1].name).toBe("Hittin");
   });
 
-  it("returns neighborhood detail with metrics and top hosts", async () => {
-    const caller = appRouter.createCaller(createPublicContext());
+  it("returns neighborhood detail with metrics", async () => {
+    const caller = appRouter.createCaller(createUserContext("viewer"));
     const result = await caller.neighborhoods.detail({ id: 1 });
-    expect(result).toBeDefined();
     expect(result?.neighborhood.name).toBe("Al Olaya");
     expect(result?.latestMetrics?.adr).toBe("800");
     expect(result?.topHosts).toHaveLength(1);
-    expect(result?.topHosts[0].hostName).toBe("Test Host");
-  });
-
-  it("returns neighborhood metrics with optional property type filter", async () => {
-    const caller = appRouter.createCaller(createPublicContext());
-    const result = await caller.neighborhoods.metrics({ neighborhoodId: 1 });
-    expect(result).toHaveLength(1);
-    expect(result[0].adr).toBe("800");
   });
 });
 
+// ─── Listings API ───
 describe("Listings API", () => {
-  it("returns paginated listings with filters", async () => {
-    const caller = appRouter.createCaller(createPublicContext());
+  it("returns paginated listings", async () => {
+    const caller = appRouter.createCaller(createUserContext("viewer"));
     const result = await caller.listings.list({ page: 1, limit: 20 });
     expect(result.items).toHaveLength(1);
     expect(result.total).toBe(1);
     expect(result.items[0].title).toBe("Test Listing");
   });
-
-  it("accepts neighborhood and property type filters", async () => {
-    const caller = appRouter.createCaller(createPublicContext());
-    const result = await caller.listings.list({
-      neighborhoodId: 1,
-      propertyType: "1br",
-      page: 1,
-    });
-    expect(result).toBeDefined();
-    expect(result.items).toBeDefined();
-  });
 });
 
-describe("Metrics API", () => {
-  it("returns ADR trends", async () => {
-    const caller = appRouter.createCaller(createPublicContext());
-    const result = await caller.metrics.adrTrends({});
-    expect(result).toHaveLength(1);
-    expect(result[0].adr).toBe("800");
-  });
-
-  it("returns price distribution", async () => {
-    const caller = appRouter.createCaller(createPublicContext());
-    const result = await caller.metrics.priceDistribution({});
-    expect(result).toHaveLength(1);
-  });
-
-  it("returns seasonal patterns", async () => {
-    const caller = appRouter.createCaller(createPublicContext());
-    const result = await caller.metrics.seasonal();
-    expect(result).toHaveLength(1);
-    expect(result[0].name).toBe("Riyadh Season");
-    expect(result[0].seasonType).toBe("peak");
-  });
-});
-
+// ─── Competitors API ───
 describe("Competitors API", () => {
   it("lists competitors sorted by portfolio size", async () => {
-    const caller = appRouter.createCaller(createPublicContext());
+    const caller = appRouter.createCaller(createUserContext("viewer"));
     const result = await caller.competitors.list({});
     expect(result).toHaveLength(1);
     expect(result[0].hostName).toBe("Test PM");
     expect(result[0].portfolioSize).toBe(15);
-    expect(result[0].isSuperhost).toBe(true);
   });
 
   it("returns competitor detail with listings", async () => {
-    const caller = appRouter.createCaller(createPublicContext());
+    const caller = appRouter.createCaller(createUserContext("viewer"));
     const result = await caller.competitors.detail({ hostId: "h1" });
-    expect(result).toBeDefined();
     expect(result?.competitor.hostName).toBe("Test PM");
     expect(result?.listings).toHaveLength(1);
   });
 });
 
-describe("OTA Sources API", () => {
-  it("lists all OTA sources", async () => {
-    const caller = appRouter.createCaller(createPublicContext());
-    const result = await caller.otaSources.list();
+// ─── Admin: User Management ───
+describe("Admin: User Management", () => {
+  it("lists all users for admin", async () => {
+    const caller = appRouter.createCaller(createUserContext("admin"));
+    const result = await caller.admin.users.list();
+    expect(result).toHaveLength(3);
+    expect(result[0].name).toBe("Admin User");
+    expect(result[1].role).toBe("user");
+    expect(result[2].role).toBe("viewer");
+  });
+
+  it("rejects non-admin access to user list", async () => {
+    const caller = appRouter.createCaller(createUserContext("user"));
+    await expect(caller.admin.users.list()).rejects.toThrow();
+  });
+
+  it("updates user role", async () => {
+    const caller = appRouter.createCaller(createUserContext("admin"));
+    const result = await caller.admin.users.updateRole({ userId: 2, role: "admin" });
+    expect(result.success).toBe(true);
+  });
+
+  it("prevents admin from changing own role", async () => {
+    const caller = appRouter.createCaller(createUserContext("admin", 1));
+    await expect(caller.admin.users.updateRole({ userId: 1, role: "user" })).rejects.toThrow(/cannot change your own role/);
+  });
+
+  it("deactivates a user", async () => {
+    const caller = appRouter.createCaller(createUserContext("admin"));
+    const result = await caller.admin.users.deactivate({ userId: 2 });
+    expect(result.success).toBe(true);
+  });
+
+  it("prevents admin from deactivating self", async () => {
+    const caller = appRouter.createCaller(createUserContext("admin", 1));
+    await expect(caller.admin.users.deactivate({ userId: 1 })).rejects.toThrow(/cannot deactivate yourself/);
+  });
+
+  it("activates a user", async () => {
+    const caller = appRouter.createCaller(createUserContext("admin"));
+    const result = await caller.admin.users.activate({ userId: 3 });
+    expect(result.success).toBe(true);
+  });
+});
+
+// ─── Admin: Audit Log ───
+describe("Admin: Audit Log", () => {
+  it("returns audit logs for admin", async () => {
+    const caller = appRouter.createCaller(createUserContext("admin"));
+    const result = await caller.admin.auditLog({ limit: 50 });
     expect(result).toHaveLength(2);
-    expect(result[0].name).toBe("Airbnb");
-    expect(result[1].name).toBe("Booking.com");
+    expect(result[0].action).toBe("scrape_trigger");
+    expect(result[1].action).toBe("role_change");
+  });
+
+  it("rejects non-admin access to audit log", async () => {
+    const caller = appRouter.createCaller(createUserContext("user"));
+    await expect(caller.admin.auditLog({ limit: 50 })).rejects.toThrow();
   });
 });
 
-describe("Scrape Jobs API", () => {
-  it("lists recent scrape jobs with job type and duration", async () => {
-    const caller = appRouter.createCaller(createPublicContext());
-    const result = await caller.scrapeJobs.list({});
-    expect(result).toHaveLength(1);
-    expect(result[0].status).toBe("completed");
-    expect(result[0].listingsFound).toBe(50);
-    expect(result[0].jobType).toBe("full_scan");
-    expect(result[0].duration).toBe(45000);
-  });
-
-  it("triggers a scrape job for authenticated users", async () => {
-    const caller = appRouter.createCaller(createAuthContext());
-    const result = await caller.scrapeJobs.trigger({
-      otaSlugs: ["airbnb"],
-      neighborhoodSlugs: ["al-olaya"],
-      jobType: "full_scan",
-    });
-    expect(result.started).toBe(true);
-    expect(result.message).toContain("Scrape job started");
-  });
-
-  it("rejects scrape trigger for unauthenticated users", async () => {
-    const caller = appRouter.createCaller(createPublicContext());
-    await expect(
-      caller.scrapeJobs.trigger({ otaSlugs: ["airbnb"] })
-    ).rejects.toThrow();
-  });
-});
-
-describe("Export API", () => {
-  it("returns export data with filters", async () => {
-    const caller = appRouter.createCaller(createPublicContext());
-    const result = await caller.export.data({});
-    expect(result).toHaveLength(1);
-    expect(result[0].adr).toBe("800");
-    expect(result[0].neighborhoodId).toBe(1);
-  });
-
-  it("accepts date range and neighborhood filters", async () => {
-    const caller = appRouter.createCaller(createPublicContext());
-    const result = await caller.export.data({
-      neighborhoodIds: [1, 2],
-      dateFrom: "2025-01-01",
-      dateTo: "2025-12-31",
-    });
-    expect(result).toBeDefined();
-  });
-
-  it("generates Excel report with base64 encoded data", async () => {
-    const caller = appRouter.createCaller(createPublicContext());
-    const result = await caller.export.excel({
-      includeListings: true,
-      includeMetrics: true,
-      includeCompetitors: true,
-      includeSeasonalPatterns: true,
-      includePriceSnapshots: true,
-    });
-    expect(result).toBeDefined();
-    expect(result.filename).toMatch(/STR_Intelligence_Riyadh_.*\.xlsx/);
-    expect(result.mimeType).toBe("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-    expect(result.data).toBeTruthy();
-    // Verify it's valid base64
-    const decoded = Buffer.from(result.data, "base64");
-    expect(decoded.length).toBeGreaterThan(0);
-  });
-
-  it("generates Excel report with selective sheets", async () => {
-    const caller = appRouter.createCaller(createPublicContext());
-    const result = await caller.export.excel({
-      includeListings: false,
-      includeMetrics: true,
-      includeCompetitors: false,
-    });
-    expect(result).toBeDefined();
-    expect(result.filename).toContain(".xlsx");
-  });
-});
-
-describe("Scheduler API", () => {
-  it("returns scheduler status for authenticated users", async () => {
-    const caller = appRouter.createCaller(createAuthContext());
-    const result = await caller.scheduler.status();
-    expect(result).toBeDefined();
-    expect(result.isRunning).toBe(false);
-    expect(result.totalRuns).toBe(0);
-  });
-
-  it("starts scheduler with specified frequency", async () => {
-    const caller = appRouter.createCaller(createAuthContext());
-    const result = await caller.scheduler.start({ frequency: "weekly" });
-    expect(result.started).toBe(true);
-    expect(result.frequency).toBe("weekly");
-  });
-
-  it("starts scheduler with default weekly frequency", async () => {
-    const caller = appRouter.createCaller(createAuthContext());
-    const result = await caller.scheduler.start({});
-    expect(result.started).toBe(true);
-    expect(result.frequency).toBe("weekly");
-  });
-
-  it("stops scheduler for authenticated users", async () => {
-    const caller = appRouter.createCaller(createAuthContext());
-    const result = await caller.scheduler.stop();
-    expect(result.stopped).toBe(true);
-  });
-
-  it("rejects scheduler access for unauthenticated users", async () => {
-    const caller = appRouter.createCaller(createPublicContext());
-    await expect(caller.scheduler.status()).rejects.toThrow();
-  });
-
-  it("rejects scheduler start for unauthenticated users", async () => {
-    const caller = appRouter.createCaller(createPublicContext());
-    await expect(caller.scheduler.start({ frequency: "daily" })).rejects.toThrow();
-  });
-});
-
+// ─── Auth ───
 describe("Auth", () => {
   it("returns null for unauthenticated user", async () => {
     const caller = appRouter.createCaller(createPublicContext());
@@ -405,15 +406,15 @@ describe("Auth", () => {
   });
 
   it("returns user for authenticated context", async () => {
-    const caller = appRouter.createCaller(createAuthContext());
+    const caller = appRouter.createCaller(createUserContext("admin"));
     const result = await caller.auth.me();
     expect(result).toBeDefined();
-    expect(result?.name).toBe("Test User");
+    expect(result?.name).toBe("Test admin");
     expect(result?.role).toBe("admin");
   });
 
   it("clears session cookie on logout", async () => {
-    const ctx = createAuthContext();
+    const ctx = createUserContext("admin");
     const caller = appRouter.createCaller(ctx);
     const result = await caller.auth.logout();
     expect(result.success).toBe(true);

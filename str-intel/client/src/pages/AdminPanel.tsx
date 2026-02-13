@@ -1,367 +1,122 @@
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Settings,
-  Database,
-  Activity,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  AlertTriangle,
-  RefreshCw,
-  Globe,
-  Server,
-  Shield,
-  Play,
-  Square,
-  Calendar,
-  Loader2,
-  Zap,
+  Settings, Play, Square, Globe, Shield, Database, Server, CheckCircle2, AlertTriangle,
+  Loader2, Users, UserCog, History, Activity, UserX, UserCheck,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
-const STATUS_ICONS: Record<string, any> = {
-  completed: CheckCircle2,
-  failed: XCircle,
-  running: RefreshCw,
-  pending: Clock,
-};
-
-const STATUS_COLORS: Record<string, string> = {
-  completed: "text-emerald-400",
-  failed: "text-red-400",
-  running: "text-blue-400",
-  pending: "text-yellow-400",
-};
-
 export default function AdminPanel() {
-  const { data: scrapeJobs, isLoading: jobsLoading, refetch: refetchJobs } = trpc.scrapeJobs.list.useQuery({ limit: 20 });
-  const { data: otaSources } = trpc.otaSources.list.useQuery();
+  const { data: summary, isLoading: summaryLoading } = trpc.dashboard.summary.useQuery();
   const { data: neighborhoods } = trpc.neighborhoods.list.useQuery();
-  const { data: summary } = trpc.dashboard.summary.useQuery();
-  const { data: schedulerStatus, refetch: refetchScheduler } = trpc.scheduler.status.useQuery(undefined, {
-    retry: false,
-    refetchInterval: 10000,
-  });
+  const { data: otaSources } = trpc.otaSources.list.useQuery();
+  const { data: scrapeJobs } = trpc.scrapeJobs.list.useQuery({ limit: 10 });
+  const { data: schedulerStatus } = trpc.scheduler.status.useQuery();
+  const { data: usersList, refetch: refetchUsers } = trpc.admin.users.list.useQuery();
+  const { data: auditLogs, refetch: refetchAudit } = trpc.admin.auditLog.useQuery({ limit: 50 });
 
-  // Scraper trigger state
   const [selectedOtas, setSelectedOtas] = useState<string[]>([]);
-  const [selectedNbs, setSelectedNbs] = useState<string[]>([]);
-  const [jobType, setJobType] = useState<"full_scan" | "price_update" | "calendar_check" | "review_scan">("full_scan");
-  const [triggering, setTriggering] = useState(false);
-
-  // Scheduler state
   const [scheduleFreq, setScheduleFreq] = useState<"daily" | "weekly" | "biweekly" | "monthly">("weekly");
 
   const triggerMutation = trpc.scrapeJobs.trigger.useMutation({
-    onSuccess: () => {
-      toast.success("Scrape job started! Check the jobs list for progress.");
-      setTriggering(false);
-      setTimeout(() => refetchJobs(), 2000);
-    },
-    onError: (error) => {
-      toast.error(`Failed to start scrape: ${error.message}`);
-      setTriggering(false);
-    },
+    onSuccess: () => { toast.success("Scrape job started"); refetchAudit(); },
+    onError: (e) => toast.error(e.message),
   });
-
   const startSchedulerMutation = trpc.scheduler.start.useMutation({
-    onSuccess: (result) => {
-      toast.success(`Scheduler started with ${result.frequency} frequency`);
-      refetchScheduler();
-    },
-    onError: (error) => {
-      toast.error(`Failed to start scheduler: ${error.message}`);
-    },
+    onSuccess: () => { toast.success("Scheduler started"); refetchAudit(); },
+    onError: (e) => toast.error(e.message),
   });
-
   const stopSchedulerMutation = trpc.scheduler.stop.useMutation({
-    onSuccess: () => {
-      toast.success("Scheduler stopped");
-      refetchScheduler();
-    },
-    onError: (error) => {
-      toast.error(`Failed to stop scheduler: ${error.message}`);
-    },
+    onSuccess: () => { toast.success("Scheduler stopped"); refetchAudit(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateRoleMutation = trpc.admin.users.updateRole.useMutation({
+    onSuccess: () => { toast.success("Role updated"); refetchUsers(); refetchAudit(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const deactivateMutation = trpc.admin.users.deactivate.useMutation({
+    onSuccess: () => { toast.success("User deactivated"); refetchUsers(); refetchAudit(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const activateMutation = trpc.admin.users.activate.useMutation({
+    onSuccess: () => { toast.success("User activated"); refetchUsers(); refetchAudit(); },
+    onError: (e) => toast.error(e.message),
   });
 
-  const otaMap = useMemo(() => {
-    if (!otaSources) return {};
-    return Object.fromEntries(otaSources.map(o => [o.id, o.name]));
-  }, [otaSources]);
-
-  const toggleOta = (slug: string) => {
-    setSelectedOtas(prev => prev.includes(slug) ? prev.filter(s => s !== slug) : [...prev, slug]);
-  };
-
-  const toggleNb = (slug: string) => {
-    setSelectedNbs(prev => prev.includes(slug) ? prev.filter(s => s !== slug) : [...prev, slug]);
-  };
-
-  const handleTriggerScrape = () => {
-    setTriggering(true);
-    triggerMutation.mutate({
-      otaSlugs: selectedOtas.length > 0 ? selectedOtas : undefined,
-      neighborhoodSlugs: selectedNbs.length > 0 ? selectedNbs : undefined,
-      jobType,
-    });
-  };
+  if (summaryLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-64" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-32" />)}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Admin Panel</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Manage data collection, monitor quality, and configure sources
-        </p>
+        <p className="text-muted-foreground text-sm mt-1">CoBNB Market Intelligence — System Administration</p>
       </div>
 
-      <Tabs defaultValue="jobs" className="space-y-4">
-        <TabsList className="bg-card/80">
-          <TabsTrigger value="jobs" className="gap-1.5">
-            <Activity className="h-3.5 w-3.5" /> Scrape Jobs
-          </TabsTrigger>
-          <TabsTrigger value="scheduler" className="gap-1.5">
-            <Calendar className="h-3.5 w-3.5" /> Scheduler
-          </TabsTrigger>
-          <TabsTrigger value="sources" className="gap-1.5">
-            <Globe className="h-3.5 w-3.5" /> OTA Sources
-          </TabsTrigger>
-          <TabsTrigger value="quality" className="gap-1.5">
-            <Database className="h-3.5 w-3.5" /> Data Quality
-          </TabsTrigger>
-          <TabsTrigger value="config" className="gap-1.5">
-            <Settings className="h-3.5 w-3.5" /> Configuration
-          </TabsTrigger>
+      <Tabs defaultValue="scraping" className="space-y-4">
+        <TabsList className="bg-secondary/50">
+          <TabsTrigger value="scraping" className="gap-2"><Activity className="h-3.5 w-3.5" />Scraping</TabsTrigger>
+          <TabsTrigger value="users" className="gap-2"><Users className="h-3.5 w-3.5" />Users</TabsTrigger>
+          <TabsTrigger value="sources" className="gap-2"><Globe className="h-3.5 w-3.5" />OTA Sources</TabsTrigger>
+          <TabsTrigger value="quality" className="gap-2"><Database className="h-3.5 w-3.5" />Data Quality</TabsTrigger>
+          <TabsTrigger value="audit" className="gap-2"><History className="h-3.5 w-3.5" />Audit Log</TabsTrigger>
+          <TabsTrigger value="config" className="gap-2"><Settings className="h-3.5 w-3.5" />Config</TabsTrigger>
         </TabsList>
 
-        {/* Scrape Jobs Tab */}
-        <TabsContent value="jobs" className="space-y-4">
-          {/* Trigger Controls */}
-          <Card className="bg-card/80 border-border/50 border-primary/20">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Zap className="h-4 w-4 text-primary" /> Trigger Manual Scrape
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* OTA Selection */}
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">OTA Platforms (empty = all)</Label>
-                  <div className="space-y-1.5">
-                    {["airbnb", "gathern", "booking", "agoda"].map(slug => (
-                      <div key={slug} className="flex items-center gap-2">
-                        <Checkbox
-                          id={`ota-${slug}`}
-                          checked={selectedOtas.includes(slug)}
-                          onCheckedChange={() => toggleOta(slug)}
-                        />
-                        <Label htmlFor={`ota-${slug}`} className="text-sm cursor-pointer capitalize">{slug}</Label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Neighborhood Selection */}
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Neighborhoods (empty = all)</Label>
-                  <div className="space-y-1.5 max-h-40 overflow-y-auto">
-                    {neighborhoods?.map(nb => (
-                      <div key={nb.slug} className="flex items-center gap-2">
-                        <Checkbox
-                          id={`nb-${nb.slug}`}
-                          checked={selectedNbs.includes(nb.slug)}
-                          onCheckedChange={() => toggleNb(nb.slug)}
-                        />
-                        <Label htmlFor={`nb-${nb.slug}`} className="text-sm cursor-pointer">{nb.name}</Label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Job Type */}
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Job Type</Label>
-                  <Select value={jobType} onValueChange={(v: any) => setJobType(v)}>
-                    <SelectTrigger className="bg-background/50">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="full_scan">Full Scan</SelectItem>
-                      <SelectItem value="price_update">Price Update</SelectItem>
-                      <SelectItem value="calendar_check">Calendar Check</SelectItem>
-                      <SelectItem value="review_scan">Review Scan</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Full scan collects all data. Price/calendar/review scans are faster targeted updates.
-                  </p>
-                </div>
-              </div>
-
-              <Button
-                onClick={handleTriggerScrape}
-                disabled={triggering}
-                className="gap-2"
-              >
-                {triggering ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-                {triggering ? "Starting..." : "Start Scrape Job"}
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Jobs List */}
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Recent Scrape Jobs</h2>
-            <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => refetchJobs()}>
-              <RefreshCw className="h-3.5 w-3.5" /> Refresh
-            </Button>
-          </div>
-
-          <Card className="bg-card/80 border-border/50">
-            <CardContent className="p-0">
-              {jobsLoading ? (
-                <div className="p-4 space-y-3">
-                  {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-border/50">
-                      <TableHead className="text-muted-foreground">Status</TableHead>
-                      <TableHead className="text-muted-foreground">OTA Source</TableHead>
-                      <TableHead className="text-muted-foreground">Type</TableHead>
-                      <TableHead className="text-muted-foreground">Started</TableHead>
-                      <TableHead className="text-muted-foreground">Completed</TableHead>
-                      <TableHead className="text-muted-foreground text-right">Listings</TableHead>
-                      <TableHead className="text-muted-foreground text-right">Errors</TableHead>
-                      <TableHead className="text-muted-foreground text-right">Duration</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {scrapeJobs?.map(job => {
-                      const Icon = STATUS_ICONS[job.status || "pending"] || Clock;
-                      const color = STATUS_COLORS[job.status || "pending"] || "text-muted-foreground";
-                      return (
-                        <TableRow key={job.id} className="border-border/30">
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Icon className={`h-4 w-4 ${color} ${job.status === 'running' ? 'animate-spin' : ''}`} />
-                              <Badge variant="outline" className={`${color} text-xs`}>
-                                {job.status}
-                              </Badge>
-                            </div>
-                          </TableCell>
-                          <TableCell className="font-medium">{otaMap[job.otaSourceId ?? 0] || `OTA ${job.otaSourceId}`}</TableCell>
-                          <TableCell className="text-xs">
-                            <Badge variant="secondary" className="text-xs">{job.jobType || "full_scan"}</Badge>
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            {job.startedAt ? new Date(job.startedAt).toLocaleString() : "—"}
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            {job.completedAt ? new Date(job.completedAt).toLocaleString() : "—"}
-                          </TableCell>
-                          <TableCell className="text-right font-mono">{job.listingsFound || 0}</TableCell>
-                          <TableCell className="text-right">
-                            {(job.errors || 0) > 0 ? (
-                              <span className="text-red-400 font-mono">{job.errors}</span>
-                            ) : (
-                              <span className="text-muted-foreground">0</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right text-xs text-muted-foreground">
-                            {job.duration ? `${(job.duration / 1000).toFixed(1)}s` : "—"}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                    {(!scrapeJobs || scrapeJobs.length === 0) && (
-                      <TableRow>
-                        <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                          No scrape jobs yet. Trigger one above or start the scheduler.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Scheduler Tab */}
-        <TabsContent value="scheduler" className="space-y-4">
-          <h2 className="text-lg font-semibold">Automated Refresh Scheduler</h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Scheduler Status */}
+        {/* ─── Scraping Tab ─── */}
+        <TabsContent value="scraping" className="space-y-4">
+          <h2 className="text-lg font-semibold">Scraping & Scheduling</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Trigger Scrape */}
             <Card className="bg-card/80 border-border/50">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Scheduler Status</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">Manual Scrape Trigger</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className={`h-3 w-3 rounded-full ${schedulerStatus?.isRunning ? 'bg-emerald-400 animate-pulse' : 'bg-gray-500'}`} />
-                  <span className="font-medium">{schedulerStatus?.isRunning ? "Running" : "Stopped"}</span>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Select OTA Platforms</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {["airbnb", "gathern", "booking", "agoda"].map(ota => (
+                      <Badge
+                        key={ota}
+                        variant={selectedOtas.includes(ota) ? "default" : "outline"}
+                        className="cursor-pointer capitalize"
+                        onClick={() => setSelectedOtas(prev =>
+                          prev.includes(ota) ? prev.filter(o => o !== ota) : [...prev, ota]
+                        )}
+                      >
+                        {ota}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
-
-                {schedulerStatus?.isRunning && (
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between py-1.5 border-b border-border/30">
-                      <span className="text-muted-foreground">Frequency</span>
-                      <Badge variant="outline" className="capitalize">{schedulerStatus.frequency}</Badge>
-                    </div>
-                    <div className="flex justify-between py-1.5 border-b border-border/30">
-                      <span className="text-muted-foreground">Next Run</span>
-                      <span className="font-mono text-xs">
-                        {schedulerStatus.nextRunAt ? new Date(schedulerStatus.nextRunAt).toLocaleString() : "—"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between py-1.5 border-b border-border/30">
-                      <span className="text-muted-foreground">Total Runs</span>
-                      <span className="font-mono">{schedulerStatus.totalRuns}</span>
-                    </div>
-                  </div>
-                )}
-
-                {schedulerStatus?.lastRunAt && (
-                  <div className="space-y-2 text-sm">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Last Run</p>
-                    <div className="flex justify-between py-1.5 border-b border-border/30">
-                      <span className="text-muted-foreground">Time</span>
-                      <span className="font-mono text-xs">{new Date(schedulerStatus.lastRunAt).toLocaleString()}</span>
-                    </div>
-                    {schedulerStatus.lastRunResult && (
-                      <>
-                        <div className="flex justify-between py-1.5 border-b border-border/30">
-                          <span className="text-muted-foreground">Listings</span>
-                          <span className="font-mono">{schedulerStatus.lastRunResult.totalListings}</span>
-                        </div>
-                        <div className="flex justify-between py-1.5 border-b border-border/30">
-                          <span className="text-muted-foreground">Errors</span>
-                          <span className={`font-mono ${schedulerStatus.lastRunResult.totalErrors > 0 ? 'text-red-400' : ''}`}>
-                            {schedulerStatus.lastRunResult.totalErrors}
-                          </span>
-                        </div>
-                        <div className="flex justify-between py-1.5 border-b border-border/30">
-                          <span className="text-muted-foreground">Duration</span>
-                          <span className="font-mono text-xs">{(schedulerStatus.lastRunResult.duration / 1000).toFixed(1)}s</span>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
+                <Button
+                  onClick={() => triggerMutation.mutate({
+                    otaSlugs: selectedOtas.length > 0 ? selectedOtas : undefined,
+                    jobType: "full_scan",
+                  })}
+                  disabled={triggerMutation.isPending}
+                  className="gap-2 w-full"
+                >
+                  {triggerMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                  Start Scrape
+                </Button>
               </CardContent>
             </Card>
 
@@ -374,9 +129,7 @@ export default function AdminPanel() {
                 <div className="space-y-2">
                   <Label className="text-xs text-muted-foreground">Refresh Frequency</Label>
                   <Select value={scheduleFreq} onValueChange={(v: any) => setScheduleFreq(v)}>
-                    <SelectTrigger className="bg-background/50">
-                      <SelectValue />
-                    </SelectTrigger>
+                    <SelectTrigger className="bg-background/50"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="daily">Daily (2:00 AM AST)</SelectItem>
                       <SelectItem value="weekly">Weekly (Monday 2:00 AM AST)</SelectItem>
@@ -385,26 +138,13 @@ export default function AdminPanel() {
                     </SelectContent>
                   </Select>
                 </div>
-
-                <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    The scheduler runs automated full scans across all OTA platforms and neighborhoods
-                    at the selected frequency. Jobs run at 2:00 AM Arabia Standard Time to minimize
-                    impact on OTA platforms.
-                  </p>
-                </div>
-
                 <div className="flex gap-3">
                   <Button
                     onClick={() => startSchedulerMutation.mutate({ frequency: scheduleFreq })}
                     disabled={startSchedulerMutation.isPending}
                     className="gap-2"
                   >
-                    {startSchedulerMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Play className="h-4 w-4" />
-                    )}
+                    {startSchedulerMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
                     {schedulerStatus?.isRunning ? "Update Schedule" : "Start Scheduler"}
                   </Button>
                   {schedulerStatus?.isRunning && (
@@ -414,32 +154,167 @@ export default function AdminPanel() {
                       disabled={stopSchedulerMutation.isPending}
                       className="gap-2 border-red-500/30 text-red-400 hover:bg-red-500/10"
                     >
-                      {stopSchedulerMutation.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Square className="h-4 w-4" />
-                      )}
+                      {stopSchedulerMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Square className="h-4 w-4" />}
                       Stop
                     </Button>
                   )}
                 </div>
-
-                {/* Frequency Explanation */}
-                <Card className="bg-background/30 border-border/30">
-                  <CardContent className="p-3">
-                    <p className="text-xs text-muted-foreground">
-                      <strong>Recommended:</strong> Weekly or bi-weekly for balanced data freshness
-                      and platform compliance. Daily scraping increases detection risk and is only
-                      recommended during high-impact events (Riyadh Season, F1).
-                    </p>
-                  </CardContent>
-                </Card>
+                {schedulerStatus?.isRunning && (
+                  <Badge variant="outline" className="text-xs gap-1 text-emerald-400 border-emerald-500/30">
+                    <CheckCircle2 className="h-3 w-3" /> Running — {schedulerStatus.frequency}
+                  </Badge>
+                )}
               </CardContent>
             </Card>
           </div>
+
+          {/* Recent Jobs */}
+          <Card className="bg-card/80 border-border/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Recent Scrape Jobs</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-border/50">
+                    <TableHead className="text-muted-foreground">ID</TableHead>
+                    <TableHead className="text-muted-foreground">Type</TableHead>
+                    <TableHead className="text-muted-foreground">Status</TableHead>
+                    <TableHead className="text-muted-foreground text-right">Listings</TableHead>
+                    <TableHead className="text-muted-foreground text-right">Errors</TableHead>
+                    <TableHead className="text-muted-foreground">Created</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {scrapeJobs?.map(job => (
+                    <TableRow key={job.id} className="border-border/30">
+                      <TableCell className="font-mono text-xs">#{job.id}</TableCell>
+                      <TableCell><Badge variant="outline" className="text-xs capitalize">{job.jobType?.replace("_", " ")}</Badge></TableCell>
+                      <TableCell>
+                        <Badge className={`text-xs ${
+                          job.status === "completed" ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" :
+                          job.status === "running" ? "bg-blue-500/20 text-blue-400 border-blue-500/30" :
+                          job.status === "failed" ? "bg-red-500/20 text-red-400 border-red-500/30" :
+                          "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
+                        }`}>{job.status}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">{job.listingsFound || 0}</TableCell>
+                      <TableCell className="text-right">{job.errors || 0}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{job.createdAt ? new Date(job.createdAt).toLocaleString() : "—"}</TableCell>
+                    </TableRow>
+                  ))}
+                  {(!scrapeJobs || scrapeJobs.length === 0) && (
+                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No scrape jobs yet</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </TabsContent>
 
-        {/* OTA Sources Tab */}
+        {/* ─── Users Tab ─── */}
+        <TabsContent value="users" className="space-y-4">
+          <h2 className="text-lg font-semibold">User Management</h2>
+          <Card className="bg-card/80 border-border/50">
+            <CardContent className="pt-4">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-border/50">
+                    <TableHead className="text-muted-foreground">Name</TableHead>
+                    <TableHead className="text-muted-foreground">Email</TableHead>
+                    <TableHead className="text-muted-foreground">Role</TableHead>
+                    <TableHead className="text-muted-foreground">Status</TableHead>
+                    <TableHead className="text-muted-foreground">Last Sign-in</TableHead>
+                    <TableHead className="text-muted-foreground text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {usersList?.map(u => (
+                    <TableRow key={u.id} className="border-border/30">
+                      <TableCell className="font-medium">{u.name || "—"}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{u.email || "—"}</TableCell>
+                      <TableCell>
+                        <Select
+                          value={u.role}
+                          onValueChange={(newRole: "viewer" | "user" | "admin") => {
+                            updateRoleMutation.mutate({ userId: u.id, role: newRole });
+                          }}
+                        >
+                          <SelectTrigger className="w-28 h-8 text-xs bg-background/50">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="viewer">Viewer</SelectItem>
+                            <SelectItem value="user">User</SelectItem>
+                            <SelectItem value="admin">Admin</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        {u.isActive ? (
+                          <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-xs gap-1">
+                            <UserCheck className="h-3 w-3" /> Active
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-xs gap-1">
+                            <UserX className="h-3 w-3" /> Inactive
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {u.lastSignedIn ? new Date(u.lastSignedIn).toLocaleString() : "Never"}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {u.isActive ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs border-red-500/30 text-red-400 hover:bg-red-500/10"
+                            onClick={() => deactivateMutation.mutate({ userId: u.id })}
+                            disabled={deactivateMutation.isPending}
+                          >
+                            <UserX className="h-3 w-3 mr-1" /> Deactivate
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                            onClick={() => activateMutation.mutate({ userId: u.id })}
+                            disabled={activateMutation.isPending}
+                          >
+                            <UserCheck className="h-3 w-3 mr-1" /> Activate
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {(!usersList || usersList.length === 0) && (
+                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No users found</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card/80 border-border/50 border-blue-500/20">
+            <CardContent className="p-5">
+              <div className="flex gap-3">
+                <UserCog className="h-5 w-5 text-blue-400 shrink-0 mt-0.5" />
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-sm">Role Permissions</h3>
+                  <div className="text-xs text-muted-foreground leading-relaxed space-y-1">
+                    <p><strong className="text-foreground">Viewer:</strong> Read-only access to dashboard, listings, competitors, and seasonal data.</p>
+                    <p><strong className="text-foreground">User:</strong> All viewer permissions + CSV/Excel export capabilities.</p>
+                    <p><strong className="text-foreground">Admin:</strong> Full access including scrape triggers, scheduler control, user management, and audit logs.</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ─── OTA Sources Tab ─── */}
         <TabsContent value="sources" className="space-y-4">
           <h2 className="text-lg font-semibold">OTA Platform Sources</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -464,9 +339,7 @@ export default function AdminPanel() {
                     </div>
                     <div className="text-right text-xs text-muted-foreground">
                       <p>Rate limit: {(source.scraperConfig as any)?.rateLimitPerMin || "—"}/min</p>
-                      <p className="mt-1">
-                        Last: {source.createdAt ? new Date(source.createdAt).toLocaleDateString() : "Never"}
-                      </p>
+                      <p className="mt-1">Added: {source.createdAt ? new Date(source.createdAt).toLocaleDateString() : "—"}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -475,7 +348,7 @@ export default function AdminPanel() {
           </div>
         </TabsContent>
 
-        {/* Data Quality Tab */}
+        {/* ─── Data Quality Tab ─── */}
         <TabsContent value="quality" className="space-y-4">
           <h2 className="text-lg font-semibold">Data Quality Metrics</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -520,7 +393,6 @@ export default function AdminPanel() {
             </Card>
           </div>
 
-          {/* Coverage Table */}
           <Card className="bg-card/80 border-border/50">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Neighborhood Coverage</CardTitle>
@@ -537,7 +409,7 @@ export default function AdminPanel() {
                 </TableHeader>
                 <TableBody>
                   {neighborhoods?.map(nb => {
-                    const nbMetric = summary?.neighborhoodMetrics?.find(m => m.neighborhoodId === nb.id);
+                    const nbMetric = summary?.neighborhoodMetrics?.find((m: any) => m.neighborhoodId === nb.id);
                     const hasData = nbMetric && (nbMetric.totalListings ?? 0) > 0;
                     return (
                       <TableRow key={nb.id} className="border-border/30">
@@ -564,10 +436,49 @@ export default function AdminPanel() {
           </Card>
         </TabsContent>
 
-        {/* Configuration Tab */}
+        {/* ─── Audit Log Tab ─── */}
+        <TabsContent value="audit" className="space-y-4">
+          <h2 className="text-lg font-semibold">Audit Log</h2>
+          <Card className="bg-card/80 border-border/50">
+            <CardContent className="pt-4">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-border/50">
+                    <TableHead className="text-muted-foreground">Timestamp</TableHead>
+                    <TableHead className="text-muted-foreground">User ID</TableHead>
+                    <TableHead className="text-muted-foreground">Action</TableHead>
+                    <TableHead className="text-muted-foreground">Target</TableHead>
+                    <TableHead className="text-muted-foreground">IP Address</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {auditLogs?.map((log: any) => (
+                    <TableRow key={log.id} className="border-border/30">
+                      <TableCell className="text-xs text-muted-foreground">
+                        {log.createdAt ? new Date(log.createdAt).toLocaleString() : "—"}
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">{log.userId || "system"}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs capitalize">
+                          {log.action?.replace(/_/g, " ")}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{log.target || "—"}</TableCell>
+                      <TableCell className="text-xs font-mono text-muted-foreground">{log.ipAddress || "—"}</TableCell>
+                    </TableRow>
+                  ))}
+                  {(!auditLogs || auditLogs.length === 0) && (
+                    <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No audit log entries yet</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ─── Config Tab ─── */}
         <TabsContent value="config" className="space-y-4">
           <h2 className="text-lg font-semibold">System Configuration</h2>
-
           <Card className="bg-card/80 border-border/50">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Scraping Configuration</CardTitle>
@@ -614,7 +525,6 @@ export default function AdminPanel() {
             </CardContent>
           </Card>
 
-          {/* Legal Notice */}
           <Card className="bg-card/80 border-border/50 border-yellow-500/20">
             <CardContent className="p-5">
               <div className="flex gap-3">
@@ -625,7 +535,7 @@ export default function AdminPanel() {
                     Data collection complies with Saudi Arabia's Personal Data Protection Law (PDPL).
                     Only publicly available listing data is collected. No personal guest data is stored.
                     Rate limiting and respectful scraping practices are enforced to minimize platform impact.
-                    Review the feasibility report for detailed legal analysis.
+                    All admin actions are logged in the audit trail for compliance.
                   </p>
                 </div>
               </div>

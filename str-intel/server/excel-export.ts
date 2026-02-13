@@ -28,7 +28,7 @@ interface ExportParams {
 
 export async function generateExcelReport(params: ExportParams): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = "CoBNB KSA — STR Intelligence";
+  workbook.creator = "CoBNB KSA — Market Intelligence";
   workbook.created = new Date();
   workbook.modified = new Date();
 

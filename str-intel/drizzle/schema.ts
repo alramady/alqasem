@@ -7,7 +7,8 @@ export const users = mysqlTable("users", {
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  role: mysqlEnum("role", ["viewer", "user", "admin"]).default("user").notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
@@ -15,6 +16,24 @@ export const users = mysqlTable("users", {
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
+
+// ─── Audit Log ───
+export const auditLog = mysqlTable("audit_log", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId"),
+  action: varchar("action", { length: 128 }).notNull(),
+  target: varchar("target", { length: 256 }),
+  metadata: json("metadata"),
+  ipAddress: varchar("ipAddress", { length: 64 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [
+  index("idx_audit_user").on(table.userId),
+  index("idx_audit_action").on(table.action),
+  index("idx_audit_created").on(table.createdAt),
+]);
+
+export type AuditLogEntry = typeof auditLog.$inferSelect;
+export type InsertAuditLogEntry = typeof auditLog.$inferInsert;
 
 // ─── Neighborhoods ───
 export const neighborhoods = mysqlTable("neighborhoods", {
@@ -129,6 +148,7 @@ export const metrics = mysqlTable("metrics", {
   medianPrice: decimal("medianPrice", { precision: 10, scale: 2 }),
   priceP25: decimal("priceP25", { precision: 10, scale: 2 }),
   priceP75: decimal("priceP75", { precision: 10, scale: 2 }),
+  dataConfidence: mysqlEnum("dataConfidence", ["real", "estimated", "default"]).default("estimated"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => [
   index("idx_metrics_neighborhood").on(table.neighborhoodId),
@@ -179,6 +199,7 @@ export const scrapeJobs = mysqlTable("scrape_jobs", {
   startedAt: timestamp("startedAt"),
   completedAt: timestamp("completedAt"),
   duration: int("duration"),
+  triggeredBy: int("triggeredBy"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => [
   index("idx_jobs_status").on(table.status),

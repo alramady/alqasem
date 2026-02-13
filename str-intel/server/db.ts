@@ -1,6 +1,6 @@
 import { eq, desc, sql, and, gte, lte, like, inArray, asc, count } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, neighborhoods, otaSources, listings, priceSnapshots, metrics, competitors, scrapeJobs, seasonalPatterns, scrapeSchedules, reports } from "../drizzle/schema";
+import { InsertUser, users, neighborhoods, otaSources, listings, priceSnapshots, metrics, competitors, scrapeJobs, seasonalPatterns, scrapeSchedules, reports, auditLog } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -50,6 +50,77 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
+// ─── Audit Log ───
+export async function insertAuditLog(entry: {
+  userId?: number | null;
+  action: string;
+  target?: string;
+  metadata?: any;
+  ipAddress?: string;
+}) {
+  const db = await getDb();
+  if (!db) return;
+  try {
+    await db.insert(auditLog).values({
+      userId: entry.userId ?? null,
+      action: entry.action,
+      target: entry.target ?? null,
+      metadata: entry.metadata ?? null,
+      ipAddress: entry.ipAddress ?? null,
+    });
+  } catch (e) {
+    console.error("[AuditLog] Failed to insert:", e);
+  }
+}
+
+export async function getAuditLogs(limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: auditLog.id,
+    userId: auditLog.userId,
+    action: auditLog.action,
+    target: auditLog.target,
+    metadata: auditLog.metadata,
+    ipAddress: auditLog.ipAddress,
+    createdAt: auditLog.createdAt,
+  }).from(auditLog).orderBy(desc(auditLog.createdAt)).limit(limit);
+}
+
+// ─── User Management (Admin) ───
+export async function getAllUsers() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: users.id,
+    openId: users.openId,
+    name: users.name,
+    email: users.email,
+    role: users.role,
+    isActive: users.isActive,
+    lastSignedIn: users.lastSignedIn,
+    createdAt: users.createdAt,
+  }).from(users).orderBy(desc(users.lastSignedIn));
+}
+
+export async function updateUserRole(userId: number, role: "viewer" | "user" | "admin") {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(users).set({ role }).where(eq(users.id, userId));
+}
+
+export async function deactivateUser(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(users).set({ isActive: false }).where(eq(users.id, userId));
+}
+
+export async function activateUser(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(users).set({ isActive: true }).where(eq(users.id, userId));
+}
+
 // ─── Neighborhoods ───
 export async function getNeighborhoods() {
   const db = await getDb();
@@ -79,7 +150,6 @@ export async function getDashboardSummary() {
   const [totalListings] = await db.select({ count: sql<number>`COUNT(*)` }).from(listings).where(eq(listings.isActive, true));
   const [avgRating] = await db.select({ avg: sql<number>`AVG(CAST(rating AS DECIMAL(3,2)))` }).from(listings).where(eq(listings.isActive, true));
   
-  // Latest metrics across all neighborhoods
   const latestMetrics = await db.select().from(metrics)
     .where(eq(metrics.propertyType, 'all'))
     .orderBy(desc(metrics.metricDate))
@@ -90,28 +160,23 @@ export async function getDashboardSummary() {
   const avgRevpar = latestMetrics.length > 0 ? latestMetrics.reduce((s, m) => s + Number(m.revpar || 0), 0) / latestMetrics.length : 0;
   const totalNew = latestMetrics.reduce((s, m) => s + (m.newListings || 0), 0);
 
-  // Competitor count
   const [compCount] = await db.select({ count: sql<number>`COUNT(*)` }).from(competitors);
 
-  // OTA distribution
   const otaDist = await db.select({
     otaSourceId: listings.otaSourceId,
     count: sql<number>`COUNT(*)`,
   }).from(listings).where(eq(listings.isActive, true)).groupBy(listings.otaSourceId);
 
-  // Property type distribution
   const ptDist = await db.select({
     propertyType: listings.propertyType,
     count: sql<number>`COUNT(*)`,
   }).from(listings).where(eq(listings.isActive, true)).groupBy(listings.propertyType);
 
-  // Host type distribution
   const hostDist = await db.select({
     hostType: listings.hostType,
     count: sql<number>`COUNT(*)`,
   }).from(listings).where(eq(listings.isActive, true)).groupBy(listings.hostType);
 
-  // Last scrape job
   const [lastJob] = await db.select().from(scrapeJobs).orderBy(desc(scrapeJobs.completedAt)).limit(1);
 
   return {
@@ -155,13 +220,11 @@ export async function getNeighborhoodDetail(neighborhoodId: number) {
   const [nb] = await db.select().from(neighborhoods).where(eq(neighborhoods.id, neighborhoodId));
   if (!nb) return null;
 
-  // Latest metrics
   const latestMetrics = await db.select().from(metrics)
     .where(and(eq(metrics.neighborhoodId, neighborhoodId), eq(metrics.propertyType, 'all')))
     .orderBy(desc(metrics.metricDate))
     .limit(1);
 
-  // Metrics by property type (latest)
   const ptMetrics = await db.select().from(metrics)
     .where(and(
       eq(metrics.neighborhoodId, neighborhoodId),
@@ -170,7 +233,6 @@ export async function getNeighborhoodDetail(neighborhoodId: number) {
     .orderBy(desc(metrics.metricDate))
     .limit(5);
 
-  // Listings in this neighborhood
   const nbListings = await db.select({
     count: sql<number>`COUNT(*)`,
     avgRating: sql<number>`AVG(CAST(rating AS DECIMAL(3,2)))`,
@@ -179,7 +241,6 @@ export async function getNeighborhoodDetail(neighborhoodId: number) {
   }).from(listings)
     .where(and(eq(listings.neighborhoodId, neighborhoodId), eq(listings.isActive, true)));
 
-  // Top hosts in this neighborhood
   const topHosts = await db.select({
     hostId: listings.hostId,
     hostName: listings.hostName,
@@ -296,6 +357,7 @@ export async function getAdrTrends(neighborhoodId?: number, propertyType?: strin
     occupancyRate: metrics.occupancyRate,
     revpar: metrics.revpar,
     totalListings: metrics.totalListings,
+    dataConfidence: metrics.dataConfidence,
   }).from(metrics)
     .where(and(...conditions))
     .orderBy(asc(metrics.metricDate));
@@ -360,7 +422,6 @@ export async function getPriceDistribution(neighborhoodId?: number) {
   const conditions = [eq(listings.isActive, true)];
   if (neighborhoodId) conditions.push(eq(listings.neighborhoodId, neighborhoodId));
 
-  // Get latest price for each listing
   const result = await db.select({
     propertyType: listings.propertyType,
     nightlyRate: priceSnapshots.nightlyRate,
