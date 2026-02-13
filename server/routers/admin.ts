@@ -7,8 +7,11 @@ import { getDb } from "../db";
 import {
   users, properties, projects, inquiries, media, pages,
   homepageSections, settings, auditLogs, notifications, messages, permissions, guides,
+  passwordResetTokens, userSessions,
 } from "../../drizzle/schema";
-import { eq, like, and, or, desc, asc, sql, isNull, count, ne } from "drizzle-orm";
+import crypto from "crypto";
+import { sendPasswordResetEmail } from "../email";
+import { eq, like, and, or, desc, asc, sql, isNull, count, ne, lt, gt } from "drizzle-orm";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { storagePut } from "../storage";
@@ -51,6 +54,40 @@ async function notifyAdmins(title: string, message: string, type: string, link?:
       await createNotification(admin.id, title, message, type, link);
     }
   }
+}
+
+/** Parse user-agent string into a readable device description. */
+function parseDeviceInfo(ua: string): string {
+  if (!ua) return "متصفح غير معروف";
+  let browser = "متصفح";
+  let os = "";
+  // Detect browser
+  if (ua.includes("Firefox")) browser = "Firefox";
+  else if (ua.includes("Edg/")) browser = "Edge";
+  else if (ua.includes("Chrome") && !ua.includes("Edg")) browser = "Chrome";
+  else if (ua.includes("Safari") && !ua.includes("Chrome")) browser = "Safari";
+  else if (ua.includes("Opera") || ua.includes("OPR")) browser = "Opera";
+  // Detect OS
+  if (ua.includes("Windows")) os = "Windows";
+  else if (ua.includes("Mac OS")) os = "macOS";
+  else if (ua.includes("Linux") && !ua.includes("Android")) os = "Linux";
+  else if (ua.includes("Android")) os = "Android";
+  else if (ua.includes("iPhone") || ua.includes("iPad")) os = "iOS";
+  return os ? `${browser} / ${os}` : browser;
+}
+
+/** Get current session token hash from request cookie. */
+function getCurrentTokenHash(req: any): string | null {
+  const cookieHeader = req.headers?.cookie;
+  if (!cookieHeader) return null;
+  const cookies = cookieHeader.split(";").reduce((acc: Record<string, string>, c: string) => {
+    const [key, ...val] = c.trim().split("=");
+    acc[key] = val.join("=");
+    return acc;
+  }, {} as Record<string, string>);
+  const token = cookies[COOKIE_NAME];
+  if (!token) return null;
+  return crypto.createHash("sha256").update(token).digest("hex");
 }
 
 export const adminRouter = router({
@@ -110,6 +147,24 @@ export const adminRouter = router({
       ...cookieOptions,
       maxAge: SESSION_EXPIRY_MS,
     });
+
+    // Track session in database
+    try {
+      const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+      const ua = ctx.req.headers["user-agent"] || "";
+      const ip = ctx.req.ip || ctx.req.headers["x-forwarded-for"]?.toString() || "unknown";
+      const deviceInfo = parseDeviceInfo(ua);
+      await db.insert(userSessions).values({
+        userId: user.id,
+        tokenHash,
+        deviceInfo,
+        ipAddress: ip,
+        userAgent: ua,
+        expiresAt: new Date(Date.now() + SESSION_EXPIRY_MS),
+      });
+    } catch (e) {
+      console.error("[Session] Failed to track session:", e);
+    }
 
     await logAudit(user.id, user.displayName || user.name || user.username, "login", "user", user.id, { method: "local", username: input.username }, null, null);
 
@@ -1176,6 +1231,233 @@ export const adminRouter = router({
       propertyId: input.propertyId || null, source: "website",
     });
     await notifyAdmins("طلب جديد", `طلب جديد من ${input.name}`, "inquiry", "/admin/inquiries");
+    return { success: true };
+  }),
+
+  // ============ FORGOT PASSWORD ============
+  requestPasswordReset: publicProcedure.input(z.object({
+    email: z.string().email("البريد الإلكتروني غير صالح"),
+    origin: z.string().url().optional(),
+  })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+    // Always return success to prevent email enumeration
+    const [user] = await db.select().from(users).where(eq(users.email, input.email)).limit(1);
+    if (!user || user.status === "inactive") {
+      // Don't reveal if email exists
+      return { success: true, message: "إذا كان البريد الإلكتروني مسجلاً، ستصلك رسالة إعادة تعيين كلمة المرور" };
+    }
+    // Invalidate any existing tokens for this user
+    await db.update(passwordResetTokens).set({ usedAt: new Date() }).where(
+      and(eq(passwordResetTokens.userId, user.id), isNull(passwordResetTokens.usedAt))
+    );
+    // Generate secure token
+    const token = crypto.randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    await db.insert(passwordResetTokens).values({
+      userId: user.id,
+      token,
+      expiresAt,
+    });
+    // Send email
+    const origin = input.origin || `https://${ctx.req.headers.host}`;
+    await sendPasswordResetEmail(
+      user.email!,
+      token,
+      origin,
+      user.displayName || user.name || user.fullName || user.username || undefined
+    );
+    await logAudit(null, null, "create", "password_reset", user.id, { email: input.email });
+    return { success: true, message: "إذا كان البريد الإلكتروني مسجلاً، ستصلك رسالة إعادة تعيين كلمة المرور" };
+  }),
+
+  verifyResetToken: publicProcedure.input(z.object({
+    token: z.string().min(1),
+  })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const [resetToken] = await db.select().from(passwordResetTokens).where(
+      and(
+        eq(passwordResetTokens.token, input.token),
+        isNull(passwordResetTokens.usedAt),
+        gt(passwordResetTokens.expiresAt, new Date())
+      )
+    ).limit(1);
+    if (!resetToken) {
+      return { valid: false };
+    }
+    return { valid: true };
+  }),
+
+  resetPassword: publicProcedure.input(z.object({
+    token: z.string().min(1),
+    newPassword: z.string().min(6, "كلمة المرور يجب أن تكون 6 أحرف على الأقل"),
+    confirmPassword: z.string().min(1),
+  })).mutation(async ({ input }) => {
+    if (input.newPassword !== input.confirmPassword) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "كلمة المرور وتأكيدها غير متطابقتين" });
+    }
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const [resetToken] = await db.select().from(passwordResetTokens).where(
+      and(
+        eq(passwordResetTokens.token, input.token),
+        isNull(passwordResetTokens.usedAt),
+        gt(passwordResetTokens.expiresAt, new Date())
+      )
+    ).limit(1);
+    if (!resetToken) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "رابط إعادة التعيين غير صالح أو منتهي الصلاحية" });
+    }
+    // Hash new password and update user
+    const hashedPassword = await bcrypt.hash(input.newPassword, 12);
+    await db.update(users).set({ passwordHash: hashedPassword, failedLoginAttempts: 0, lockedUntil: null }).where(eq(users.id, resetToken.userId));
+    // Mark token as used
+    await db.update(passwordResetTokens).set({ usedAt: new Date() }).where(eq(passwordResetTokens.id, resetToken.id));
+    // Revoke all existing sessions for this user (force re-login)
+    await db.update(userSessions).set({ isRevoked: true }).where(eq(userSessions.userId, resetToken.userId));
+    await logAudit(resetToken.userId, null, "update", "password_reset", resetToken.userId, { action: "password_reset_completed" });
+    return { success: true, message: "تم إعادة تعيين كلمة المرور بنجاح. يمكنك الآن تسجيل الدخول" };
+  }),
+
+  // ============ SESSION MANAGEMENT ============
+  listSessions: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return { sessions: [], currentTokenHash: null };
+    const sessions = await db.select().from(userSessions).where(
+      and(
+        eq(userSessions.userId, ctx.user.id),
+        eq(userSessions.isRevoked, false),
+        gt(userSessions.expiresAt, new Date())
+      )
+    ).orderBy(desc(userSessions.lastActiveAt));
+    const currentTokenHash = getCurrentTokenHash(ctx.req);
+    return {
+      sessions: sessions.map(s => ({
+        id: s.id,
+        deviceInfo: s.deviceInfo,
+        ipAddress: s.ipAddress,
+        lastActiveAt: s.lastActiveAt,
+        createdAt: s.createdAt,
+        expiresAt: s.expiresAt,
+        isCurrent: s.tokenHash === currentTokenHash,
+      })),
+      currentTokenHash,
+    };
+  }),
+
+  revokeSession: protectedProcedure.input(z.object({
+    sessionId: z.number(),
+  })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    // Only allow revoking own sessions
+    const [session] = await db.select().from(userSessions).where(
+      and(eq(userSessions.id, input.sessionId), eq(userSessions.userId, ctx.user.id))
+    ).limit(1);
+    if (!session) throw new TRPCError({ code: "NOT_FOUND", message: "الجلسة غير موجودة" });
+    const currentTokenHash = getCurrentTokenHash(ctx.req);
+    if (session.tokenHash === currentTokenHash) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "لا يمكنك إلغاء الجلسة الحالية" });
+    }
+    await db.update(userSessions).set({ isRevoked: true }).where(eq(userSessions.id, input.sessionId));
+    await logAudit(ctx.user.id, ctx.user.name || null, "delete", "session", input.sessionId, { action: "session_revoked" });
+    return { success: true };
+  }),
+
+  revokeAllOtherSessions: protectedProcedure.mutation(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const currentTokenHash = getCurrentTokenHash(ctx.req);
+    if (currentTokenHash) {
+      // Revoke all sessions except current
+      await db.update(userSessions).set({ isRevoked: true }).where(
+        and(
+          eq(userSessions.userId, ctx.user.id),
+          eq(userSessions.isRevoked, false),
+          sql`${userSessions.tokenHash} != ${currentTokenHash}`
+        )
+      );
+    } else {
+      await db.update(userSessions).set({ isRevoked: true }).where(
+        and(eq(userSessions.userId, ctx.user.id), eq(userSessions.isRevoked, false))
+      );
+    }
+    await logAudit(ctx.user.id, ctx.user.name || null, "delete", "session", null, { action: "all_other_sessions_revoked" });
+    return { success: true };
+  }),
+
+  // ============ ENHANCED USER MANAGEMENT ============
+  createUserWithCredentials: adminProcedure.input(z.object({
+    fullName: z.string().min(1, "الاسم مطلوب"),
+    username: z.string().min(3, "اسم المستخدم يجب أن يكون 3 أحرف على الأقل"),
+    password: z.string().min(6, "كلمة المرور يجب أن تكون 6 أحرف على الأقل"),
+    email: z.string().email("البريد الإلكتروني غير صالح"),
+    phone: z.string().optional(),
+    role: z.enum(["admin", "manager", "staff"]),
+  })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    // Check username uniqueness
+    const [existingUser] = await db.select().from(users).where(eq(users.username, input.username)).limit(1);
+    if (existingUser) {
+      throw new TRPCError({ code: "CONFLICT", message: "اسم المستخدم مستخدم بالفعل" });
+    }
+    // Check email uniqueness
+    const [existingEmail] = await db.select().from(users).where(eq(users.email, input.email)).limit(1);
+    if (existingEmail) {
+      throw new TRPCError({ code: "CONFLICT", message: "البريد الإلكتروني مستخدم بالفعل" });
+    }
+    const openId = `local-${nanoid(16)}`;
+    const passwordHash = await bcrypt.hash(input.password, 12);
+    await db.insert(users).values({
+      openId,
+      username: input.username,
+      passwordHash,
+      name: input.fullName,
+      fullName: input.fullName,
+      displayName: input.fullName,
+      email: input.email,
+      phone: input.phone || null,
+      role: input.role,
+      status: "active",
+    });
+    await logAudit(ctx.user.id, ctx.user.name || null, "create", "user", null, { username: input.username, email: input.email, role: input.role });
+    await notifyAdmins("مستخدم جديد", `تم إنشاء حساب جديد: ${input.fullName} (${input.role})`, "user_action", "/admin/users", ctx.user.id);
+    return { success: true };
+  }),
+
+  adminResetUserPassword: adminProcedure.input(z.object({
+    userId: z.number(),
+    newPassword: z.string().min(6, "كلمة المرور يجب أن تكون 6 أحرف على الأقل"),
+  })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const [targetUser] = await db.select().from(users).where(eq(users.id, input.userId)).limit(1);
+    if (!targetUser) throw new TRPCError({ code: "NOT_FOUND", message: "المستخدم غير موجود" });
+    const hashedPassword = await bcrypt.hash(input.newPassword, 12);
+    await db.update(users).set({ passwordHash: hashedPassword, failedLoginAttempts: 0, lockedUntil: null }).where(eq(users.id, input.userId));
+    // Revoke all sessions for this user
+    await db.update(userSessions).set({ isRevoked: true }).where(eq(userSessions.userId, input.userId));
+    await logAudit(ctx.user.id, ctx.user.name || null, "update", "user", input.userId, { action: "admin_password_reset" });
+    return { success: true };
+  }),
+
+  deleteUser: adminProcedure.input(z.object({
+    userId: z.number(),
+  })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    if (input.userId === ctx.user.id) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "لا يمكنك حذف حسابك الخاص" });
+    }
+    const [targetUser] = await db.select().from(users).where(eq(users.id, input.userId)).limit(1);
+    if (!targetUser) throw new TRPCError({ code: "NOT_FOUND", message: "المستخدم غير موجود" });
+    // Revoke all sessions first
+    await db.update(userSessions).set({ isRevoked: true }).where(eq(userSessions.userId, input.userId));
+    // Delete the user
+    await db.delete(users).where(eq(users.id, input.userId));
+    await logAudit(ctx.user.id, ctx.user.name || null, "delete", "user", input.userId, { deletedUser: targetUser.fullName || targetUser.username });
     return { success: true };
   }),
 });

@@ -290,3 +290,37 @@ export const guides = mysqlTable("guides", {
 
 export type Guide = typeof guides.$inferSelect;
 export type InsertGuide = typeof guides.$inferInsert;
+
+/**
+ * Password reset tokens for forgot-password flow.
+ */
+export const passwordResetTokens = mysqlTable("password_reset_tokens", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  token: varchar("token", { length: 255 }).notNull().unique(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  usedAt: timestamp("usedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;
+
+/**
+ * User sessions for session management (track active logins).
+ */
+export const userSessions = mysqlTable("user_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  tokenHash: varchar("tokenHash", { length: 255 }).notNull(),
+  deviceInfo: varchar("deviceInfo", { length: 500 }),
+  ipAddress: varchar("ipAddress", { length: 45 }),
+  userAgent: text("userAgent"),
+  lastActiveAt: timestamp("lastActiveAt").defaultNow().notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  isRevoked: boolean("isRevoked").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type UserSession = typeof userSessions.$inferSelect;
+export type InsertUserSession = typeof userSessions.$inferInsert;

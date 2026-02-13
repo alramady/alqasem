@@ -148,6 +148,16 @@ export default function AdminLogin() {
                 "تسجيل الدخول"
               )}
             </Button>
+
+            {/* Forgot Password Link */}
+            <div className="text-center pt-2">
+              <a
+                href="/admin/forgot-password"
+                className="text-sm text-[#c8a45e]/70 hover:text-[#c8a45e] transition-colors"
+              >
+                نسيت كلمة المرور؟
+              </a>
+            </div>
           </form>
         </div>
 

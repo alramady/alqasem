@@ -38,6 +38,9 @@ const AdminMessages = lazy(() => import("./pages/admin/Messages"));
 const AdminGuides = lazy(() => import("./pages/admin/Guides"));
 const AdminPermissions = lazy(() => import("./pages/admin/Permissions"));
 const AdminProfile = lazy(() => import("./pages/admin/Profile"));
+const AdminForgotPassword = lazy(() => import("./pages/admin/ForgotPassword"));
+const AdminResetPassword = lazy(() => import("./pages/admin/ResetPassword"));
+const AdminSessions = lazy(() => import("./pages/admin/Sessions"));
 
 function PageFallback() {
   return (
@@ -106,6 +109,15 @@ function Router() {
       {/* Admin routes */}
       <Route path="/admin/login">
         <Suspense fallback={<AdminFallback />}><AdminLogin /></Suspense>
+      </Route>
+      <Route path="/admin/forgot-password">
+        <Suspense fallback={<AdminFallback />}><AdminForgotPassword /></Suspense>
+      </Route>
+      <Route path="/admin/reset-password">
+        <Suspense fallback={<AdminFallback />}><AdminResetPassword /></Suspense>
+      </Route>
+      <Route path="/admin/sessions">
+        <Suspense fallback={<AdminFallback />}><AdminSessions /></Suspense>
       </Route>
       <Route path="/admin">
         <Suspense fallback={<AdminFallback />}><AdminDashboard /></Suspense>

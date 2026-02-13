@@ -1,8 +1,0 @@
-Auth verification notes:
-- Dashboard loads successfully with existing session cookie (from previous "Prog Muhammed" login)
-- The old session still works because the JWT verification in sdk.ts still validates correctly
-- The admin login page redirects to dashboard when already authenticated (correct behavior)
-- Need to verify: login with new Hobart/15001500 credentials works
-- The OAuth removal is working - no OAuth routes are being called
-- Dashboard shows all KPI cards, charts, activity logs correctly
-- 42 notifications badge visible

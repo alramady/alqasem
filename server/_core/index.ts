@@ -93,6 +93,8 @@ async function startServer() {
   app.use("/api/trpc/public.submitInquiry", formLimiter);
   app.use("/api/trpc/public.submitProperty", formLimiter);
   app.use("/api/trpc/public.submitPropertyRequest", formLimiter);
+  app.use("/api/trpc/admin.requestPasswordReset", authLimiter);
+  app.use("/api/trpc/admin.resetPassword", authLimiter);
 
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));

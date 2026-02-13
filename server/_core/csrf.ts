@@ -35,6 +35,8 @@ const TOKEN_BYTES = 32;
 const BOOTSTRAP_SAFE_MUTATIONS = [
   "admin.localLogin",
   "admin.localRegister",
+  "admin.requestPasswordReset",
+  "admin.resetPassword",
   "auth.logout",
   "public.submitInquiry",
   "public.submitProperty",

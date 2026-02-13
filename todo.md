@@ -149,3 +149,31 @@
 - [x] Seed root admin: Khalid Abdullah / Hobart / 15001500 / hobarti@protonmail.com
 - [x] Update all tests to reflect local-only auth
 - [x] Verify all admin and public pages work correctly
+
+## New Features - Batch Implementation
+- [x] Feature 1: Forgot Password flow via email with reset token
+  - [x] Add password_reset_tokens table to schema
+  - [x] Add sessions table to schema for session management
+  - [x] Push database migrations
+  - [x] Create server-side forgot password endpoint (generate token, send email)
+  - [x] Create server-side reset password endpoint (validate token, update password)
+  - [x] Create Forgot Password page (request reset)
+  - [x] Create Reset Password page (enter new password)
+  - [x] Add routes in App.tsx
+  - [x] Add rate limiting for password reset endpoints
+  - [x] Add CSRF bootstrap-safe mutations for password reset
+- [x] Feature 2: Session management in admin panel
+  - [x] Track sessions in DB on login (device, IP, timestamp)
+  - [x] Add server endpoints: list sessions, revoke session, revoke all
+  - [x] Create Sessions management UI in admin panel
+  - [x] Highlight current session, allow revoking others
+  - [x] Add Sessions link to admin sidebar
+- [x] Feature 3: Create additional admin/staff accounts from admin panel
+  - [x] Add server endpoint to create new platform users with username/password
+  - [x] Add server endpoint to edit existing user roles and reset passwords
+  - [x] Add server endpoint to delete users
+  - [x] Enhance Users admin page with create/edit/delete user forms
+  - [x] Support admin, manager, staff role assignment
+  - [x] Admin password reset with session revocation
+- [x] Write comprehensive vitest tests for all three features (17 tests)
+- [x] All 185 tests passing
