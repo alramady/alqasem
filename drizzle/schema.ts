@@ -372,3 +372,34 @@ export const propertyViews = mysqlTable("property_views", {
   viewedAt: timestamp("viewedAt").defaultNow().notNull(),
 });
 export type PropertyView = typeof propertyViews.$inferSelect;
+
+/**
+ * Cities for property/project location management.
+ */
+export const cities = mysqlTable("cities", {
+  id: int("id").autoincrement().primaryKey(),
+  nameAr: varchar("nameAr", { length: 200 }).notNull(),
+  nameEn: varchar("nameEn", { length: 200 }),
+  isActive: boolean("isActive").default(true).notNull(),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type City = typeof cities.$inferSelect;
+export type InsertCity = typeof cities.$inferInsert;
+
+/**
+ * Districts (neighborhoods) within cities.
+ */
+export const districts = mysqlTable("districts", {
+  id: int("id").autoincrement().primaryKey(),
+  cityId: int("cityId").notNull(),
+  nameAr: varchar("nameAr", { length: 200 }).notNull(),
+  nameEn: varchar("nameEn", { length: 200 }),
+  isActive: boolean("isActive").default(true).notNull(),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type District = typeof districts.$inferSelect;
+export type InsertDistrict = typeof districts.$inferInsert;

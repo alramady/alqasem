@@ -44,6 +44,7 @@ const AdminForgotPassword = lazy(() => import("./pages/admin/ForgotPassword"));
 const AdminResetPassword = lazy(() => import("./pages/admin/ResetPassword"));
 const AdminSessions = lazy(() => import("./pages/admin/Sessions"));
 const AdminActivityDashboard = lazy(() => import("./pages/admin/ActivityDashboard"));
+const AdminCitiesDistricts = lazy(() => import("./pages/admin/CitiesDistricts"));
 
 function PageFallback() {
   return (
@@ -131,6 +132,9 @@ function Router() {
       </Route>
       <Route path="/admin/activity">
         <Suspense fallback={<AdminFallback />}><AdminActivityDashboard /></Suspense>
+      </Route>
+      <Route path="/admin/cities-districts">
+        <Suspense fallback={<AdminFallback />}><AdminCitiesDistricts /></Suspense>
       </Route>
       <Route path="/admin">
         <Suspense fallback={<AdminFallback />}><AdminDashboard /></Suspense>

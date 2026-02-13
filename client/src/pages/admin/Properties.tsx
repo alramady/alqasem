@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
 import PropertyImageGallery from "@/components/PropertyImageGallery";
 import { Plus, Search, Edit, Trash2, Download, ImageIcon, Eye, Building2 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { toast } from "sonner";
 
 const propertyTypes: Record<string, string> = {
@@ -35,6 +35,7 @@ export default function AdminProperties() {
   const [activeEditTab, setActiveEditTab] = useState("details");
 
   const { data: properties, refetch } = trpc.admin.listProperties.useQuery({ search, type: typeFilter, status: statusFilter });
+  const { data: citiesData } = trpc.public.getCitiesWithDistricts.useQuery();
 
   const createProp = trpc.admin.createProperty.useMutation({
     onSuccess: () => { toast.success("تم إضافة العقار بنجاح"); setShowCreate(false); setForm({ ...emptyForm }); refetch(); },
@@ -166,20 +167,29 @@ export default function AdminProperties() {
                     <Input type="number" value={form.bathrooms} onChange={(e) => setForm({...form, bathrooms: e.target.value})} placeholder="3" dir="ltr" className="mt-1" />
                   </div>
                   <div>
-                    <Label className="text-slate-600">المدينة (عربي)</Label>
-                    <Input value={form.city} onChange={(e) => setForm({...form, city: e.target.value})} className="mt-1" />
+                    <Label className="text-slate-600">المدينة</Label>
+                    <Select value={form.city} onValueChange={(v) => {
+                      const city = citiesData?.find(c => c.nameAr === v);
+                      setForm({...form, city: v, cityEn: city?.nameEn || "", district: "", districtEn: ""});
+                    }}>
+                      <SelectTrigger className="mt-1"><SelectValue placeholder="اختر المدينة" /></SelectTrigger>
+                      <SelectContent>
+                        {citiesData?.map(c => <SelectItem key={c.id} value={c.nameAr}>{c.nameAr}{c.nameEn ? ` (${c.nameEn})` : ""}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
-                    <Label className="text-slate-600">City (English)</Label>
-                    <Input value={form.cityEn} onChange={(e) => setForm({...form, cityEn: e.target.value})} placeholder="Riyadh" dir="ltr" className="mt-1 text-left" />
-                  </div>
-                  <div>
-                    <Label className="text-slate-600">الحي (عربي)</Label>
-                    <Input value={form.district} onChange={(e) => setForm({...form, district: e.target.value})} placeholder="حي النرجس" className="mt-1" />
-                  </div>
-                  <div>
-                    <Label className="text-slate-600">District (English)</Label>
-                    <Input value={form.districtEn} onChange={(e) => setForm({...form, districtEn: e.target.value})} placeholder="Al-Narjis" dir="ltr" className="mt-1 text-left" />
+                    <Label className="text-slate-600">الحي</Label>
+                    <Select value={form.district} onValueChange={(v) => {
+                      const selectedCity = citiesData?.find(c => c.nameAr === form.city);
+                      const dist = selectedCity?.districts?.find((d: any) => d.nameAr === v);
+                      setForm({...form, district: v, districtEn: dist?.nameEn || ""});
+                    }}>
+                      <SelectTrigger className="mt-1"><SelectValue placeholder="اختر الحي" /></SelectTrigger>
+                      <SelectContent>
+                        {(citiesData?.find(c => c.nameAr === form.city)?.districts || []).map((d: any) => <SelectItem key={d.id} value={d.nameAr}>{d.nameAr}{d.nameEn ? ` (${d.nameEn})` : ""}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <Label className="text-slate-600">العنوان التفصيلي (عربي)</Label>
@@ -385,20 +395,29 @@ export default function AdminProperties() {
                   <Input type="number" value={editForm.bathrooms} onChange={(e) => setEditForm({...editForm, bathrooms: e.target.value})} dir="ltr" className="mt-1" />
                 </div>
                 <div>
-                  <Label className="text-slate-600">المدينة (عربي)</Label>
-                  <Input value={editForm.city} onChange={(e) => setEditForm({...editForm, city: e.target.value})} className="mt-1" />
+                  <Label className="text-slate-600">المدينة</Label>
+                  <Select value={editForm.city} onValueChange={(v) => {
+                    const city = citiesData?.find(c => c.nameAr === v);
+                    setEditForm({...editForm, city: v, cityEn: city?.nameEn || "", district: "", districtEn: ""});
+                  }}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="اختر المدينة" /></SelectTrigger>
+                    <SelectContent>
+                      {citiesData?.map(c => <SelectItem key={c.id} value={c.nameAr}>{c.nameAr}{c.nameEn ? ` (${c.nameEn})` : ""}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
-                  <Label className="text-slate-600">City (English)</Label>
-                  <Input value={editForm.cityEn} onChange={(e) => setEditForm({...editForm, cityEn: e.target.value})} dir="ltr" className="mt-1 text-left" />
-                </div>
-                <div>
-                  <Label className="text-slate-600">الحي (عربي)</Label>
-                  <Input value={editForm.district} onChange={(e) => setEditForm({...editForm, district: e.target.value})} className="mt-1" />
-                </div>
-                <div>
-                  <Label className="text-slate-600">District (English)</Label>
-                  <Input value={editForm.districtEn} onChange={(e) => setEditForm({...editForm, districtEn: e.target.value})} dir="ltr" className="mt-1 text-left" />
+                  <Label className="text-slate-600">الحي</Label>
+                  <Select value={editForm.district} onValueChange={(v) => {
+                    const selectedCity = citiesData?.find(c => c.nameAr === editForm.city);
+                    const dist = selectedCity?.districts?.find((d: any) => d.nameAr === v);
+                    setEditForm({...editForm, district: v, districtEn: dist?.nameEn || ""});
+                  }}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="اختر الحي" /></SelectTrigger>
+                    <SelectContent>
+                      {(citiesData?.find(c => c.nameAr === editForm.city)?.districts || []).map((d: any) => <SelectItem key={d.id} value={d.nameAr}>{d.nameAr}{d.nameEn ? ` (${d.nameEn})` : ""}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label className="text-slate-600">العنوان التفصيلي (عربي)</Label>

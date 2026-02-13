@@ -36,6 +36,13 @@
       "when": 1771018880036,
       "tag": "0004_harsh_epoch",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1771026276553,
+      "tag": "0005_long_sunspot",
+      "breakpoints": true
     }
   ]
 }

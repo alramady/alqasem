@@ -48,6 +48,7 @@ import {
   ExternalLink,
   Monitor,
   Activity,
+  MapPin,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -74,6 +75,7 @@ const menuGroups: MenuGroup[] = [
       { icon: FolderKanban, label: "المشاريع", path: "/admin/projects" },
       { icon: FileText, label: "الصفحات", path: "/admin/cms" },
       { icon: Image, label: "مكتبة الوسائط", path: "/admin/media" },
+      { icon: MapPin, label: "المدن والأحياء", path: "/admin/cities-districts" },
     ],
   },
   {

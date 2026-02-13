@@ -7,7 +7,7 @@ import { getDb } from "../db";
 import {
   users, properties, projects, inquiries, media, pages,
   homepageSections, settings, auditLogs, notifications, messages, permissions, guides,
-  passwordResetTokens, userSessions, activityLogs,
+  passwordResetTokens, userSessions, activityLogs, cities, districts,
 } from "../../drizzle/schema";
 import crypto from "crypto";
 import { sendPasswordResetEmail } from "../email";
@@ -385,7 +385,8 @@ export const adminRouter = router({
 
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const [monthlyInqCount] = await db.select({ count: count() }).from(inquiries).where(sql`${inquiries.createdAt} >= ${monthStart}`);
+    const monthStartStr = monthStart.toISOString().slice(0, 19).replace('T', ' ');
+    const [monthlyInqCount] = await db.select({ count: count() }).from(inquiries).where(gte(inquiries.createdAt, monthStart));
 
     const recentInquiries = await db.select().from(inquiries).orderBy(desc(inquiries.createdAt)).limit(10);
     const recentActivity = await db.select().from(auditLogs).orderBy(desc(auditLogs.createdAt)).limit(15);
@@ -393,12 +394,13 @@ export const adminRouter = router({
     const months = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
     // Optimized: single query instead of 6 separate queries (N+1 fix)
     const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+    const sixMonthsAgoStr = sixMonthsAgo.toISOString().slice(0, 19).replace('T', ' ');
     const monthlyData = await db.select({
       yearMonth: sql<string>`DATE_FORMAT(${inquiries.createdAt}, '%Y-%m')`,
       monthNum: sql<number>`MONTH(${inquiries.createdAt})`,
       cnt: count(),
     }).from(inquiries)
-      .where(sql`${inquiries.createdAt} >= ${sixMonthsAgo}`)
+      .where(sql`${inquiries.createdAt} >= ${sixMonthsAgoStr}`)
       .groupBy(sql`DATE_FORMAT(${inquiries.createdAt}, '%Y-%m')`, sql`MONTH(${inquiries.createdAt})`)
       .orderBy(sql`DATE_FORMAT(${inquiries.createdAt}, '%Y-%m')`);
     
@@ -1147,8 +1149,10 @@ export const adminRouter = router({
     for (let i = trendMonths - 1; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const dEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59);
-      const [ic] = await db.select({ count: count() }).from(inquiries).where(and(sql`${inquiries.createdAt} >= ${d}`, sql`${inquiries.createdAt} <= ${dEnd}`));
-      const [pc] = await db.select({ count: count() }).from(properties).where(and(sql`${properties.createdAt} >= ${d}`, sql`${properties.createdAt} <= ${dEnd}`, isNull(properties.deletedAt)));
+      const dStr = d.toISOString().slice(0, 19).replace('T', ' ');
+      const dEndStr = dEnd.toISOString().slice(0, 19).replace('T', ' ');
+      const [ic] = await db.select({ count: count() }).from(inquiries).where(and(sql`${inquiries.createdAt} >= ${dStr}`, sql`${inquiries.createdAt} <= ${dEndStr}`));
+      const [pc] = await db.select({ count: count() }).from(properties).where(and(sql`${properties.createdAt} >= ${dStr}`, sql`${properties.createdAt} <= ${dEndStr}`, isNull(properties.deletedAt)));
       inquiriesTrend.push({ label: months[d.getMonth()], count: ic.count });
       propertiesTrend.push({ label: months[d.getMonth()], count: pc.count });
     }
@@ -1340,8 +1344,8 @@ export const adminRouter = router({
     if (input.search) conditions.push(like(auditLogs.userName, `%${input.search}%`));
     if (input.action && input.action !== "all") conditions.push(eq(auditLogs.action, input.action as any));
     if (input.entityType && input.entityType !== "all") conditions.push(eq(auditLogs.entityType, input.entityType));
-    if (input.dateFrom) conditions.push(sql`${auditLogs.createdAt} >= ${new Date(input.dateFrom)}`);
-    if (input.dateTo) conditions.push(sql`${auditLogs.createdAt} <= ${new Date(input.dateTo)}`);
+    if (input.dateFrom) conditions.push(sql`${auditLogs.createdAt} >= ${new Date(input.dateFrom).toISOString().slice(0, 19).replace('T', ' ')}`);
+    if (input.dateTo) conditions.push(sql`${auditLogs.createdAt} <= ${new Date(input.dateTo).toISOString().slice(0, 19).replace('T', ' ')}`);
     return db.select().from(auditLogs).where(conditions.length > 0 ? and(...conditions) : undefined).orderBy(desc(auditLogs.createdAt)).limit(500);
   }),
 
@@ -1790,8 +1794,9 @@ export const adminRouter = router({
       count: count(),
     }).from(activityLogs).where(eq(activityLogs.userId, input.userId)).groupBy(activityLogs.category);
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().slice(0, 19).replace('T', ' ');
     const [recentSessionsResult] = await db.select({ count: count() }).from(userSessions).where(
-      and(eq(userSessions.userId, input.userId), sql`${userSessions.createdAt} >= ${thirtyDaysAgo}`)
+      and(eq(userSessions.userId, input.userId), sql`${userSessions.createdAt} >= ${thirtyDaysAgoStr}`)
     );
     return {
       totalActions: totalResult?.count || 0,
@@ -1818,5 +1823,122 @@ export const adminRouter = router({
     const [totalResult] = await db.select({ count: count() }).from(activityLogs).where(whereClause);
     const activities = await db.select().from(activityLogs).where(whereClause).orderBy(desc(activityLogs.createdAt)).limit(input.limit).offset(input.offset);
     return { activities, total: totalResult?.count || 0 };
+  }),
+
+  // ============ CITIES ============
+  listCities: protectedProcedure.input(z.object({ includeInactive: z.boolean().optional() }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return [];
+    const conditions: any[] = [];
+    if (!input?.includeInactive) conditions.push(eq(cities.isActive, true));
+    return db.select().from(cities).where(conditions.length ? and(...conditions) : undefined).orderBy(asc(cities.sortOrder), asc(cities.nameAr));
+  }),
+
+  createCity: adminProcedure.input(z.object({
+    nameAr: z.string().min(1),
+    nameEn: z.string().optional(),
+    sortOrder: z.number().optional(),
+  })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const [result] = await db.insert(cities).values({ nameAr: input.nameAr, nameEn: input.nameEn || null, sortOrder: input.sortOrder ?? 0 });
+    await logAudit(ctx.user.id, ctx.user.name || null, "create", "city", result.insertId, { nameAr: input.nameAr });
+    await logActivity(ctx.user.id, ctx.user.name || null, "create_city", "settings", `إنشاء مدينة: ${input.nameAr}`, "city", result.insertId);
+    return { id: result.insertId };
+  }),
+
+  updateCity: adminProcedure.input(z.object({
+    id: z.number(),
+    nameAr: z.string().min(1),
+    nameEn: z.string().optional(),
+    sortOrder: z.number().optional(),
+  })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    await db.update(cities).set({ nameAr: input.nameAr, nameEn: input.nameEn || null, sortOrder: input.sortOrder ?? 0 }).where(eq(cities.id, input.id));
+    await logAudit(ctx.user.id, ctx.user.name || null, "update", "city", input.id, { nameAr: input.nameAr });
+    await logActivity(ctx.user.id, ctx.user.name || null, "update_city", "settings", `تحديث مدينة: ${input.nameAr}`, "city", input.id);
+    return { success: true };
+  }),
+
+  toggleCityActive: adminProcedure.input(z.object({ id: z.number(), isActive: z.boolean() })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    await db.update(cities).set({ isActive: input.isActive }).where(eq(cities.id, input.id));
+    // Also deactivate all districts if city is deactivated
+    if (!input.isActive) {
+      await db.update(districts).set({ isActive: false }).where(eq(districts.cityId, input.id));
+    }
+    await logAudit(ctx.user.id, ctx.user.name || null, "status_change", "city", input.id, { isActive: input.isActive });
+    await logActivity(ctx.user.id, ctx.user.name || null, input.isActive ? "activate_city" : "deactivate_city", "settings", `${input.isActive ? "تفعيل" : "تعطيل"} مدينة`, "city", input.id);
+    return { success: true };
+  }),
+
+  deleteCity: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    // Delete all districts in this city first
+    await db.delete(districts).where(eq(districts.cityId, input.id));
+    await db.delete(cities).where(eq(cities.id, input.id));
+    await logAudit(ctx.user.id, ctx.user.name || null, "delete", "city", input.id, {});
+    await logActivity(ctx.user.id, ctx.user.name || null, "delete_city", "settings", "حذف مدينة", "city", input.id);
+    return { success: true };
+  }),
+
+  // ============ DISTRICTS ============
+  listDistricts: protectedProcedure.input(z.object({ cityId: z.number().optional(), includeInactive: z.boolean().optional() }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return [];
+    const conditions: any[] = [];
+    if (input?.cityId) conditions.push(eq(districts.cityId, input.cityId));
+    if (!input?.includeInactive) conditions.push(eq(districts.isActive, true));
+    return db.select().from(districts).where(conditions.length ? and(...conditions) : undefined).orderBy(asc(districts.sortOrder), asc(districts.nameAr));
+  }),
+
+  createDistrict: adminProcedure.input(z.object({
+    cityId: z.number(),
+    nameAr: z.string().min(1),
+    nameEn: z.string().optional(),
+    sortOrder: z.number().optional(),
+  })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const [result] = await db.insert(districts).values({ cityId: input.cityId, nameAr: input.nameAr, nameEn: input.nameEn || null, sortOrder: input.sortOrder ?? 0 });
+    await logAudit(ctx.user.id, ctx.user.name || null, "create", "district", result.insertId, { nameAr: input.nameAr, cityId: input.cityId });
+    await logActivity(ctx.user.id, ctx.user.name || null, "create_district", "settings", `إنشاء حي: ${input.nameAr}`, "district", result.insertId);
+    return { id: result.insertId };
+  }),
+
+  updateDistrict: adminProcedure.input(z.object({
+    id: z.number(),
+    cityId: z.number(),
+    nameAr: z.string().min(1),
+    nameEn: z.string().optional(),
+    sortOrder: z.number().optional(),
+  })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    await db.update(districts).set({ cityId: input.cityId, nameAr: input.nameAr, nameEn: input.nameEn || null, sortOrder: input.sortOrder ?? 0 }).where(eq(districts.id, input.id));
+    await logAudit(ctx.user.id, ctx.user.name || null, "update", "district", input.id, { nameAr: input.nameAr });
+    await logActivity(ctx.user.id, ctx.user.name || null, "update_district", "settings", `تحديث حي: ${input.nameAr}`, "district", input.id);
+    return { success: true };
+  }),
+
+  toggleDistrictActive: adminProcedure.input(z.object({ id: z.number(), isActive: z.boolean() })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    await db.update(districts).set({ isActive: input.isActive }).where(eq(districts.id, input.id));
+    await logAudit(ctx.user.id, ctx.user.name || null, "status_change", "district", input.id, { isActive: input.isActive });
+    await logActivity(ctx.user.id, ctx.user.name || null, input.isActive ? "activate_district" : "deactivate_district", "settings", `${input.isActive ? "تفعيل" : "تعطيل"} حي`, "district", input.id);
+    return { success: true };
+  }),
+
+  deleteDistrict: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    await db.delete(districts).where(eq(districts.id, input.id));
+    await logAudit(ctx.user.id, ctx.user.name || null, "delete", "district", input.id, {});
+    await logActivity(ctx.user.id, ctx.user.name || null, "delete_district", "settings", "حذف حي", "district", input.id);
+    return { success: true };
   }),
 });

@@ -1,7 +1,7 @@
 import { publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { sanitizeText } from "../sanitize";
-import { inquiries, properties, projects, notifications, users, auditLogs, settings, homepageSections, pages, newsletterSubscribers, propertyViews } from "../../drizzle/schema";
+import { inquiries, properties, projects, notifications, users, auditLogs, settings, homepageSections, pages, newsletterSubscribers, propertyViews, cities, districts } from "../../drizzle/schema";
 import { eq, desc, asc, and, isNull, like, or, gte, lte, sql, count } from "drizzle-orm";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
@@ -245,16 +245,26 @@ export const publicRouter = router({
     };
   }),
 
-  // Get distinct cities for filter dropdown
+  // Get distinct cities for filter dropdown (from cities table)
   getPropertyCities: publicProcedure.query(async () => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "خطأ في الاتصال بقاعدة البيانات" });
+    const activeCities = await db.select().from(cities).where(eq(cities.isActive, true)).orderBy(asc(cities.sortOrder), asc(cities.nameAr));
+    return activeCities.map(c => c.nameAr);
+  }),
 
-    const result = await db.selectDistinct({ city: properties.city })
-      .from(properties)
-      .where(and(isNull(properties.deletedAt), eq(properties.status, "active")));
-
-    return result.map(r => r.city).filter(Boolean) as string[];
+  // Get active cities with their districts for advanced filters
+  getCitiesWithDistricts: publicProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "خطأ في الاتصال بقاعدة البيانات" });
+    const activeCities = await db.select().from(cities).where(eq(cities.isActive, true)).orderBy(asc(cities.sortOrder), asc(cities.nameAr));
+    const activeDistricts = await db.select().from(districts).where(eq(districts.isActive, true)).orderBy(asc(districts.sortOrder), asc(districts.nameAr));
+    return activeCities.map(city => ({
+      id: city.id,
+      nameAr: city.nameAr,
+      nameEn: city.nameEn,
+      districts: activeDistricts.filter(d => d.cityId === city.id).map(d => ({ id: d.id, nameAr: d.nameAr, nameEn: d.nameEn })),
+    }));
   }),
 
   // ============ PUBLIC PROJECT QUERIES ============

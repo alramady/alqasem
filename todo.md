@@ -229,3 +229,41 @@
 - [x] Wire logActivity into property/project/CMS/media CRUD operations
 - [x] Implement email templates settings tab (functional editor UI)
 - [x] All 230 tests passing
+
+## CMS & Admin Backend Verification
+- [x] Verify server is running with no errors
+- [x] Test admin login flow
+- [x] Test admin dashboard loads with real data
+- [x] Fix dashboard SQL Date parameter bug (DATE_FORMAT queries)
+- [x] Fix getReportData Date parameter issues
+- [x] Fix audit log and session date filter issues
+- [ ] Test properties CRUD (list, create, edit, delete)
+- [ ] Test projects CRUD (list, create, edit, delete)
+- [ ] Test CMS pages (list, create, edit, publish)
+- [ ] Test media library (upload, list, delete)
+- [ ] Test inquiries management (list, status update, notes)
+- [ ] Test settings management (site config, homepage sections)
+- [ ] Test reports page with export and period filter
+- [ ] Test notifications page
+- [ ] Test users management
+- [ ] Test sessions management
+- [ ] Test activity dashboard
+
+## Cities & Districts Management System
+- [x] Add cities table (id, nameAr, nameEn, isActive, sortOrder, createdAt)
+- [x] Add districts table (id, cityId FK, nameAr, nameEn, isActive, sortOrder, createdAt)
+- [x] Push database migrations
+- [x] Add admin CRUD endpoints: listCities, createCity, updateCity, toggleCityActive, deleteCity
+- [x] Add admin CRUD endpoints: listDistricts, createDistrict, updateDistrict, toggleDistrictActive, deleteDistrict
+- [x] Add public endpoint: getCitiesWithDistricts for frontend filters
+- [x] Build Cities & Districts admin page with tabs, search, toggle switches
+- [x] Add sidebar link in AdminLayout (المدن والأحياء)
+- [x] Integrate with property creation/edit forms (dynamic city/district dropdowns)
+- [x] Write vitest tests (15 tests)
+- [x] All 245 tests passing
+
+## Dashboard SQL Date Bug Fix
+- [x] Fix Date object to ISO string conversion in dashboardStats query
+- [x] Fix Date object in getReportData trend queries
+- [x] Fix Date object in audit log date filters
+- [x] Fix Date object in session login history query
