@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Menu, X, Phone, Mail, MapPin, ChevronDown, Globe } from "lucide-react";
+import { Menu, X, Phone, Mail, ChevronDown, Globe } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useLocation } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -18,9 +18,7 @@ export default function Navbar() {
   // Dynamic values from settings with fallbacks
   const phone = settings.phone || "920001911";
   const email = settings.email || "info@alqasem.com.sa";
-  const address = isAr
-    ? (settings.address || "شارع الإمام عبد العزيز بن محمد بن سعود - حي أم سليم، الرياض")
-    : (settings.addressEn || "Imam Abdulaziz bin Mohammed Road - Umm Saleem, Riyadh");
+
   const logoUrl = settings.logo || DEFAULT_LOGO;
   const instagram = settings.instagram || "https://www.instagram.com/alqasem_sa/";
   const twitter = settings.twitter || "https://x.com/alqasem_sa";
@@ -88,10 +86,7 @@ export default function Navbar() {
               <Phone className="w-3 h-3" />
               <span dir="ltr">{phone}</span>
             </a>
-            <span className="flex items-center gap-1.5">
-              <MapPin className="w-3 h-3 shrink-0" />
-              <span className="truncate max-w-[250px]">{address}</span>
-            </span>
+
           </div>
         </div>
 

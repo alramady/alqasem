@@ -134,3 +134,6 @@
 
 ## Visual Edit
 - [x] Change hero text from "ابحث عن منزلك مع القاسم" to "ابحث عن عقارك مع القاسم"
+
+## UI Adjustments
+- [x] Remove address/location text from the top bar
