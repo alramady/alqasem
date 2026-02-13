@@ -1,5 +1,6 @@
 import { publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
+import { sanitizeText } from "../sanitize";
 import { inquiries, properties, projects, notifications, users, auditLogs, settings, homepageSections, pages } from "../../drizzle/schema";
 import { eq, desc, asc, and, isNull, like, or, gte, lte, sql, count } from "drizzle-orm";
 import { z } from "zod";
@@ -328,12 +329,12 @@ export const publicRouter = router({
     else if (input.subject === "إدارة أملاك") inquiryType = "management";
 
     const result = await db.insert(inquiries).values({
-      name: input.name,
-      phone: input.phone,
-      email: input.email || null,
+      name: sanitizeText(input.name),
+      phone: sanitizeText(input.phone),
+      email: input.email ? sanitizeText(input.email) : null,
       inquiryType,
-      message: input.subject ? `[${input.subject}] ${input.message}` : input.message,
-      source: input.source || "contact_form",
+      message: input.subject ? `[${sanitizeText(input.subject)}] ${sanitizeText(input.message)}` : sanitizeText(input.message),
+      source: sanitizeText(input.source || "contact_form"),
       status: "new",
     });
 

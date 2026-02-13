@@ -20,8 +20,8 @@ const listingTypes: Record<string, string> = { sale: "بيع", rent: "إيجار
 const statusLabels: Record<string, string> = { active: "نشط", sold: "مباع", rented: "مؤجر", draft: "مسودة" };
 
 const emptyForm = {
-  title: "", description: "", type: "villa", listingType: "sale", status: "active",
-  price: "", area: "", rooms: "", bathrooms: "", city: "الرياض", district: "", address: "", videoUrl: "",
+  title: "", titleEn: "", description: "", descriptionEn: "", type: "villa", listingType: "sale", status: "active",
+  price: "", area: "", rooms: "", bathrooms: "", city: "الرياض", cityEn: "", district: "", districtEn: "", address: "", addressEn: "", videoUrl: "",
 };
 
 export default function AdminProperties() {
@@ -63,11 +63,16 @@ export default function AdminProperties() {
   const openEdit = (prop: any) => {
     setEditingProperty(prop);
     setEditForm({
-      title: prop.title || "", description: prop.description || "", type: prop.type || "villa",
+      title: prop.title || "", titleEn: prop.titleEn || "",
+      description: prop.description || "", descriptionEn: prop.descriptionEn || "",
+      type: prop.type || "villa",
       listingType: prop.listingType || "sale", status: prop.status || "active",
       price: prop.price?.toString() || "", area: prop.area?.toString() || "",
       rooms: prop.rooms?.toString() || "", bathrooms: prop.bathrooms?.toString() || "",
-      city: prop.city || "الرياض", district: prop.district || "", address: prop.address || "", videoUrl: prop.videoUrl || "",
+      city: prop.city || "الرياض", cityEn: prop.cityEn || "",
+      district: prop.district || "", districtEn: prop.districtEn || "",
+      address: prop.address || "", addressEn: prop.addressEn || "",
+      videoUrl: prop.videoUrl || "",
     });
     setActiveEditTab("details");
   };
@@ -75,11 +80,13 @@ export default function AdminProperties() {
   const saveEdit = () => {
     if (!editingProperty) return;
     updateProp.mutate({
-      id: editingProperty.id, title: editForm.title, description: editForm.description,
+      id: editingProperty.id, title: editForm.title, titleEn: editForm.titleEn,
+      description: editForm.description, descriptionEn: editForm.descriptionEn,
       type: editForm.type, listingType: editForm.listingType, status: editForm.status,
       price: parseFloat(editForm.price) || 0, area: parseFloat(editForm.area) || 0,
       rooms: parseInt(editForm.rooms) || 0, bathrooms: parseInt(editForm.bathrooms) || 0,
-      city: editForm.city, district: editForm.district, address: editForm.address, videoUrl: editForm.videoUrl,
+      city: editForm.city, cityEn: editForm.cityEn, district: editForm.district, districtEn: editForm.districtEn,
+      address: editForm.address, addressEn: editForm.addressEn, videoUrl: editForm.videoUrl,
     });
   };
 
@@ -113,12 +120,20 @@ export default function AdminProperties() {
                 <p className="text-sm text-slate-400 mb-2">أضف بيانات العقار الأساسية أولاً، ثم يمكنك إضافة الصور من صفحة التعديل.</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                   <div className="md:col-span-2">
-                    <Label className="text-slate-600">عنوان العقار</Label>
+                    <Label className="text-slate-600">عنوان العقار (عربي)</Label>
                     <Input value={form.title} onChange={(e) => setForm({...form, title: e.target.value})} placeholder="فيلا فاخرة في حي النرجس" className="mt-1" />
                   </div>
                   <div className="md:col-span-2">
-                    <Label className="text-slate-600">الوصف</Label>
+                    <Label className="text-slate-600">Property Title (English)</Label>
+                    <Input value={form.titleEn} onChange={(e) => setForm({...form, titleEn: e.target.value})} placeholder="Luxury Villa in Al-Narjis" dir="ltr" className="mt-1 text-left" />
+                  </div>
+                  <div className="md:col-span-2">
+                    <Label className="text-slate-600">الوصف (عربي)</Label>
                     <Textarea value={form.description} onChange={(e) => setForm({...form, description: e.target.value})} placeholder="وصف تفصيلي للعقار..." rows={3} className="mt-1" />
+                  </div>
+                  <div className="md:col-span-2">
+                    <Label className="text-slate-600">Description (English)</Label>
+                    <Textarea value={form.descriptionEn} onChange={(e) => setForm({...form, descriptionEn: e.target.value})} placeholder="Detailed property description..." rows={3} dir="ltr" className="mt-1 text-left" />
                   </div>
                   <div>
                     <Label className="text-slate-600">نوع العقار</Label>
@@ -151,16 +166,28 @@ export default function AdminProperties() {
                     <Input type="number" value={form.bathrooms} onChange={(e) => setForm({...form, bathrooms: e.target.value})} placeholder="3" dir="ltr" className="mt-1" />
                   </div>
                   <div>
-                    <Label className="text-slate-600">المدينة</Label>
+                    <Label className="text-slate-600">المدينة (عربي)</Label>
                     <Input value={form.city} onChange={(e) => setForm({...form, city: e.target.value})} className="mt-1" />
                   </div>
                   <div>
-                    <Label className="text-slate-600">الحي</Label>
+                    <Label className="text-slate-600">City (English)</Label>
+                    <Input value={form.cityEn} onChange={(e) => setForm({...form, cityEn: e.target.value})} placeholder="Riyadh" dir="ltr" className="mt-1 text-left" />
+                  </div>
+                  <div>
+                    <Label className="text-slate-600">الحي (عربي)</Label>
                     <Input value={form.district} onChange={(e) => setForm({...form, district: e.target.value})} placeholder="حي النرجس" className="mt-1" />
                   </div>
-                  <div className="md:col-span-2">
-                    <Label className="text-slate-600">العنوان التفصيلي</Label>
+                  <div>
+                    <Label className="text-slate-600">District (English)</Label>
+                    <Input value={form.districtEn} onChange={(e) => setForm({...form, districtEn: e.target.value})} placeholder="Al-Narjis" dir="ltr" className="mt-1 text-left" />
+                  </div>
+                  <div>
+                    <Label className="text-slate-600">العنوان التفصيلي (عربي)</Label>
                     <Input value={form.address} onChange={(e) => setForm({...form, address: e.target.value})} placeholder="شارع الأمير محمد بن سلمان" className="mt-1" />
+                  </div>
+                  <div>
+                    <Label className="text-slate-600">Address (English)</Label>
+                    <Input value={form.addressEn} onChange={(e) => setForm({...form, addressEn: e.target.value})} placeholder="Prince Mohammed bin Salman St." dir="ltr" className="mt-1 text-left" />
                   </div>
                   <div className="md:col-span-2">
                     <Button className="w-full bg-indigo-500 text-white hover:bg-indigo-600" onClick={() => createProp.mutate({
@@ -305,12 +332,20 @@ export default function AdminProperties() {
             <TabsContent value="details" className="mt-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
-                  <Label className="text-slate-600">عنوان العقار</Label>
+                  <Label className="text-slate-600">عنوان العقار (عربي)</Label>
                   <Input value={editForm.title} onChange={(e) => setEditForm({...editForm, title: e.target.value})} className="mt-1" />
                 </div>
                 <div className="md:col-span-2">
-                  <Label className="text-slate-600">الوصف</Label>
+                  <Label className="text-slate-600">Property Title (English)</Label>
+                  <Input value={editForm.titleEn} onChange={(e) => setEditForm({...editForm, titleEn: e.target.value})} dir="ltr" className="mt-1 text-left" />
+                </div>
+                <div className="md:col-span-2">
+                  <Label className="text-slate-600">الوصف (عربي)</Label>
                   <Textarea value={editForm.description} onChange={(e) => setEditForm({...editForm, description: e.target.value})} rows={3} className="mt-1" />
+                </div>
+                <div className="md:col-span-2">
+                  <Label className="text-slate-600">Description (English)</Label>
+                  <Textarea value={editForm.descriptionEn} onChange={(e) => setEditForm({...editForm, descriptionEn: e.target.value})} rows={3} dir="ltr" className="mt-1 text-left" />
                 </div>
                 <div>
                   <Label className="text-slate-600">نوع العقار</Label>
@@ -350,16 +385,28 @@ export default function AdminProperties() {
                   <Input type="number" value={editForm.bathrooms} onChange={(e) => setEditForm({...editForm, bathrooms: e.target.value})} dir="ltr" className="mt-1" />
                 </div>
                 <div>
-                  <Label className="text-slate-600">المدينة</Label>
+                  <Label className="text-slate-600">المدينة (عربي)</Label>
                   <Input value={editForm.city} onChange={(e) => setEditForm({...editForm, city: e.target.value})} className="mt-1" />
                 </div>
                 <div>
-                  <Label className="text-slate-600">الحي</Label>
+                  <Label className="text-slate-600">City (English)</Label>
+                  <Input value={editForm.cityEn} onChange={(e) => setEditForm({...editForm, cityEn: e.target.value})} dir="ltr" className="mt-1 text-left" />
+                </div>
+                <div>
+                  <Label className="text-slate-600">الحي (عربي)</Label>
                   <Input value={editForm.district} onChange={(e) => setEditForm({...editForm, district: e.target.value})} className="mt-1" />
                 </div>
-                <div className="md:col-span-2">
-                  <Label className="text-slate-600">العنوان التفصيلي</Label>
+                <div>
+                  <Label className="text-slate-600">District (English)</Label>
+                  <Input value={editForm.districtEn} onChange={(e) => setEditForm({...editForm, districtEn: e.target.value})} dir="ltr" className="mt-1 text-left" />
+                </div>
+                <div>
+                  <Label className="text-slate-600">العنوان التفصيلي (عربي)</Label>
                   <Input value={editForm.address} onChange={(e) => setEditForm({...editForm, address: e.target.value})} className="mt-1" />
+                </div>
+                <div>
+                  <Label className="text-slate-600">Address (English)</Label>
+                  <Input value={editForm.addressEn} onChange={(e) => setEditForm({...editForm, addressEn: e.target.value})} dir="ltr" className="mt-1 text-left" />
                 </div>
                 <div className="md:col-span-2">
                   <Label className="text-slate-600">رابط الفيديو (YouTube أو غيره)</Label>

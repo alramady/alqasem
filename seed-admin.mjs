@@ -2,6 +2,7 @@ import { drizzle } from "drizzle-orm/mysql2";
 import { sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import dotenv from "dotenv";
+import crypto from "crypto";
 dotenv.config();
 
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -11,7 +12,16 @@ const db = drizzle(DATABASE_URL);
 
 async function seedAdmin() {
   console.log("🔐 Seeding root admin account...");
-  const passwordHash = await bcrypt.hash("Hobart", 12);
+  
+  // Use ADMIN_PASSWORD env var, or generate a random secure password
+  let adminPassword = process.env.ADMIN_PASSWORD;
+  let wasGenerated = false;
+  if (!adminPassword) {
+    adminPassword = crypto.randomBytes(16).toString("base64url").slice(0, 20);
+    wasGenerated = true;
+  }
+  
+  const passwordHash = await bcrypt.hash(adminPassword, 12);
   
   await db.execute(sql`
     INSERT INTO users (openId, username, passwordHash, displayName, name, fullName, email, phone, role, userStatus, loginMethod)
@@ -19,7 +29,14 @@ async function seedAdmin() {
     ON DUPLICATE KEY UPDATE passwordHash = ${passwordHash}, role = 'admin', userStatus = 'active'
   `);
   
-  console.log("  ✅ Root admin account seeded (username: admin, password: Hobart)");
+  if (wasGenerated) {
+    console.log(`  ✅ Root admin account seeded (username: admin)`);
+    console.log(`  🔑 Generated password: ${adminPassword}`);
+    console.log(`  ⚠️  Save this password securely! It will not be shown again.`);
+    console.log(`  💡 Tip: Set ADMIN_PASSWORD env var before running this script to use a custom password.`);
+  } else {
+    console.log(`  ✅ Root admin account seeded (username: admin, password from ADMIN_PASSWORD env var)`);
+  }
   
   // Also seed permissions for all roles
   console.log("🔑 Seeding permissions...");

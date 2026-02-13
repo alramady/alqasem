@@ -91,5 +91,17 @@
 - [x] Card-based layouts with hover animations
 
 ## Export & GitHub Update
-- [ ] Export entire project as zip file
-- [ ] Update GitHub repository with latest code
+- [x] Export entire project as zip file
+- [x] Update GitHub repository with latest code
+
+## Bug Fixes & Security Hardening (Audit)
+- [x] Fix #1: PropertyDetail.tsx — replace hardcoded data with tRPC DB query
+- [x] Fix #2: Wire bilingual English fields into admin CRUD (properties + projects)
+- [x] Fix #3: Remove hardcoded admin password from seed file
+- [x] Fix #4: Add rate limiting (global, auth, forms)
+- [x] Fix #5: Add input sanitization / XSS prevention with DOMPurify
+- [x] Fix #6: Add CORS configuration
+- [x] Fix #7: Reduce JWT session expiry from 1 year to 24 hours
+- [x] Fix #8: Add database indexes and push migration
+- [x] Fix #9: Optimize dashboard N+1 queries
+- [x] Verify all existing tests still pass after fixes
