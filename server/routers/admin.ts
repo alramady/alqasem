@@ -1,7 +1,7 @@
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import bcrypt from "bcryptjs";
 import { sdk } from "../_core/sdk";
-import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+import { COOKIE_NAME, SESSION_EXPIRY_MS } from "@shared/const";
 import { getSessionCookieOptions } from "../_core/cookies";
 import { getDb } from "../db";
 import {
@@ -13,6 +13,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { storagePut } from "../storage";
 import { nanoid } from "nanoid";
+import { sanitizeText, sanitizeHtml, sanitizeObject } from "../sanitize";
 
 // Helper to log audit events with before/after tracking
 async function logAudit(userId: number | null, userName: string | null, action: string, entityType: string, entityId: number | null, details: any, oldValues?: any, newValues?: any) {
@@ -99,7 +100,7 @@ export const adminRouter = router({
 
     // Create JWT session token
     const token = await sdk.createSessionToken(user.openId, {
-      expiresInMs: ONE_YEAR_MS,
+      expiresInMs: SESSION_EXPIRY_MS,
       name: user.displayName || user.name || user.fullName || user.username || "",
     });
 
@@ -107,7 +108,7 @@ export const adminRouter = router({
     const cookieOptions = getSessionCookieOptions(ctx.req);
     ctx.res.cookie(COOKIE_NAME, token, {
       ...cookieOptions,
-      maxAge: ONE_YEAR_MS,
+      maxAge: SESSION_EXPIRY_MS,
     });
 
     await logAudit(user.id, user.displayName || user.name || user.username, "login", "user", user.id, { method: "local", username: input.username }, null, null);
@@ -222,12 +223,23 @@ export const adminRouter = router({
     const recentActivity = await db.select().from(auditLogs).orderBy(desc(auditLogs.createdAt)).limit(15);
 
     const months = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+    // Optimized: single query instead of 6 separate queries (N+1 fix)
+    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+    const monthlyData = await db.select({
+      yearMonth: sql<string>`DATE_FORMAT(${inquiries.createdAt}, '%Y-%m')`,
+      monthNum: sql<number>`MONTH(${inquiries.createdAt})`,
+      cnt: count(),
+    }).from(inquiries)
+      .where(sql`${inquiries.createdAt} >= ${sixMonthsAgo}`)
+      .groupBy(sql`DATE_FORMAT(${inquiries.createdAt}, '%Y-%m')`, sql`MONTH(${inquiries.createdAt})`)
+      .orderBy(sql`DATE_FORMAT(${inquiries.createdAt}, '%Y-%m')`);
+    
+    const monthlyMap = new Map(monthlyData.map(r => [r.yearMonth, r.cnt]));
     const inquiriesByMonth = [];
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const dEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59);
-      const [c] = await db.select({ count: count() }).from(inquiries).where(and(sql`${inquiries.createdAt} >= ${d}`, sql`${inquiries.createdAt} <= ${dEnd}`));
-      inquiriesByMonth.push({ month: months[d.getMonth()], count: c.count });
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      inquiriesByMonth.push({ month: months[d.getMonth()], count: monthlyMap.get(key) || 0 });
     }
 
     const typeResults = await db.select({ type: properties.type, count: count() }).from(properties).where(isNull(properties.deletedAt)).groupBy(properties.type);
@@ -384,21 +396,28 @@ export const adminRouter = router({
   }),
 
   createProperty: protectedProcedure.input(z.object({
-    title: z.string().min(1), description: z.string().optional(), type: z.string(), listingType: z.string(),
+    title: z.string().min(1), titleEn: z.string().optional(), description: z.string().optional(), descriptionEn: z.string().optional(),
+    type: z.string(), listingType: z.string(),
     status: z.string().optional(), price: z.number(), area: z.number(), rooms: z.number(), bathrooms: z.number(),
-    city: z.string().optional(), district: z.string().optional(), address: z.string().optional(),
+    city: z.string().optional(), cityEn: z.string().optional(), district: z.string().optional(), districtEn: z.string().optional(),
+    address: z.string().optional(), addressEn: z.string().optional(),
     videoUrl: z.string().optional(), images: z.array(z.string()).optional(), features: z.array(z.string()).optional(),
   })).mutation(async ({ input, ctx }) => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    // Sanitize all text inputs to prevent XSS
+    const s = sanitizeObject(input, ["description", "descriptionEn"]);
     const [result] = await db.insert(properties).values({
-      title: input.title, description: input.description || null,
-      type: input.type as any, listingType: input.listingType as any,
-      status: (input.status || "active") as any,
+      title: s.title, titleEn: s.titleEn || null,
+      description: s.description || null, descriptionEn: s.descriptionEn || null,
+      type: s.type as any, listingType: s.listingType as any,
+      status: (s.status || "active") as any,
       price: input.price.toString(), area: input.area.toString(),
       rooms: input.rooms, bathrooms: input.bathrooms,
-      city: input.city || "الرياض", district: input.district || null,
-      address: input.address || null, videoUrl: input.videoUrl || null,
+      city: s.city || "الرياض", cityEn: s.cityEn || null,
+      district: s.district || null, districtEn: s.districtEn || null,
+      address: s.address || null, addressEn: s.addressEn || null,
+      videoUrl: s.videoUrl || null,
       images: input.images || null, features: input.features || null,
       createdBy: ctx.user.id,
     });
@@ -408,18 +427,24 @@ export const adminRouter = router({
   }),
 
   updateProperty: protectedProcedure.input(z.object({
-    id: z.number(), title: z.string().optional(), description: z.string().optional(),
+    id: z.number(), title: z.string().optional(), titleEn: z.string().optional(),
+    description: z.string().optional(), descriptionEn: z.string().optional(),
     type: z.string().optional(), listingType: z.string().optional(), status: z.string().optional(),
     price: z.number().optional(), area: z.number().optional(), rooms: z.number().optional(), bathrooms: z.number().optional(),
-    city: z.string().optional(), district: z.string().optional(), address: z.string().optional(),
+    city: z.string().optional(), cityEn: z.string().optional(), district: z.string().optional(), districtEn: z.string().optional(),
+    address: z.string().optional(), addressEn: z.string().optional(),
     videoUrl: z.string().optional(), images: z.array(z.string()).optional(), features: z.array(z.string()).optional(),
   })).mutation(async ({ input, ctx }) => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
     const [oldProp] = await db.select().from(properties).where(eq(properties.id, input.id));
+    // Sanitize text inputs
+    const s = sanitizeObject(input, ["description", "descriptionEn"]);
     const updateData: any = {};
-    if (input.title !== undefined) updateData.title = input.title;
-    if (input.description !== undefined) updateData.description = input.description;
+    if (s.title !== undefined) updateData.title = s.title;
+    if (s.titleEn !== undefined) updateData.titleEn = s.titleEn;
+    if (s.description !== undefined) updateData.description = s.description;
+    if (s.descriptionEn !== undefined) updateData.descriptionEn = s.descriptionEn;
     if (input.type !== undefined) updateData.type = input.type;
     if (input.listingType !== undefined) updateData.listingType = input.listingType;
     if (input.status !== undefined) updateData.status = input.status;
@@ -427,10 +452,13 @@ export const adminRouter = router({
     if (input.area !== undefined) updateData.area = input.area.toString();
     if (input.rooms !== undefined) updateData.rooms = input.rooms;
     if (input.bathrooms !== undefined) updateData.bathrooms = input.bathrooms;
-    if (input.city !== undefined) updateData.city = input.city;
-    if (input.district !== undefined) updateData.district = input.district;
-    if (input.address !== undefined) updateData.address = input.address;
-    if (input.videoUrl !== undefined) updateData.videoUrl = input.videoUrl;
+    if (s.city !== undefined) updateData.city = s.city;
+    if (s.cityEn !== undefined) updateData.cityEn = s.cityEn;
+    if (s.district !== undefined) updateData.district = s.district;
+    if (s.districtEn !== undefined) updateData.districtEn = s.districtEn;
+    if (s.address !== undefined) updateData.address = s.address;
+    if (s.addressEn !== undefined) updateData.addressEn = s.addressEn;
+    if (s.videoUrl !== undefined) updateData.videoUrl = s.videoUrl;
     if (input.images !== undefined) updateData.images = input.images;
     if (input.features !== undefined) updateData.features = input.features;
     await db.update(properties).set(updateData).where(eq(properties.id, input.id));
@@ -568,17 +596,24 @@ export const adminRouter = router({
   }),
 
   createProject: protectedProcedure.input(z.object({
-    title: z.string().min(1), subtitle: z.string().optional(), description: z.string().optional(),
-    location: z.string().optional(), status: z.string().optional(),
+    title: z.string().min(1), titleEn: z.string().optional(),
+    subtitle: z.string().optional(), subtitleEn: z.string().optional(),
+    description: z.string().optional(), descriptionEn: z.string().optional(),
+    location: z.string().optional(), locationEn: z.string().optional(),
+    status: z.string().optional(),
     totalUnits: z.number().optional(), soldUnits: z.number().optional(),
     videoUrl: z.string().optional(), isFeatured: z.boolean().optional(),
     latitude: z.number().optional(), longitude: z.number().optional(),
   })).mutation(async ({ input, ctx }) => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const s = sanitizeObject(input, ["description", "descriptionEn"]);
     await db.insert(projects).values({
-      title: input.title, subtitle: input.subtitle || null, description: input.description || null,
-      location: input.location || null, status: (input.status || "active") as any,
+      title: s.title, titleEn: s.titleEn || null,
+      subtitle: s.subtitle || null, subtitleEn: s.subtitleEn || null,
+      description: s.description || null, descriptionEn: s.descriptionEn || null,
+      location: s.location || null, locationEn: s.locationEn || null,
+      status: (input.status || "active") as any,
       totalUnits: input.totalUnits || 0, soldUnits: input.soldUnits || 0,
       videoUrl: input.videoUrl || null, isFeatured: input.isFeatured || false,
       latitude: input.latitude ? String(input.latitude) : null,
@@ -589,8 +624,11 @@ export const adminRouter = router({
   }),
 
   updateProject: protectedProcedure.input(z.object({
-    id: z.number(), title: z.string().optional(), subtitle: z.string().optional(),
-    description: z.string().optional(), location: z.string().optional(), status: z.string().optional(),
+    id: z.number(), title: z.string().optional(), titleEn: z.string().optional(),
+    subtitle: z.string().optional(), subtitleEn: z.string().optional(),
+    description: z.string().optional(), descriptionEn: z.string().optional(),
+    location: z.string().optional(), locationEn: z.string().optional(),
+    status: z.string().optional(),
     totalUnits: z.number().optional(), soldUnits: z.number().optional(),
     videoUrl: z.string().optional(), isFeatured: z.boolean().optional(), displayOrder: z.number().optional(),
     latitude: z.number().optional(), longitude: z.number().optional(),
@@ -598,11 +636,16 @@ export const adminRouter = router({
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
     const [oldProj] = await db.select().from(projects).where(eq(projects.id, input.id));
+    const s = sanitizeObject(input, ["description", "descriptionEn"]);
     const updateData: any = {};
-    if (input.title !== undefined) updateData.title = input.title;
-    if (input.subtitle !== undefined) updateData.subtitle = input.subtitle;
-    if (input.description !== undefined) updateData.description = input.description;
-    if (input.location !== undefined) updateData.location = input.location;
+    if (s.title !== undefined) updateData.title = s.title;
+    if (s.titleEn !== undefined) updateData.titleEn = s.titleEn;
+    if (s.subtitle !== undefined) updateData.subtitle = s.subtitle;
+    if (s.subtitleEn !== undefined) updateData.subtitleEn = s.subtitleEn;
+    if (s.description !== undefined) updateData.description = s.description;
+    if (s.descriptionEn !== undefined) updateData.descriptionEn = s.descriptionEn;
+    if (s.location !== undefined) updateData.location = s.location;
+    if (s.locationEn !== undefined) updateData.locationEn = s.locationEn;
     if (input.status !== undefined) updateData.status = input.status;
     if (input.totalUnits !== undefined) updateData.totalUnits = input.totalUnits;
     if (input.soldUnits !== undefined) updateData.soldUnits = input.soldUnits;

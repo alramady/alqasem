@@ -19,11 +19,13 @@ export default function AdminProjects() {
   const [showCreate, setShowCreate] = useState(false);
   const [editProject, setEditProject] = useState<any>(null);
   const [form, setForm] = useState({
-    title: "", subtitle: "", description: "", location: "", status: "active",
+    title: "", titleEn: "", subtitle: "", subtitleEn: "", description: "", descriptionEn: "",
+    location: "", locationEn: "", status: "active",
     totalUnits: "", soldUnits: "", videoUrl: "", isFeatured: false,
   });
   const [editForm, setEditForm] = useState({
-    title: "", subtitle: "", description: "", location: "", status: "active",
+    title: "", titleEn: "", subtitle: "", subtitleEn: "", description: "", descriptionEn: "",
+    location: "", locationEn: "", status: "active",
     totalUnits: "", soldUnits: "", videoUrl: "", isFeatured: false,
   });
 
@@ -32,7 +34,7 @@ export default function AdminProjects() {
     onSuccess: () => {
       toast.success("تم إضافة المشروع");
       setShowCreate(false);
-      setForm({ title: "", subtitle: "", description: "", location: "", status: "active", totalUnits: "", soldUnits: "", videoUrl: "", isFeatured: false });
+      setForm({ title: "", titleEn: "", subtitle: "", subtitleEn: "", description: "", descriptionEn: "", location: "", locationEn: "", status: "active", totalUnits: "", soldUnits: "", videoUrl: "", isFeatured: false });
       refetch();
     },
     onError: (err: any) => toast.error(err.message),
@@ -49,8 +51,11 @@ export default function AdminProjects() {
   const openEdit = (p: any) => {
     setEditProject(p);
     setEditForm({
-      title: p.title || "", subtitle: p.subtitle || "", description: p.description || "",
-      location: p.location || "", status: p.status || "active",
+      title: p.title || "", titleEn: p.titleEn || "",
+      subtitle: p.subtitle || "", subtitleEn: p.subtitleEn || "",
+      description: p.description || "", descriptionEn: p.descriptionEn || "",
+      location: p.location || "", locationEn: p.locationEn || "",
+      status: p.status || "active",
       totalUnits: String(p.totalUnits || ""), soldUnits: String(p.soldUnits || ""),
       videoUrl: p.videoUrl || "", isFeatured: !!p.isFeatured,
     });
@@ -60,10 +65,10 @@ export default function AdminProjects() {
     if (!editProject) return;
     updateProject.mutate({
       id: editProject.id,
-      title: editForm.title || undefined,
-      subtitle: editForm.subtitle || undefined,
-      description: editForm.description || undefined,
-      location: editForm.location || undefined,
+      title: editForm.title || undefined, titleEn: editForm.titleEn || undefined,
+      subtitle: editForm.subtitle || undefined, subtitleEn: editForm.subtitleEn || undefined,
+      description: editForm.description || undefined, descriptionEn: editForm.descriptionEn || undefined,
+      location: editForm.location || undefined, locationEn: editForm.locationEn || undefined,
       status: editForm.status || undefined,
       totalUnits: editForm.totalUnits ? parseInt(editForm.totalUnits) : undefined,
       soldUnits: editForm.soldUnits ? parseInt(editForm.soldUnits) : undefined,
@@ -88,10 +93,14 @@ export default function AdminProjects() {
             <DialogContent dir="rtl" className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader><DialogTitle className="text-slate-800">إضافة مشروع جديد</DialogTitle></DialogHeader>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <div className="md:col-span-2"><Label className="text-slate-600">اسم المشروع</Label><Input value={form.title} onChange={(e) => setForm({...form, title: e.target.value})} className="mt-1" /></div>
-                <div className="md:col-span-2"><Label className="text-slate-600">العنوان الفرعي</Label><Input value={form.subtitle} onChange={(e) => setForm({...form, subtitle: e.target.value})} className="mt-1" /></div>
-                <div className="md:col-span-2"><Label className="text-slate-600">الوصف</Label><Textarea value={form.description} onChange={(e) => setForm({...form, description: e.target.value})} rows={3} className="mt-1" /></div>
-                <div><Label className="text-slate-600">الموقع</Label><Input value={form.location} onChange={(e) => setForm({...form, location: e.target.value})} className="mt-1" /></div>
+                <div className="md:col-span-2"><Label className="text-slate-600">اسم المشروع (عربي)</Label><Input value={form.title} onChange={(e) => setForm({...form, title: e.target.value})} className="mt-1" /></div>
+                <div className="md:col-span-2"><Label className="text-slate-600">Project Name (English)</Label><Input value={form.titleEn} onChange={(e) => setForm({...form, titleEn: e.target.value})} dir="ltr" className="mt-1 text-left" /></div>
+                <div className="md:col-span-2"><Label className="text-slate-600">العنوان الفرعي (عربي)</Label><Input value={form.subtitle} onChange={(e) => setForm({...form, subtitle: e.target.value})} className="mt-1" /></div>
+                <div className="md:col-span-2"><Label className="text-slate-600">Subtitle (English)</Label><Input value={form.subtitleEn} onChange={(e) => setForm({...form, subtitleEn: e.target.value})} dir="ltr" className="mt-1 text-left" /></div>
+                <div className="md:col-span-2"><Label className="text-slate-600">الوصف (عربي)</Label><Textarea value={form.description} onChange={(e) => setForm({...form, description: e.target.value})} rows={3} className="mt-1" /></div>
+                <div className="md:col-span-2"><Label className="text-slate-600">Description (English)</Label><Textarea value={form.descriptionEn} onChange={(e) => setForm({...form, descriptionEn: e.target.value})} rows={3} dir="ltr" className="mt-1 text-left" /></div>
+                <div><Label className="text-slate-600">الموقع (عربي)</Label><Input value={form.location} onChange={(e) => setForm({...form, location: e.target.value})} className="mt-1" /></div>
+                <div><Label className="text-slate-600">Location (English)</Label><Input value={form.locationEn} onChange={(e) => setForm({...form, locationEn: e.target.value})} dir="ltr" className="mt-1 text-left" /></div>
                 <div>
                   <Label className="text-slate-600">الحالة</Label>
                   <Select value={form.status} onValueChange={(v) => setForm({...form, status: v})}>
@@ -210,10 +219,14 @@ export default function AdminProjects() {
 
             <TabsContent value="details" className="mt-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2"><Label className="text-slate-600">اسم المشروع</Label><Input value={editForm.title} onChange={(e) => setEditForm({...editForm, title: e.target.value})} className="mt-1" /></div>
-                <div className="md:col-span-2"><Label className="text-slate-600">العنوان الفرعي</Label><Input value={editForm.subtitle} onChange={(e) => setEditForm({...editForm, subtitle: e.target.value})} className="mt-1" /></div>
-                <div className="md:col-span-2"><Label className="text-slate-600">الوصف</Label><Textarea value={editForm.description} onChange={(e) => setEditForm({...editForm, description: e.target.value})} rows={4} className="mt-1" /></div>
-                <div><Label className="text-slate-600">الموقع</Label><Input value={editForm.location} onChange={(e) => setEditForm({...editForm, location: e.target.value})} className="mt-1" /></div>
+                <div className="md:col-span-2"><Label className="text-slate-600">اسم المشروع (عربي)</Label><Input value={editForm.title} onChange={(e) => setEditForm({...editForm, title: e.target.value})} className="mt-1" /></div>
+                <div className="md:col-span-2"><Label className="text-slate-600">Project Name (English)</Label><Input value={editForm.titleEn} onChange={(e) => setEditForm({...editForm, titleEn: e.target.value})} dir="ltr" className="mt-1 text-left" /></div>
+                <div className="md:col-span-2"><Label className="text-slate-600">العنوان الفرعي (عربي)</Label><Input value={editForm.subtitle} onChange={(e) => setEditForm({...editForm, subtitle: e.target.value})} className="mt-1" /></div>
+                <div className="md:col-span-2"><Label className="text-slate-600">Subtitle (English)</Label><Input value={editForm.subtitleEn} onChange={(e) => setEditForm({...editForm, subtitleEn: e.target.value})} dir="ltr" className="mt-1 text-left" /></div>
+                <div className="md:col-span-2"><Label className="text-slate-600">الوصف (عربي)</Label><Textarea value={editForm.description} onChange={(e) => setEditForm({...editForm, description: e.target.value})} rows={4} className="mt-1" /></div>
+                <div className="md:col-span-2"><Label className="text-slate-600">Description (English)</Label><Textarea value={editForm.descriptionEn} onChange={(e) => setEditForm({...editForm, descriptionEn: e.target.value})} rows={4} dir="ltr" className="mt-1 text-left" /></div>
+                <div><Label className="text-slate-600">الموقع (عربي)</Label><Input value={editForm.location} onChange={(e) => setEditForm({...editForm, location: e.target.value})} className="mt-1" /></div>
+                <div><Label className="text-slate-600">Location (English)</Label><Input value={editForm.locationEn} onChange={(e) => setEditForm({...editForm, locationEn: e.target.value})} dir="ltr" className="mt-1 text-left" /></div>
                 <div>
                   <Label className="text-slate-600">الحالة</Label>
                   <Select value={editForm.status} onValueChange={(v) => setEditForm({...editForm, status: v})}>
