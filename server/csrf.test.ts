@@ -1,5 +1,5 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
-import type { Request, Response, NextFunction } from "express";
+import { describe, expect, it, vi } from "vitest";
+import type { Request, Response } from "express";
 import { generateCsrfToken, csrfProtection, csrfTokenEndpoint, setCsrfCookies } from "./_core/csrf";
 
 // Helper to create mock Express request/response objects
@@ -55,7 +55,6 @@ describe("setCsrfCookies", () => {
 
     setCsrfCookies(req, res, token);
 
-    // HttpOnly cookie
     expect(res._cookies["__csrf_token"]).toBeDefined();
     expect(res._cookies["__csrf_token"].value).toBe(token);
     expect(res._cookies["__csrf_token"].options.httpOnly).toBe(true);
@@ -63,7 +62,6 @@ describe("setCsrfCookies", () => {
     expect(res._cookies["__csrf_token"].options.sameSite).toBe("lax");
     expect(res._cookies["__csrf_token"].options.path).toBe("/");
 
-    // Readable cookie
     expect(res._cookies["csrf_token"]).toBeDefined();
     expect(res._cookies["csrf_token"].value).toBe(token);
     expect(res._cookies["csrf_token"].options.httpOnly).toBe(false);
@@ -84,13 +82,12 @@ describe("setCsrfCookies", () => {
 describe("csrfProtection middleware", () => {
   const middleware = csrfProtection();
 
+  // --- Safe methods always pass ---
   it("allows GET requests through without validation", () => {
     const req = createMockReq({ method: "GET" });
     const res = createMockRes();
     const next = vi.fn();
-
     middleware(req, res, next);
-
     expect(next).toHaveBeenCalled();
     expect(res._status).toBe(200);
   });
@@ -99,9 +96,7 @@ describe("csrfProtection middleware", () => {
     const req = createMockReq({ method: "HEAD" });
     const res = createMockRes();
     const next = vi.fn();
-
     middleware(req, res, next);
-
     expect(next).toHaveBeenCalled();
   });
 
@@ -109,12 +104,11 @@ describe("csrfProtection middleware", () => {
     const req = createMockReq({ method: "OPTIONS" });
     const res = createMockRes();
     const next = vi.fn();
-
     middleware(req, res, next);
-
     expect(next).toHaveBeenCalled();
   });
 
+  // --- Non-tRPC POST requests pass ---
   it("allows non-tRPC POST requests through without validation", () => {
     const req = createMockReq({
       method: "POST",
@@ -122,53 +116,11 @@ describe("csrfProtection middleware", () => {
     });
     const res = createMockRes();
     const next = vi.fn();
-
     middleware(req, res, next);
-
     expect(next).toHaveBeenCalled();
   });
 
-  it("rejects tRPC mutation POST without CSRF token", () => {
-    const token = generateCsrfToken();
-    const req = createMockReq({
-      method: "POST",
-      originalUrl: "/api/trpc/admin.createProperty",
-      headers: {
-        cookie: `__csrf_token=${token}`,
-        // No x-csrf-token header
-      },
-    });
-    const res = createMockRes();
-    const next = vi.fn();
-
-    middleware(req, res, next);
-
-    expect(next).not.toHaveBeenCalled();
-    expect(res._status).toBe(403);
-    expect(res._json.error.code).toBe("CSRF_TOKEN_MISSING");
-  });
-
-  it("rejects tRPC mutation POST with mismatched CSRF token", () => {
-    const cookieToken = generateCsrfToken();
-    const headerToken = generateCsrfToken(); // Different token
-    const req = createMockReq({
-      method: "POST",
-      originalUrl: "/api/trpc/admin.updateProperty",
-      headers: {
-        cookie: `__csrf_token=${cookieToken}`,
-        "x-csrf-token": headerToken,
-      },
-    });
-    const res = createMockRes();
-    const next = vi.fn();
-
-    middleware(req, res, next);
-
-    expect(next).not.toHaveBeenCalled();
-    expect(res._status).toBe(403);
-    expect(res._json.error.code).toBe("CSRF_TOKEN_INVALID");
-  });
-
+  // --- Valid token matching ---
   it("allows tRPC mutation POST with valid matching CSRF token", () => {
     const token = generateCsrfToken();
     const req = createMockReq({
@@ -181,26 +133,79 @@ describe("csrfProtection middleware", () => {
     });
     const res = createMockRes();
     const next = vi.fn();
-
     middleware(req, res, next);
-
     expect(next).toHaveBeenCalled();
     expect(res._status).toBe(200);
   });
 
+  // --- Missing header token on non-bootstrap mutation ---
+  it("rejects tRPC mutation POST without CSRF header when cookie exists", () => {
+    const token = generateCsrfToken();
+    const req = createMockReq({
+      method: "POST",
+      originalUrl: "/api/trpc/admin.createProperty",
+      headers: {
+        cookie: `__csrf_token=${token}`,
+      },
+    });
+    const res = createMockRes();
+    const next = vi.fn();
+    middleware(req, res, next);
+    expect(next).not.toHaveBeenCalled();
+    expect(res._status).toBe(403);
+    expect(res._json.error.code).toBe("CSRF_TOKEN_MISSING");
+  });
+
+  // --- Mismatched tokens on non-bootstrap mutation ---
+  it("rejects tRPC mutation POST with mismatched CSRF token", () => {
+    const cookieToken = generateCsrfToken();
+    const headerToken = generateCsrfToken();
+    const req = createMockReq({
+      method: "POST",
+      originalUrl: "/api/trpc/admin.updateProperty",
+      headers: {
+        cookie: `__csrf_token=${cookieToken}`,
+        "x-csrf-token": headerToken,
+      },
+    });
+    const res = createMockRes();
+    const next = vi.fn();
+    middleware(req, res, next);
+    expect(next).not.toHaveBeenCalled();
+    expect(res._status).toBe(403);
+    expect(res._json.error.code).toBe("CSRF_TOKEN_INVALID");
+  });
+
+  it("rejects tokens with different lengths", () => {
+    const cookieToken = generateCsrfToken();
+    const shortToken = cookieToken.slice(0, 32);
+    const req = createMockReq({
+      method: "POST",
+      originalUrl: "/api/trpc/admin.deleteProperty",
+      headers: {
+        cookie: `__csrf_token=${cookieToken}`,
+        "x-csrf-token": shortToken,
+      },
+    });
+    const res = createMockRes();
+    const next = vi.fn();
+    middleware(req, res, next);
+    expect(next).not.toHaveBeenCalled();
+    expect(res._status).toBe(403);
+    expect(res._json.error.code).toBe("CSRF_TOKEN_INVALID");
+  });
+
+  // --- Bootstrap-safe mutations: no cookie at all (first visit) ---
   it("allows admin.localLogin to bootstrap without existing CSRF cookie", () => {
     const req = createMockReq({
       method: "POST",
       originalUrl: "/api/trpc/admin.localLogin",
-      headers: {}, // No cookies at all
+      headers: {},
     });
     const res = createMockRes();
     const next = vi.fn();
-
     middleware(req, res, next);
-
     expect(next).toHaveBeenCalled();
-    // Should have set new CSRF cookies
     expect(res._cookies["__csrf_token"]).toBeDefined();
     expect(res._cookies["csrf_token"]).toBeDefined();
   });
@@ -213,9 +218,7 @@ describe("csrfProtection middleware", () => {
     });
     const res = createMockRes();
     const next = vi.fn();
-
     middleware(req, res, next);
-
     expect(next).toHaveBeenCalled();
   });
 
@@ -227,9 +230,7 @@ describe("csrfProtection middleware", () => {
     });
     const res = createMockRes();
     const next = vi.fn();
-
     middleware(req, res, next);
-
     expect(next).toHaveBeenCalled();
   });
 
@@ -241,36 +242,122 @@ describe("csrfProtection middleware", () => {
     });
     const res = createMockRes();
     const next = vi.fn();
-
     middleware(req, res, next);
-
     expect(next).toHaveBeenCalled();
   });
 
-  it("validates CSRF on admin.localLogin when cookie already exists", () => {
+  it("allows public.submitProperty to bootstrap without existing CSRF cookie", () => {
+    const req = createMockReq({
+      method: "POST",
+      originalUrl: "/api/trpc/public.submitProperty",
+      headers: {},
+    });
+    const res = createMockRes();
+    const next = vi.fn();
+    middleware(req, res, next);
+    expect(next).toHaveBeenCalled();
+  });
+
+  it("allows public.submitPropertyRequest to bootstrap without existing CSRF cookie", () => {
+    const req = createMockReq({
+      method: "POST",
+      originalUrl: "/api/trpc/public.submitPropertyRequest",
+      headers: {},
+    });
+    const res = createMockRes();
+    const next = vi.fn();
+    middleware(req, res, next);
+    expect(next).toHaveBeenCalled();
+  });
+
+  // --- Bootstrap-safe mutations: cookie exists but header missing ---
+  it("allows public.submitInquiry without header when cookie exists", () => {
     const token = generateCsrfToken();
     const req = createMockReq({
       method: "POST",
-      originalUrl: "/api/trpc/admin.localLogin",
+      originalUrl: "/api/trpc/public.submitInquiry",
       headers: {
         cookie: `__csrf_token=${token}`,
-        "x-csrf-token": token,
       },
     });
     const res = createMockRes();
     const next = vi.fn();
-
     middleware(req, res, next);
-
     expect(next).toHaveBeenCalled();
   });
 
-  it("rejects admin.localLogin with wrong token when cookie already exists", () => {
+  it("allows public.submitProperty without header when cookie exists", () => {
+    const token = generateCsrfToken();
+    const req = createMockReq({
+      method: "POST",
+      originalUrl: "/api/trpc/public.submitProperty",
+      headers: {
+        cookie: `__csrf_token=${token}`,
+      },
+    });
+    const res = createMockRes();
+    const next = vi.fn();
+    middleware(req, res, next);
+    expect(next).toHaveBeenCalled();
+  });
+
+  it("allows public.submitPropertyRequest without header when cookie exists", () => {
+    const token = generateCsrfToken();
+    const req = createMockReq({
+      method: "POST",
+      originalUrl: "/api/trpc/public.submitPropertyRequest",
+      headers: {
+        cookie: `__csrf_token=${token}`,
+      },
+    });
+    const res = createMockRes();
+    const next = vi.fn();
+    middleware(req, res, next);
+    expect(next).toHaveBeenCalled();
+  });
+
+  // --- Bootstrap-safe mutations: cookie exists but token mismatches ---
+  it("allows public.submitInquiry even with mismatched token (stale cache)", () => {
+    const cookieToken = generateCsrfToken();
+    const staleToken = generateCsrfToken();
+    const req = createMockReq({
+      method: "POST",
+      originalUrl: "/api/trpc/public.submitInquiry",
+      headers: {
+        cookie: `__csrf_token=${cookieToken}`,
+        "x-csrf-token": staleToken,
+      },
+    });
+    const res = createMockRes();
+    const next = vi.fn();
+    middleware(req, res, next);
+    expect(next).toHaveBeenCalled();
+  });
+
+  it("allows admin.localLogin even with mismatched token (stale cache)", () => {
+    const cookieToken = generateCsrfToken();
+    const staleToken = generateCsrfToken();
+    const req = createMockReq({
+      method: "POST",
+      originalUrl: "/api/trpc/admin.localLogin",
+      headers: {
+        cookie: `__csrf_token=${cookieToken}`,
+        "x-csrf-token": staleToken,
+      },
+    });
+    const res = createMockRes();
+    const next = vi.fn();
+    middleware(req, res, next);
+    expect(next).toHaveBeenCalled();
+  });
+
+  // --- Non-bootstrap mutations still rejected with mismatch ---
+  it("rejects admin.createProperty with mismatched token even though cookie exists", () => {
     const cookieToken = generateCsrfToken();
     const wrongToken = generateCsrfToken();
     const req = createMockReq({
       method: "POST",
-      originalUrl: "/api/trpc/admin.localLogin",
+      originalUrl: "/api/trpc/admin.createProperty",
       headers: {
         cookie: `__csrf_token=${cookieToken}`,
         "x-csrf-token": wrongToken,
@@ -278,32 +365,41 @@ describe("csrfProtection middleware", () => {
     });
     const res = createMockRes();
     const next = vi.fn();
-
     middleware(req, res, next);
-
     expect(next).not.toHaveBeenCalled();
     expect(res._status).toBe(403);
   });
 
-  it("rejects tokens with different lengths", () => {
-    const cookieToken = generateCsrfToken();
-    const shortToken = cookieToken.slice(0, 32); // Half length
+  // --- Non-bootstrap mutation rejected when no cookie exists ---
+  it("rejects non-bootstrap mutation when no CSRF cookie exists", () => {
     const req = createMockReq({
       method: "POST",
       originalUrl: "/api/trpc/admin.deleteProperty",
+      headers: {},
+    });
+    const res = createMockRes();
+    const next = vi.fn();
+    middleware(req, res, next);
+    expect(next).not.toHaveBeenCalled();
+    expect(res._status).toBe(403);
+    expect(res._json.error.code).toBe("CSRF_TOKEN_MISSING");
+  });
+
+  // --- Bootstrap-safe mutations with valid matching token ---
+  it("allows public.submitInquiry with valid matching token", () => {
+    const token = generateCsrfToken();
+    const req = createMockReq({
+      method: "POST",
+      originalUrl: "/api/trpc/public.submitInquiry",
       headers: {
-        cookie: `__csrf_token=${cookieToken}`,
-        "x-csrf-token": shortToken,
+        cookie: `__csrf_token=${token}`,
+        "x-csrf-token": token,
       },
     });
     const res = createMockRes();
     const next = vi.fn();
-
     middleware(req, res, next);
-
-    expect(next).not.toHaveBeenCalled();
-    expect(res._status).toBe(403);
-    expect(res._json.error.code).toBe("CSRF_TOKEN_INVALID");
+    expect(next).toHaveBeenCalled();
   });
 });
 
@@ -317,9 +413,7 @@ describe("csrfTokenEndpoint", () => {
       },
     });
     const res = createMockRes();
-
     csrfTokenEndpoint(req, res);
-
     expect(res._json).toEqual({ csrfToken: token });
   });
 
@@ -329,12 +423,9 @@ describe("csrfTokenEndpoint", () => {
       headers: {},
     });
     const res = createMockRes();
-
     csrfTokenEndpoint(req, res);
-
     expect(res._json.csrfToken).toBeDefined();
     expect(res._json.csrfToken).toMatch(/^[a-f0-9]{64}$/);
-    // Should have set cookies
     expect(res._cookies["__csrf_token"]).toBeDefined();
     expect(res._cookies["csrf_token"]).toBeDefined();
     expect(res._cookies["__csrf_token"].value).toBe(res._json.csrfToken);

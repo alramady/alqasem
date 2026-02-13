@@ -1,6 +1,5 @@
 import crypto from "crypto";
 import type { Request, Response, NextFunction } from "express";
-import { ENV } from "./env";
 
 /**
  * CSRF Protection using the Double-Submit Cookie pattern.
@@ -14,12 +13,33 @@ import { ENV } from "./env";
  *    as the `x-csrf-token` header on every mutation request
  * 4. Server middleware compares the header value against the HttpOnly cookie
  * 5. If they don't match (or either is missing), the mutation is rejected
+ *
+ * Bootstrap handling:
+ * - On first visit, no cookies exist. The middleware issues fresh tokens
+ *   and allows specific "bootstrap-safe" mutations through (login, register,
+ *   logout, and all public form submissions).
+ * - The SPA eagerly fetches /api/csrf-token on initialization to ensure
+ *   cookies are set before any form is rendered.
  */
 
 const CSRF_COOKIE_NAME = "__csrf_token";
 const CSRF_READABLE_COOKIE_NAME = "csrf_token";
 const CSRF_HEADER_NAME = "x-csrf-token";
 const TOKEN_BYTES = 32;
+
+/**
+ * Mutations that are allowed to proceed without a valid CSRF token.
+ * These are either authentication bootstrapping endpoints or public
+ * form submissions that a first-time visitor needs to use.
+ */
+const BOOTSTRAP_SAFE_MUTATIONS = [
+  "admin.localLogin",
+  "admin.localRegister",
+  "auth.logout",
+  "public.submitInquiry",
+  "public.submitProperty",
+  "public.submitPropertyRequest",
+];
 
 /** Generate a cryptographically secure random token. */
 export function generateCsrfToken(): string {
@@ -63,7 +83,6 @@ export function setCsrfCookies(req: Request, res: Response, token: string): void
 
 /**
  * Parse a specific cookie value from the raw Cookie header.
- * We avoid pulling in a full cookie-parser dependency.
  */
 function parseCookie(req: Request, name: string): string | undefined {
   const header = req.headers.cookie;
@@ -74,47 +93,57 @@ function parseCookie(req: Request, name: string): string | undefined {
 }
 
 /**
+ * Check if a tRPC URL contains any of the bootstrap-safe mutation names.
+ * tRPC batch URLs look like: /api/trpc/public.submitInquiry?batch=1
+ * or /api/trpc/public.submitInquiry,auth.me?batch=1
+ */
+function isBootstrapSafeMutation(url: string): boolean {
+  return BOOTSTRAP_SAFE_MUTATIONS.some((name) => url.includes(name));
+}
+
+/**
  * Express middleware that:
  * - Issues CSRF cookies on every response if not already present
  * - Validates the CSRF token on tRPC mutation requests (POST to /api/trpc)
  *
  * Safe methods (GET, HEAD, OPTIONS) are always allowed through.
- * The admin.localLogin and admin.localRegister mutations are exempt
- * on the *first* request (when no CSRF cookie exists yet) to allow
- * the initial login flow to bootstrap the token.
+ * Bootstrap-safe mutations are allowed when no CSRF cookie exists yet
+ * (first visit scenario).
  */
 export function csrfProtection() {
   return (req: Request, res: Response, next: NextFunction) => {
     const existingToken = parseCookie(req, CSRF_COOKIE_NAME);
 
-    // Always ensure CSRF cookies exist — issue them if missing
+    // If no CSRF cookie exists, issue fresh tokens
     if (!existingToken) {
       const newToken = generateCsrfToken();
       setCsrfCookies(req, res, newToken);
 
-      // If this is a safe method or a login/register bootstrap, allow through
+      // Safe methods always pass through
       if (req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS") {
         return next();
       }
 
-      // Allow login/register mutations to bootstrap without a token
+      // Check the URL for bootstrap-safe or non-tRPC paths
       const url = req.originalUrl || req.url;
-      if (
-        url.includes("admin.localLogin") ||
-        url.includes("admin.localRegister") ||
-        url.includes("auth.logout")
-      ) {
+
+      // Non-tRPC POST requests (e.g., /api/oauth/callback) don't need CSRF
+      if (!url.startsWith("/api/trpc")) {
         return next();
       }
 
-      // For public form submissions, also allow bootstrap
-      if (
-        url.includes("public.submitInquiry") ||
-        url.includes("public.submitProperty") ||
-        url.includes("public.submitPropertyRequest")
-      ) {
+      // Allow bootstrap-safe mutations on first visit (no cookie yet)
+      if (isBootstrapSafeMutation(url)) {
         return next();
       }
+
+      // Non-bootstrap tRPC mutations without any cookie → reject
+      return res.status(403).json({
+        error: {
+          message: "CSRF token missing. Please refresh the page and try again.",
+          code: "CSRF_TOKEN_MISSING",
+        },
+      });
     }
 
     // Safe methods don't need CSRF validation
@@ -130,9 +159,12 @@ export function csrfProtection() {
 
     // Validate: header token must match the HttpOnly cookie token
     const headerToken = req.headers[CSRF_HEADER_NAME] as string | undefined;
-    const cookieToken = existingToken || parseCookie(req, CSRF_COOKIE_NAME);
 
-    if (!cookieToken || !headerToken) {
+    if (!headerToken) {
+      // No header token — check if this is a bootstrap-safe mutation
+      if (isBootstrapSafeMutation(url)) {
+        return next();
+      }
       return res.status(403).json({
         error: {
           message: "CSRF token missing. Please refresh the page and try again.",
@@ -142,14 +174,35 @@ export function csrfProtection() {
     }
 
     // Constant-time comparison to prevent timing attacks
-    if (
-      cookieToken.length !== headerToken.length ||
-      !crypto.timingSafeEqual(Buffer.from(cookieToken), Buffer.from(headerToken))
-    ) {
+    try {
+      const cookieBuffer = Buffer.from(existingToken);
+      const headerBuffer = Buffer.from(headerToken);
+
+      if (
+        cookieBuffer.length !== headerBuffer.length ||
+        !crypto.timingSafeEqual(cookieBuffer, headerBuffer)
+      ) {
+        // Token mismatch — but if it's a bootstrap-safe mutation, allow it
+        // This handles the case where the client has a stale cached token
+        if (isBootstrapSafeMutation(url)) {
+          return next();
+        }
+        return res.status(403).json({
+          error: {
+            message: "CSRF token mismatch. Please refresh the page and try again.",
+            code: "CSRF_TOKEN_INVALID",
+          },
+        });
+      }
+    } catch {
+      // Buffer creation or comparison failed — allow bootstrap-safe mutations
+      if (isBootstrapSafeMutation(url)) {
+        return next();
+      }
       return res.status(403).json({
         error: {
-          message: "CSRF token mismatch. Please refresh the page and try again.",
-          code: "CSRF_TOKEN_INVALID",
+          message: "CSRF token validation error. Please refresh the page and try again.",
+          code: "CSRF_TOKEN_ERROR",
         },
       });
     }

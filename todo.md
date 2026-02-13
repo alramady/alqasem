@@ -126,3 +126,8 @@
 - [x] Fix #4: Wire PropertyDetail inquiry form with tRPC mutation
 - [x] Fix #5: Verify and add composite database indexes in schema
 - [x] Run all tests and verify fixes
+
+## CSRF Token Bootstrap Fix
+- [x] Fix public form submissions failing with 'error 1' due to CSRF token mismatch on first visit
+- [x] Pre-fetch CSRF token on SPA initialization before any form renders
+- [x] Verify all public forms work on first visit without prior navigation
