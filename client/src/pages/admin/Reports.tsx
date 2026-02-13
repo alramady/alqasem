@@ -2,8 +2,9 @@ import AdminLayout from "@/components/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { trpc } from "@/lib/trpc";
-import { Download, BarChart3, TrendingUp, Building2, MessageSquare } from "lucide-react";
+import { Download, BarChart3, TrendingUp, Building2, MessageSquare, FileText, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
@@ -11,6 +12,23 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 export default function AdminReports() {
   const [period, setPeriod] = useState("month");
   const { data: reportData } = trpc.admin.getReportData.useQuery({ period });
+  const exportCSV = trpc.admin.exportReportCSV.useMutation({
+    onSuccess: (data) => {
+      if (!data.csv) {
+        toast.error("لا توجد بيانات للتصدير");
+        return;
+      }
+      const blob = new Blob([data.csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `report-${Date.now()}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("تم تصدير التقرير بنجاح");
+    },
+    onError: () => toast.error("فشل في تصدير التقرير"),
+  });
 
   return (
     <AdminLayout>
@@ -30,7 +48,26 @@ export default function AdminReports() {
                 <SelectItem value="year">سنوي</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" onClick={() => toast.info("ميزة التصدير قادمة قريباً")}><Download className="w-4 h-4 ml-2" />تصدير التقرير</Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" disabled={exportCSV.isPending}>
+                  <Download className="w-4 h-4 ml-2" />
+                  {exportCSV.isPending ? "جاري التصدير..." : "تصدير التقرير"}
+                  <ChevronDown className="w-3 h-3 mr-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => exportCSV.mutate({ type: "properties" })}>
+                  <Building2 className="w-4 h-4 ml-2" />تصدير العقارات (CSV)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => exportCSV.mutate({ type: "inquiries" })}>
+                  <MessageSquare className="w-4 h-4 ml-2" />تصدير الطلبات (CSV)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => exportCSV.mutate({ type: "audit" })}>
+                  <FileText className="w-4 h-4 ml-2" />تصدير سجل المراجعة (CSV)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 

@@ -2,14 +2,15 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { trpc } from "@/lib/trpc";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import {
-  Search, MapPin, BedDouble, Bath, Maximize, Heart,
+  Search, MapPin, BedDouble, Bath, Maximize, Heart, Scale,
   SlidersHorizontal, Grid3X3, List, ChevronDown, X,
   ChevronLeft, ChevronRight, Loader2, ArrowUpDown
 } from "lucide-react";
 import { Link, useSearch } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { toast } from "sonner";
 
 type PropertyType = "villa" | "apartment" | "land" | "commercial" | "office" | "building";
 type ListingType = "sale" | "rent";
@@ -54,7 +55,12 @@ export default function Properties() {
   const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [favorites, setFavorites] = useState<number[]>([]);
+  const [favorites, setFavorites] = useState<number[]>(() => {
+    try { return JSON.parse(localStorage.getItem("alqasim_favorites") || "[]"); } catch { return []; }
+  });
+  const [compareIds, setCompareIds] = useState<number[]>(() => {
+    try { return JSON.parse(localStorage.getItem("alqasim_compare") || "[]"); } catch { return []; }
+  });
 
   const handleSearchChange = useCallback((value: string) => {
     setQuery(value);
@@ -93,7 +99,30 @@ export default function Properties() {
 
   const toggleFav = (id: number, e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation();
-    setFavorites(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]);
+    setFavorites(prev => {
+      const updated = prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id];
+      localStorage.setItem("alqasim_favorites", JSON.stringify(updated));
+      toast.success(prev.includes(id) ? (isAr ? "تمت الإزالة من المفضلة" : "Removed from favorites") : (isAr ? "تمت الإضافة للمفضلة" : "Added to favorites"));
+      return updated;
+    });
+  };
+
+  const toggleCompare = (id: number, e: React.MouseEvent) => {
+    e.preventDefault(); e.stopPropagation();
+    setCompareIds(prev => {
+      if (prev.includes(id)) {
+        const updated = prev.filter(f => f !== id);
+        localStorage.setItem("alqasim_compare", JSON.stringify(updated));
+        return updated;
+      }
+      if (prev.length >= 4) {
+        toast.error(isAr ? "يمكنك مقارنة 4 عقارات كحد أقصى" : "You can compare up to 4 properties");
+        return prev;
+      }
+      const updated = [...prev, id];
+      localStorage.setItem("alqasim_compare", JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const propertyTypes: { value: PropertyType; label: string }[] = [
@@ -335,11 +364,16 @@ export default function Properties() {
                             <div className="absolute top-3 flex gap-2" style={{ insetInlineStart: '0.75rem' }}>
                               <span className={`px-3 py-1 rounded-full text-xs font-semibold ${badge.color}`}>{badge.label}</span>
                             </div>
-                            <button onClick={(e) => toggleFav(property.id, e)}
-                              className="absolute top-3 w-8 h-8 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors"
-                              style={{ insetInlineEnd: '0.75rem' }}>
-                              <Heart className={`w-4 h-4 ${favorites.includes(property.id) ? "fill-[#E31E24] text-[#E31E24]" : "text-gray-500"}`} />
-                            </button>
+                            <div className="absolute top-3 flex flex-col gap-1.5" style={{ insetInlineEnd: '0.75rem' }}>
+                              <button onClick={(e) => toggleFav(property.id, e)}
+                                className="w-8 h-8 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors">
+                                <Heart className={`w-4 h-4 ${favorites.includes(property.id) ? "fill-[#E31E24] text-[#E31E24]" : "text-gray-500"}`} />
+                              </button>
+                              <button onClick={(e) => toggleCompare(property.id, e)}
+                                className={`w-8 h-8 backdrop-blur-sm rounded-full flex items-center justify-center transition-colors ${compareIds.includes(property.id) ? "bg-[#c8a45e] text-[#0f1b33]" : "bg-white/80 hover:bg-white text-gray-500"}`}>
+                                <Scale className="w-4 h-4" />
+                              </button>
+                            </div>
                             {images.length > 1 && (
                               <div className="absolute bottom-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm" style={{ insetInlineEnd: '0.5rem' }}>
                                 {images.length} {isAr ? "صور" : "photos"}
@@ -437,6 +471,25 @@ export default function Properties() {
         </div>
       </section>
 
+      {/* Floating Compare Bar */}
+      <AnimatePresence>
+        {compareIds.length > 0 && (
+          <motion.div initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }} className="fixed bottom-0 left-0 right-0 z-50 bg-[#0f1b33] text-white py-3 px-4 shadow-2xl print:hidden">
+            <div className="container flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Scale className="w-5 h-5 text-[#c8a45e]" />
+                <span className="text-sm font-medium">{isAr ? `${compareIds.length} عقارات محددة للمقارنة` : `${compareIds.length} properties selected`}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <button onClick={() => { setCompareIds([]); localStorage.setItem("alqasim_compare", "[]"); }} className="text-xs text-white/60 hover:text-white transition-colors">{isAr ? "مسح الكل" : "Clear All"}</button>
+                <Link href="/compare" className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${compareIds.length >= 2 ? "bg-[#c8a45e] text-[#0f1b33] hover:bg-[#b8944e]" : "bg-white/10 text-white/40 cursor-not-allowed"}`}>
+                  {isAr ? "مقارنة الآن" : "Compare Now"}
+                </Link>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <Footer />
     </div>
   );

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Menu, X, Phone, Mail, ChevronDown, Globe } from "lucide-react";
+import { Menu, X, Phone, Mail, ChevronDown, Globe, Heart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useLocation } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -194,6 +194,13 @@ export default function Navbar() {
               <Globe className="w-3.5 h-3.5" />
               <span className="text-xs font-medium">{t("common.langCode")}</span>
             </button>
+            <Link
+              href="/favorites"
+              className="relative text-white/70 hover:text-[#E31E24] transition-colors p-2"
+              title={isAr ? "المفضلة" : "Favorites"}
+            >
+              <Heart className="w-5 h-5" />
+            </Link>
             <Link
               href="/add-property"
               className="hidden md:flex items-center gap-2 border border-[#c8a45e]/40 text-[#c8a45e] hover:bg-[#c8a45e] hover:text-[#0f1b33] font-semibold px-4 py-2 rounded-sm transition-all text-sm"

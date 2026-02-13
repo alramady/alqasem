@@ -1,8 +1,10 @@
-import { Phone, Mail, MapPin, ArrowUp } from "lucide-react";
+import { Phone, Mail, MapPin, ArrowUp, Send, Loader2 } from "lucide-react";
 import { Link } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
 import { trpc } from "@/lib/trpc";
+import { useState } from "react";
+import { toast } from "sonner";
 
 const DEFAULT_LOGO = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663331132774/BEtRgbusNNpRjAtj.png";
 
@@ -46,6 +48,29 @@ function FooterCMSPages({ isAr }: { isAr: boolean }) {
         );
       })}
     </>
+  );
+}
+
+function NewsletterForm() {
+  const { t } = useLanguage();
+  const [email, setEmail] = useState("");
+  const subscribe = trpc.public.subscribeNewsletter.useMutation({
+    onSuccess: () => {
+      toast.success(t("newsletter.success"));
+      setEmail("");
+    },
+    onError: (err) => {
+      toast.error(err.message);
+    },
+  });
+  return (
+    <form onSubmit={(e) => { e.preventDefault(); if (email.trim()) subscribe.mutate({ email: email.trim() }); }} className="flex gap-2 w-full md:w-auto">
+      <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("newsletter.placeholder")} required className="flex-1 md:w-64 px-4 py-3 bg-white/10 border border-white/10 rounded-lg text-white text-sm placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/50" dir="ltr" />
+      <button type="submit" disabled={subscribe.isPending} className="px-5 py-3 bg-[#c8a45e] hover:bg-[#b8944e] text-[#0f1b33] font-semibold rounded-lg transition-colors disabled:opacity-60 flex items-center gap-2">
+        {subscribe.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+        {t("newsletter.subscribe")}
+      </button>
+    </form>
   );
 }
 
@@ -165,6 +190,17 @@ export default function Footer() {
                 </a>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* Newsletter Subscription */}
+        <div className="bg-white/5 rounded-2xl p-6 md:p-8 mb-10">
+          <div className="flex flex-col md:flex-row items-center gap-6">
+            <div className="flex-1 text-center md:text-start">
+              <h4 className="text-white font-bold text-lg mb-1">{t("newsletter.title")}</h4>
+              <p className="text-white/50 text-sm">{t("newsletter.desc")}</p>
+            </div>
+            <NewsletterForm />
           </div>
         </div>
 

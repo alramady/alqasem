@@ -20,6 +20,8 @@ const ContactPage = lazy(() => import("./pages/Contact"));
 const AddPropertyPage = lazy(() => import("./pages/AddProperty"));
 const RequestPropertyPage = lazy(() => import("./pages/RequestProperty"));
 const CMSPage = lazy(() => import("./pages/CMSPage"));
+const FavoritesPage = lazy(() => import("./pages/Favorites"));
+const ComparePage = lazy(() => import("./pages/Compare"));
 
 // Lazy load admin pages
 const AdminLogin = lazy(() => import("./pages/admin/Login"));
@@ -100,6 +102,13 @@ function Router() {
       </Route>
       <Route path="/request-property">
         <Suspense fallback={<PageFallback />}><RequestPropertyPage /></Suspense>
+      </Route>
+
+      <Route path="/favorites">
+        <Suspense fallback={<PageFallback />}><FavoritesPage /></Suspense>
+      </Route>
+      <Route path="/compare">
+        <Suspense fallback={<PageFallback />}><ComparePage /></Suspense>
       </Route>
 
       {/* Dynamic CMS pages - catch-all for /page/:slug */}

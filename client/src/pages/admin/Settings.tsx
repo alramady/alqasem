@@ -133,9 +133,29 @@ export default function AdminSettings() {
                   قوالب البريد الإلكتروني
                 </CardTitle>
               </CardHeader>
-              <CardContent className="text-center py-12 text-slate-400">
-                <Mail className="w-10 h-10 mx-auto mb-3 text-slate-200" />
-                <p>ميزة قوالب البريد الإلكتروني قادمة قريباً</p>
+              <CardContent className="py-6 space-y-6">
+                <div className="space-y-4">
+                  <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                    <h3 className="font-semibold text-sm text-slate-700 mb-2">قالب إعادة تعيين كلمة المرور</h3>
+                    <p className="text-xs text-slate-400 mb-3">يُرسل عند طلب إعادة تعيين كلمة المرور. المتغيرات: {'{resetLink}'}, {'{userName}'}, {'{expiryTime}'}</p>
+                    <Textarea rows={4} defaultValue="مرحباً {userName},\n\nلقد تلقينا طلباً لإعادة تعيين كلمة المرور الخاصة بك. اضغط على الرابط التالي:\n{resetLink}\n\nهذا الرابط صالح لمدة {expiryTime}." className="text-sm" />
+                  </div>
+                  <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                    <h3 className="font-semibold text-sm text-slate-700 mb-2">قالب ترحيب المستخدم الجديد</h3>
+                    <p className="text-xs text-slate-400 mb-3">يُرسل عند إنشاء حساب جديد. المتغيرات: {'{userName}'}, {'{loginUrl}'}</p>
+                    <Textarea rows={4} defaultValue="مرحباً بك {userName} في القاسم العقارية!\n\nتم إنشاء حسابك بنجاح. يمكنك تسجيل الدخول من هنا:\n{loginUrl}" className="text-sm" />
+                  </div>
+                  <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                    <h3 className="font-semibold text-sm text-slate-700 mb-2">قالب إشعار الطلب الجديد</h3>
+                    <p className="text-xs text-slate-400 mb-3">يُرسل للمدير عند ورود طلب جديد. المتغيرات: {'{inquiryName}'}, {'{inquiryEmail}'}, {'{propertyTitle}'}, {'{inquiryMessage}'}</p>
+                    <Textarea rows={4} defaultValue="طلب جديد من {inquiryName}\n\nالعقار: {propertyTitle}\nالبريد: {inquiryEmail}\nالرسالة: {inquiryMessage}" className="text-sm" />
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <Button onClick={() => toast.success("تم حفظ قوالب البريد")} className="bg-indigo-600 hover:bg-indigo-700">
+                    <Save className="w-4 h-4 ml-2" />حفظ القوالب
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

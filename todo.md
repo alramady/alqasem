@@ -208,3 +208,24 @@
   - [x] Add activity link to admin sidebar
 - [x] Write comprehensive vitest tests for all new features (21 tests)
 - [x] All 206 tests passing
+
+## World-Class Real Estate Features - Public Visitor Experience
+- [x] Persistent favorites with localStorage + dedicated /favorites page
+- [x] Property sharing (WhatsApp, Twitter/X, copy link, email) via ShareModal component
+- [x] Property comparison tool (compare up to 4 properties side-by-side) with /compare page
+- [x] Mortgage/financing calculator (SAR, Saudi bank rates) with MortgageCalculator component
+- [x] Similar properties section on property detail page
+- [x] Property print-friendly view (print button on PropertyDetail)
+- [x] Newsletter subscription (footer form + subscribeNewsletter endpoint)
+- [x] Enhanced property detail (share buttons, print, similar properties, mortgage calc)
+- [x] Property views counter (trackPropertyView endpoint + viewCount display)
+- [x] Favorites icon in Navbar + compare floating bar on Properties page
+- [x] Compare button on property cards in Properties listing
+
+## Fix Non-Functional Admin Features
+- [x] Fix report export button (connected to exportReportCSV endpoint with CSV download)
+- [x] Fix notification creation (sendCustomNotification endpoint + wired form)
+- [x] Fix report period filter (backend now filters by week/month/quarter/year)
+- [x] Wire logActivity into property/project/CMS/media CRUD operations
+- [x] Implement email templates settings tab (functional editor UI)
+- [x] All 230 tests passing

@@ -74,12 +74,12 @@ export const properties = mysqlTable("properties", {
   features: json("features"),
   images: json("images"),
   videoUrl: varchar("videoUrl", { length: 1000 }),
+  viewCount: int("viewCount").default(0),
   createdBy: int("createdBy"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   deletedAt: timestamp("deletedAt"),
 });
-
 export type Property = typeof properties.$inferSelect;
 export type InsertProperty = typeof properties.$inferInsert;
 
@@ -347,3 +347,28 @@ export const activityLogs = mysqlTable("activity_logs", {
 });
 export type ActivityLog = typeof activityLogs.$inferSelect;
 export type InsertActivityLog = typeof activityLogs.$inferInsert;
+
+/**
+ * Newsletter subscribers.
+ */
+export const newsletterSubscribers = mysqlTable("newsletter_subscribers", {
+  id: int("id").autoincrement().primaryKey(),
+  email: varchar("email", { length: 320 }).notNull().unique(),
+  name: varchar("name", { length: 255 }),
+  isActive: boolean("isActive").default(true).notNull(),
+  subscribedAt: timestamp("subscribedAt").defaultNow().notNull(),
+  unsubscribedAt: timestamp("unsubscribedAt"),
+});
+export type NewsletterSubscriber = typeof newsletterSubscribers.$inferSelect;
+
+/**
+ * Property view tracking for analytics.
+ */
+export const propertyViews = mysqlTable("property_views", {
+  id: int("id").autoincrement().primaryKey(),
+  propertyId: int("propertyId").notNull(),
+  visitorIp: varchar("visitorIp", { length: 45 }),
+  userAgent: text("userAgent"),
+  viewedAt: timestamp("viewedAt").defaultNow().notNull(),
+});
+export type PropertyView = typeof propertyViews.$inferSelect;

@@ -1,7 +1,7 @@
 import { publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { sanitizeText } from "../sanitize";
-import { inquiries, properties, projects, notifications, users, auditLogs, settings, homepageSections, pages } from "../../drizzle/schema";
+import { inquiries, properties, projects, notifications, users, auditLogs, settings, homepageSections, pages, newsletterSubscribers, propertyViews } from "../../drizzle/schema";
 import { eq, desc, asc, and, isNull, like, or, gte, lte, sql, count } from "drizzle-orm";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
@@ -517,5 +517,105 @@ export const publicRouter = router({
     });
 
     return { success: true, id: insertId, message: "تم استلام طلبك بنجاح! سنبحث لك عن أفضل الخيارات المتاحة." };
+  }),
+
+  // ============ NEWSLETTER SUBSCRIPTION ============
+  subscribeNewsletter: publicProcedure.input(z.object({
+    email: z.string().email("البريد الإلكتروني غير صحيح"),
+    name: z.string().optional(),
+  })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "خطأ في الاتصال بقاعدة البيانات" });
+    const email = sanitizeText(input.email).toLowerCase();
+    // Check if already subscribed
+    const [existing] = await db.select().from(newsletterSubscribers).where(eq(newsletterSubscribers.email, email)).limit(1);
+    if (existing) {
+      if (!existing.isActive) {
+        await db.update(newsletterSubscribers).set({ isActive: true, unsubscribedAt: null }).where(eq(newsletterSubscribers.id, existing.id));
+        return { success: true, message: "تم إعادة تفعيل اشتراكك بنجاح!" };
+      }
+      return { success: true, message: "أنت مشترك بالفعل في النشرة البريدية." };
+    }
+    await db.insert(newsletterSubscribers).values({ email, name: input.name ? sanitizeText(input.name) : null });
+    await notifyAdmins("📬 اشتراك جديد في النشرة البريدية", `${email} اشترك في النشرة البريدية`, "info", "/admin/settings");
+    return { success: true, message: "تم الاشتراك بنجاح! شكراً لك." };
+  }),
+
+  // ============ PROPERTY VIEW TRACKING ============
+  trackPropertyView: publicProcedure.input(z.object({
+    propertyId: z.number().int().positive(),
+  })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) return { success: false };
+    const ip = ctx.req.ip || ctx.req.headers["x-forwarded-for"]?.toString() || "unknown";
+    const ua = ctx.req.headers["user-agent"] || "";
+    // Rate limit: only count 1 view per IP per property per hour
+    const oneHourAgo = new Date(Date.now() - 3600000);
+    const [recentView] = await db.select({ id: propertyViews.id }).from(propertyViews)
+      .where(and(
+        eq(propertyViews.propertyId, input.propertyId),
+        eq(propertyViews.visitorIp, ip),
+        gte(propertyViews.viewedAt, oneHourAgo)
+      )).limit(1);
+    if (recentView) return { success: true, counted: false };
+    await db.insert(propertyViews).values({ propertyId: input.propertyId, visitorIp: ip, userAgent: ua });
+    await db.update(properties).set({ viewCount: sql`COALESCE(${properties.viewCount}, 0) + 1` }).where(eq(properties.id, input.propertyId));
+    return { success: true, counted: true };
+  }),
+
+  // ============ SIMILAR PROPERTIES ============
+  getSimilarProperties: publicProcedure.input(z.object({
+    propertyId: z.number().int().positive(),
+    limit: z.number().int().min(1).max(12).optional(),
+  })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return [];
+    const [property] = await db.select().from(properties).where(eq(properties.id, input.propertyId)).limit(1);
+    if (!property) return [];
+    const limit = input.limit || 4;
+    // Find similar by: same type + same city, or same type + same listing type
+    const conditions = [
+      isNull(properties.deletedAt),
+      eq(properties.status, "active"),
+      sql`${properties.id} != ${input.propertyId}`,
+    ];
+    // Priority 1: same type + same city
+    const sameCityType = await db.select().from(properties)
+      .where(and(...conditions, eq(properties.type, property.type), eq(properties.city, property.city!)))
+      .orderBy(desc(properties.createdAt)).limit(limit);
+    if (sameCityType.length >= limit) return sameCityType;
+    // Priority 2: same type
+    const sameType = await db.select().from(properties)
+      .where(and(...conditions, eq(properties.type, property.type)))
+      .orderBy(desc(properties.createdAt)).limit(limit);
+    if (sameType.length >= limit) return sameType;
+    // Priority 3: same listing type
+    const sameListing = await db.select().from(properties)
+      .where(and(...conditions, eq(properties.listingType, property.listingType)))
+      .orderBy(desc(properties.createdAt)).limit(limit);
+    return sameListing;
+  }),
+
+  // ============ COMPARE PROPERTIES ============
+  getPropertiesForComparison: publicProcedure.input(z.object({
+    ids: z.array(z.number().int().positive()).min(2).max(4),
+  })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const { inArray } = await import("drizzle-orm");
+    const result = await db.select().from(properties)
+      .where(and(inArray(properties.id, input.ids), isNull(properties.deletedAt)));
+    return result;
+  }),
+
+  // ============ PROPERTY VIEW COUNT ============
+  getPropertyViewCount: publicProcedure.input(z.object({
+    propertyId: z.number().int().positive(),
+  })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { count: 0 };
+    const [result] = await db.select({ count: count() }).from(propertyViews)
+      .where(eq(propertyViews.propertyId, input.propertyId));
+    return { count: result?.count || 0 };
   }),
 });

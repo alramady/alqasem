@@ -13,7 +13,7 @@ import crypto from "crypto";
 import { sendPasswordResetEmail } from "../email";
 import { generateSecret as otpGenerateSecret, generateSync as otpGenerateSync, verifySync as otpVerifySync, generateURI as otpGenerateURI } from "otplib";
 import QRCode from "qrcode";
-import { eq, like, and, or, desc, asc, sql, isNull, count, ne, lt, gt, inArray } from "drizzle-orm";
+import { eq, like, and, or, desc, asc, sql, isNull, count, ne, lt, gt, gte, lte, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { storagePut } from "../storage";
@@ -590,6 +590,7 @@ export const adminRouter = router({
       createdBy: ctx.user.id,
     });
     await logAudit(ctx.user.id, ctx.user.name || null, "create", "property", null, { title: input.title });
+    await logActivity(ctx.user.id, ctx.user.name || ctx.user.username, "create_property", "property", `إضافة عقار: ${input.title}`, "property", undefined, { title: input.title, type: input.type });
     await notifyAdmins("عقار جديد", `تم إضافة عقار: ${input.title}`, "property", "/admin/properties");
     return { success: true };
   }),
@@ -629,20 +630,20 @@ export const adminRouter = router({
     if (s.videoUrl !== undefined) updateData.videoUrl = s.videoUrl;
     if (input.images !== undefined) updateData.images = input.images;
     if (input.features !== undefined) updateData.features = input.features;
-    await db.update(properties).set(updateData).where(eq(properties.id, input.id));
+     await db.update(properties).set(updateData).where(eq(properties.id, input.id));
     await logAudit(ctx.user.id, ctx.user.name || null, "update", "property", input.id, {}, oldProp, updateData);
+    await logActivity(ctx.user.id, ctx.user.name || ctx.user.username, "update_property", "property", `تعديل عقار #${input.id}`, "property", input.id, { changes: Object.keys(updateData) });
     return { success: true };
   }),
-
   deleteProperty: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
     await db.update(properties).set({ deletedAt: new Date() }).where(eq(properties.id, input.id));
     await logAudit(ctx.user.id, ctx.user.name || null, "delete", "property", input.id, {});
+    await logActivity(ctx.user.id, ctx.user.name || ctx.user.username, "delete_property", "property", `حذف عقار #${input.id}`, "property", input.id);
     return { success: true };
   }),
-
-  // ============ PROPERTY IMAGES ============
+  // ============ PROPERTY IMAGES =============
   uploadPropertyImage: protectedProcedure.input(z.object({
     propertyId: z.number(),
     filename: z.string(),
@@ -788,9 +789,9 @@ export const adminRouter = router({
       longitude: input.longitude ? String(input.longitude) : null,
     });
     await logAudit(ctx.user.id, ctx.user.name || null, "create", "project", null, { title: input.title });
+    await logActivity(ctx.user.id, ctx.user.name || ctx.user.username, "create_project", "project", `إضافة مشروع: ${input.title}`, "project", undefined, { title: input.title });
     return { success: true };
   }),
-
   updateProject: protectedProcedure.input(z.object({
     id: z.number(), title: z.string().optional(), titleEn: z.string().optional(),
     subtitle: z.string().optional(), subtitleEn: z.string().optional(),
@@ -822,19 +823,19 @@ export const adminRouter = router({
     if (input.displayOrder !== undefined) updateData.displayOrder = input.displayOrder;
     if (input.latitude !== undefined) updateData.latitude = String(input.latitude);
     if (input.longitude !== undefined) updateData.longitude = String(input.longitude);
-    await db.update(projects).set(updateData).where(eq(projects.id, input.id));
+     await db.update(projects).set(updateData).where(eq(projects.id, input.id));
     await logAudit(ctx.user.id, ctx.user.name || null, "update", "project", input.id, {}, oldProj, updateData);
+    await logActivity(ctx.user.id, ctx.user.name || ctx.user.username, "update_project", "project", `تعديل مشروع #${input.id}`, "project", input.id, { changes: Object.keys(updateData) });
     return { success: true };
   }),
-
   deleteProject: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-    await db.delete(projects).where(eq(projects.id, input.id));
+     await db.delete(projects).where(eq(projects.id, input.id));
     await logAudit(ctx.user.id, ctx.user.name || null, "delete", "project", input.id, {});
+    await logActivity(ctx.user.id, ctx.user.name || ctx.user.username, "delete_project", "project", `حذف مشروع #${input.id}`, "project", input.id);
     return { success: true };
   }),
-
   // ============ PROJECT IMAGES ============
   uploadProjectImage: protectedProcedure.input(z.object({
     projectId: z.number(),
@@ -999,10 +1000,10 @@ export const adminRouter = router({
       template: input.template || "default",
       createdBy: ctx.user.id,
     });
-    await logAudit(ctx.user.id, ctx.user.name || null, "create", "page", null, { title: input.title, slug: input.slug });
+     await logAudit(ctx.user.id, ctx.user.name || null, "create", "page", null, { title: input.title, slug: input.slug });
+    await logActivity(ctx.user.id, ctx.user.name || ctx.user.username, "create_page", "cms", `إضافة صفحة: ${input.title}`, "page", undefined, { title: input.title, slug: input.slug });
     return { success: true };
   }),
-
   updatePage: protectedProcedure.input(z.object({
     id: z.number(), title: z.string().optional(), slug: z.string().optional(), content: z.string().optional(),
     sections: z.any().optional(), pageType: z.string().optional(), status: z.string().optional(),
@@ -1025,18 +1026,18 @@ export const adminRouter = router({
     if (input.template !== undefined) updateData.template = input.template;
     await db.update(pages).set(updateData).where(eq(pages.id, input.id));
     await logAudit(ctx.user.id, ctx.user.name || null, "update", "page", input.id, {}, oldPage, updateData);
+    await logActivity(ctx.user.id, ctx.user.name || ctx.user.username, "update_page", "cms", `تعديل صفحة #${input.id}`, "page", input.id, { changes: Object.keys(updateData) });
     return { success: true };
   }),
-
   deletePage: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
     await db.delete(pages).where(eq(pages.id, input.id));
     await logAudit(ctx.user.id, ctx.user.name || null, "delete", "page", input.id, {});
+    await logActivity(ctx.user.id, ctx.user.name || ctx.user.username, "delete_page", "cms", `حذف صفحة #${input.id}`, "page", input.id);
     return { success: true };
   }),
-
-  // ============ CMS - HOMEPAGE SECTIONS ============
+  // ============ CMS - HOMEPAGE SECTIONS =============
   listHomepageSections: protectedProcedure.query(async () => {
     const db = await getDb();
     if (!db) return [];
@@ -1086,34 +1087,64 @@ export const adminRouter = router({
       uploadedBy: ctx.user.id,
     });
     await logAudit(ctx.user.id, ctx.user.name || null, "upload", "media", null, { filename: input.filename });
+    await logActivity(ctx.user.id, ctx.user.name || ctx.user.username, "upload_media", "media", `رفع ملف: ${input.filename}`, "media", undefined, { filename: input.filename, fileType });
     return { success: true, url };
   }),
-
   deleteMedia: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-    await db.delete(media).where(eq(media.id, input.id));
+     await db.delete(media).where(eq(media.id, input.id));
     await logAudit(ctx.user.id, ctx.user.name || null, "delete", "media", input.id, {});
+    await logActivity(ctx.user.id, ctx.user.name || ctx.user.username, "delete_media", "media", `حذف ملف #${input.id}`, "media", input.id);
     return { success: true };
   }),
-
   // ============ REPORTS ============
   getReportData: protectedProcedure.input(z.object({ period: z.string().optional() })).query(async ({ input }) => {
     const db = await getDb();
     if (!db) return { totalProperties: 0, totalInquiries: 0, conversionRate: "0%", avgPrice: "0", inquiriesTrend: [], propertiesTrend: [], inquiriesByType: [], propertiesByStatus: [] };
 
-    const [propCount] = await db.select({ count: count() }).from(properties).where(isNull(properties.deletedAt));
-    const [inqCount] = await db.select({ count: count() }).from(inquiries);
-    const [completedCount] = await db.select({ count: count() }).from(inquiries).where(eq(inquiries.status, "completed"));
+    // Calculate date range based on period
+    const now = new Date();
+    let periodStart: Date | null = null;
+    let trendMonths = 6;
+    switch (input?.period) {
+      case "week":
+        periodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+        trendMonths = 1;
+        break;
+      case "month":
+        periodStart = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+        trendMonths = 6;
+        break;
+      case "quarter":
+        periodStart = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+        trendMonths = 6;
+        break;
+      case "year":
+        periodStart = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+        trendMonths = 12;
+        break;
+    }
+
+    const propConditions: any[] = [isNull(properties.deletedAt)];
+    const inqConditions: any[] = [];
+    if (periodStart) {
+      propConditions.push(gte(properties.createdAt, periodStart));
+      inqConditions.push(gte(inquiries.createdAt, periodStart));
+    }
+
+    const [propCount] = await db.select({ count: count() }).from(properties).where(and(...propConditions));
+    const [inqCount] = await db.select({ count: count() }).from(inquiries).where(inqConditions.length ? and(...inqConditions) : undefined);
+    const completedConds = [...inqConditions, eq(inquiries.status, "completed")];
+    const [completedCount] = await db.select({ count: count() }).from(inquiries).where(completedConds.length ? and(...completedConds) : undefined);
     const conversionRate = inqCount.count > 0 ? `${Math.round((completedCount.count / inqCount.count) * 100)}%` : "0%";
-    const avgResult = await db.select({ avg: sql<string>`AVG(${properties.price})` }).from(properties).where(isNull(properties.deletedAt));
+    const avgResult = await db.select({ avg: sql<string>`AVG(${properties.price})` }).from(properties).where(and(...propConditions));
     const avgPrice = avgResult[0]?.avg ? Math.round(parseFloat(avgResult[0].avg)).toLocaleString() : "0";
 
-    const now = new Date();
     const months = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
     const inquiriesTrend = [];
     const propertiesTrend = [];
-    for (let i = 5; i >= 0; i--) {
+    for (let i = trendMonths - 1; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const dEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59);
       const [ic] = await db.select({ count: count() }).from(inquiries).where(and(sql`${inquiries.createdAt} >= ${d}`, sql`${inquiries.createdAt} <= ${dEnd}`));
@@ -1136,6 +1167,18 @@ export const adminRouter = router({
       const logs = await db.select().from(auditLogs).orderBy(desc(auditLogs.createdAt)).limit(1000);
       const headers = "المستخدم,الإجراء,النوع,التاريخ\n";
       const rows = logs.map(l => `"${l.userName}","${l.action}","${l.entityType}","${l.createdAt}"`).join("\n");
+      return { csv: "\uFEFF" + headers + rows };
+    }
+    if (input.type === "properties") {
+      const props = await db.select().from(properties).where(isNull(properties.deletedAt)).orderBy(desc(properties.createdAt)).limit(5000);
+      const headers = "الرقم,العنوان,النوع,نوع العرض,الحالة,السعر,المساحة,الغرف,المدينة,الحي,تاريخ الإضافة\n";
+      const rows = props.map(p => `${p.id},"${p.title}","${p.type}","${p.listingType}","${p.status}","${p.price || ''}","${p.area || ''}","${p.rooms || ''}","${p.city || ''}","${p.district || ''}","${p.createdAt}"`).join("\n");
+      return { csv: "\uFEFF" + headers + rows };
+    }
+    if (input.type === "inquiries") {
+      const inqs = await db.select().from(inquiries).orderBy(desc(inquiries.createdAt)).limit(5000);
+      const headers = "الرقم,الاسم,الجوال,البريد,النوع,الحالة,المصدر,تاريخ الإرسال\n";
+      const rows = inqs.map(i => `${i.id},"${i.name}","${i.phone || ''}","${i.email || ''}","${i.inquiryType}","${i.status}","${i.source || ''}","${i.createdAt}"`).join("\n");
       return { csv: "\uFEFF" + headers + rows };
     }
     return { csv: "" };
@@ -1197,8 +1240,26 @@ export const adminRouter = router({
     await db.update(notifications).set({ isRead: true }).where(eq(notifications.userId, ctx.user.id));
     return { success: true };
   }),
-
-  // ============ MESSAGES ============
+  sendCustomNotification: protectedProcedure.input(z.object({
+    title: z.string().min(1), message: z.string().min(1), type: z.string().optional(),
+    targetAll: z.boolean().optional(), targetUserId: z.number().optional(),
+  })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "فقط المدير يمكنه إرسال التنبيهات" });
+    const notifType = input.type || "info";
+    if (input.targetUserId) {
+      await createNotification(input.targetUserId, input.title, input.message, notifType);
+    } else {
+      const allUsers = await db.select({ id: users.id }).from(users).where(eq(users.status, "active"));
+      for (const u of allUsers) {
+        await createNotification(u.id, input.title, input.message, notifType);
+      }
+    }
+    await logActivity(ctx.user.id, ctx.user.name || ctx.user.username, "send_notification", "system", `إرسال تنبيه: ${input.title}`, "notification", undefined, { targetAll: !input.targetUserId, type: notifType });
+    return { success: true };
+  }),
+  // ============ MESSAGES =============
   listThreads: protectedProcedure.input(z.object({ filter: z.string().optional() })).query(async ({ ctx, input }) => {
     const db = await getDb();
     if (!db) return [];

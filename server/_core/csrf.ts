@@ -42,6 +42,8 @@ const BOOTSTRAP_SAFE_MUTATIONS = [
   "public.submitInquiry",
   "public.submitProperty",
   "public.submitPropertyRequest",
+  "public.subscribeNewsletter",
+  "public.trackPropertyView",
 ];
 
 /** Generate a cryptographically secure random token. */

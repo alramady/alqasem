@@ -33,7 +33,10 @@ export default function AdminNotifications() {
   // For admin, we use notifyAdmins through a custom procedure
   const markRead = trpc.admin.markNotificationRead.useMutation({ onSuccess: () => { refetch(); } });
   const markAllRead = trpc.admin.markAllNotificationsRead.useMutation({ onSuccess: () => { refetch(); toast.success("تم تحديد الكل كمقروء"); } });
-  
+  const sendNotif = trpc.admin.sendCustomNotification.useMutation({
+    onSuccess: () => { refetch(); toast.success("تم إرسال التنبيه بنجاح"); setShowCreateDialog(false); setForm({ title: "", message: "", type: "info", targetUserId: "" }); },
+    onError: (e) => toast.error(e.message || "فشل في إرسال التنبيه"),
+  });
 
   const filtered = (notifications ?? []).filter((n: any) => filterType === "all" || n.type === filterType);
   const unreadCount = (notifications ?? []).filter((n: any) => !n.isRead).length;
@@ -151,8 +154,8 @@ export default function AdminNotifications() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowCreateDialog(false)}>إلغاء</Button>
-              <Button onClick={() => { if (!form.title || !form.message) { toast.error("يرجى تعبئة الحقول المطلوبة"); return; } toast.info("ميزة إرسال التنبيهات المخصصة قادمة قريباً"); setShowCreateDialog(false); }} className="bg-[#0f1b33] hover:bg-[#1a2b4a]" >
-                إرسال التنبيه
+              <Button disabled={sendNotif.isPending} onClick={() => { if (!form.title || !form.message) { toast.error("يرجى تعبئة الحقول المطلوبة"); return; } sendNotif.mutate({ title: form.title, message: form.message, type: form.type, targetUserId: form.targetUserId ? Number(form.targetUserId) : undefined, targetAll: !form.targetUserId }); }} className="bg-[#0f1b33] hover:bg-[#1a2b4a]" >
+                {sendNotif.isPending ? "جاري الإرسال..." : "إرسال التنبيه"}
               </Button>
             </DialogFooter>
           </DialogContent>
