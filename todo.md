@@ -131,3 +131,6 @@
 - [x] Fix public form submissions failing with 'error 1' due to CSRF token mismatch on first visit
 - [x] Pre-fetch CSRF token on SPA initialization before any form renders
 - [x] Verify all public forms work on first visit without prior navigation
+
+## Visual Edit
+- [x] Change hero text from "ابحث عن منزلك مع القاسم" to "ابحث عن عقارك مع القاسم"

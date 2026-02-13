@@ -1,0 +1,15 @@
+{
+  "query": "SELECT id, sectionKey, content FROM homepage_sections WHERE sectionKey = 'hero' LIMIT 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.4e413a58b2a3 --database FCSdcQDHNngsNZkY5BfGCD --execute SELECT id, sectionKey, content FROM homepage_sections WHERE sectionKey = 'hero' LIMIT 1;",
+  "rows": [
+    {
+      "id": "1",
+      "sectionKey": "hero",
+      "content": "{\"backgroundImage\": \"https://manus-storage.oss-cn-beijing.aliyuncs.com/user-file/e8c3c3a1-1b7c-4e7c-a2ff-d1a4d1e1a5b1/real-estate-hero.jpg\", \"heading\": \"ابحث عن منزلك مع القاسم\", \"stats\": [{\"label\": \"عقار متاح\", \"value\": \"+500\"}, {\"label\": \"عميل سعيد\", \"value\": \"+1200\"}, {\"label\": \"مشروع منجز\", \"value\": \"+50\"}, {\"label\": \"سنة خبرة\", \"value\": \"+25\"}], \"subheading\": \"نقدم أفضل تجربة في البحث عن العقارات المميزة في المملكة العربية السعودية\"}"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tsectionKey\tcontent\n1\thero\t{\"backgroundImage\": \"https://manus-storage.oss-cn-beijing.aliyuncs.com/user-file/e8c3c3a1-1b7c-4e7c-a2ff-d1a4d1e1a5b1/real-estate-hero.jpg\", \"heading\": \"ابحث عن منزلك مع القاسم\", \"stats\": [{\"label\": \"عقار متاح\", \"value\": \"+500\"}, {\"label\": \"عميل سعيد\", \"value\": \"+1200\"}, {\"label\": \"مشروع منجز\", \"value\": \"+50\"}, {\"label\": \"سنة خبرة\", \"value\": \"+25\"}], \"subheading\": \"نقدم أفضل تجربة في البحث عن العقارات المميزة في المملكة العربية السعودية\"}\n",
+  "stderr": "",
+  "execution_time_ms": 1710
+}

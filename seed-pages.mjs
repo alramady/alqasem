@@ -152,7 +152,7 @@ const sectionsContent = [
   {
     key: 'hero',
     content: JSON.stringify({
-      heading: 'ابحث عن منزلك مع القاسم',
+      heading: 'ابحث عن عقارك مع القاسم',
       subheading: 'نقدم أفضل تجربة في البحث عن العقارات المميزة في المملكة العربية السعودية',
       stats: [
         { label: 'عقار متاح', value: '+500' },
