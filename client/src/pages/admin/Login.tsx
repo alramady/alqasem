@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
-import { Building2, Eye, EyeOff, Loader2, Lock, User, AlertCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Building2, Eye, EyeOff, Loader2, Lock, User, AlertCircle, ShieldCheck, ArrowRight } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
 import { useLocation } from "wouter";
 
 export default function AdminLogin() {
@@ -15,12 +15,35 @@ export default function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
 
+  // 2FA state
+  const [show2FA, setShow2FA] = useState(false);
+  const [twoFaToken, setTwoFaToken] = useState("");
+  const [totpCode, setTotpCode] = useState("");
+  const codeInputRef = useRef<HTMLInputElement>(null);
+
   const loginMutation = trpc.admin.localLogin.useMutation({
+    onSuccess: (data) => {
+      if (data.requires2FA) {
+        setTwoFaToken((data as any).twoFaToken);
+        setShow2FA(true);
+        setError("");
+        setTimeout(() => codeInputRef.current?.focus(), 100);
+      } else {
+        window.location.href = "/admin/dashboard";
+      }
+    },
+    onError: (err) => {
+      setError(err.message || "فشل تسجيل الدخول");
+    },
+  });
+
+  const verify2FAMutation = trpc.admin.verify2FA.useMutation({
     onSuccess: () => {
       window.location.href = "/admin/dashboard";
     },
     onError: (err) => {
-      setError(err.message || "فشل تسجيل الدخول");
+      setError(err.message || "رمز التحقق غير صحيح");
+      setTotpCode("");
     },
   });
 
@@ -38,6 +61,23 @@ export default function AdminLogin() {
       return;
     }
     loginMutation.mutate({ username: username.trim(), password });
+  };
+
+  const handle2FASubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    if (!totpCode.trim() || totpCode.trim().length < 6) {
+      setError("يرجى إدخال رمز التحقق المكون من 6 أرقام");
+      return;
+    }
+    verify2FAMutation.mutate({ twoFaToken, totpCode: totpCode.trim() });
+  };
+
+  const handleBack = () => {
+    setShow2FA(false);
+    setTwoFaToken("");
+    setTotpCode("");
+    setError("");
   };
 
   if (loading) {
@@ -61,104 +101,169 @@ export default function AdminLogin() {
         {/* Logo & Title */}
         <div className="flex flex-col items-center gap-4 mb-2">
           <div className="w-24 h-24 bg-gradient-to-br from-[#c8a45e]/30 to-[#c8a45e]/10 rounded-2xl flex items-center justify-center border border-[#c8a45e]/20 shadow-lg shadow-[#c8a45e]/5">
-            <Building2 className="w-12 h-12 text-[#c8a45e]" />
+            {show2FA ? (
+              <ShieldCheck className="w-12 h-12 text-[#c8a45e]" />
+            ) : (
+              <Building2 className="w-12 h-12 text-[#c8a45e]" />
+            )}
           </div>
           <div className="text-center">
             <h1 className="text-2xl font-bold text-white mb-1">
-              لوحة تحكم القاسم العقارية
+              {show2FA ? "التحقق الثنائي" : "لوحة تحكم القاسم العقارية"}
             </h1>
             <p className="text-sm text-white/50">
-              نظام إدارة المحتوى والعمليات
+              {show2FA ? "أدخل رمز التحقق من تطبيق المصادقة" : "نظام إدارة المحتوى والعمليات"}
             </p>
           </div>
         </div>
 
-        {/* Login Form */}
+        {/* Form Card */}
         <div className="w-full bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 shadow-2xl">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Error Alert */}
-            {error && (
-              <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-red-300 text-sm">
-                <AlertCircle className="w-5 h-5 shrink-0" />
-                <span>{error}</span>
-              </div>
-            )}
-
-            {/* Username */}
-            <div className="space-y-2">
-              <Label htmlFor="username" className="text-white/80 text-sm font-medium">
-                اسم المستخدم
-              </Label>
-              <div className="relative">
-                <User className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
-                <Input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => { setUsername(e.target.value); setError(""); }}
-                  placeholder="أدخل اسم المستخدم"
-                  className="pr-11 pl-4 h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 rounded-xl focus:border-[#c8a45e] focus:ring-[#c8a45e]/30 transition-all"
-                  autoComplete="username"
-                  autoFocus
-                  dir="ltr"
-                />
-              </div>
-            </div>
-
-            {/* Password */}
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-white/80 text-sm font-medium">
-                كلمة المرور
-              </Label>
-              <div className="relative">
-                <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => { setPassword(e.target.value); setError(""); }}
-                  placeholder="أدخل كلمة المرور"
-                  className="pr-11 pl-12 h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 rounded-xl focus:border-[#c8a45e] focus:ring-[#c8a45e]/30 transition-all"
-                  autoComplete="current-password"
-                  dir="ltr"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
-                  tabIndex={-1}
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-            </div>
-
-            {/* Login Button */}
-            <Button
-              type="submit"
-              disabled={loginMutation.isPending}
-              className="w-full h-12 bg-[#c8a45e] text-[#0f1b33] hover:bg-[#d4b36e] font-bold shadow-lg text-base rounded-xl transition-all duration-200 hover:shadow-[#c8a45e]/20 hover:shadow-xl disabled:opacity-60"
-            >
-              {loginMutation.isPending ? (
-                <span className="flex items-center gap-2">
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  جاري تسجيل الدخول...
-                </span>
-              ) : (
-                "تسجيل الدخول"
+          {!show2FA ? (
+            /* Login Form */
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {error && (
+                <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-red-300 text-sm">
+                  <AlertCircle className="w-5 h-5 shrink-0" />
+                  <span>{error}</span>
+                </div>
               )}
-            </Button>
 
-            {/* Forgot Password Link */}
-            <div className="text-center pt-2">
-              <a
-                href="/admin/forgot-password"
-                className="text-sm text-[#c8a45e]/70 hover:text-[#c8a45e] transition-colors"
+              <div className="space-y-2">
+                <Label htmlFor="username" className="text-white/80 text-sm font-medium">
+                  اسم المستخدم
+                </Label>
+                <div className="relative">
+                  <User className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
+                  <Input
+                    id="username"
+                    type="text"
+                    value={username}
+                    onChange={(e) => { setUsername(e.target.value); setError(""); }}
+                    placeholder="أدخل اسم المستخدم"
+                    className="pr-11 pl-4 h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 rounded-xl focus:border-[#c8a45e] focus:ring-[#c8a45e]/30 transition-all"
+                    autoComplete="username"
+                    autoFocus
+                    dir="ltr"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-white/80 text-sm font-medium">
+                  كلمة المرور
+                </Label>
+                <div className="relative">
+                  <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => { setPassword(e.target.value); setError(""); }}
+                    placeholder="أدخل كلمة المرور"
+                    className="pr-11 pl-12 h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 rounded-xl focus:border-[#c8a45e] focus:ring-[#c8a45e]/30 transition-all"
+                    autoComplete="current-password"
+                    dir="ltr"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={loginMutation.isPending}
+                className="w-full h-12 bg-[#c8a45e] text-[#0f1b33] hover:bg-[#d4b36e] font-bold shadow-lg text-base rounded-xl transition-all duration-200 hover:shadow-[#c8a45e]/20 hover:shadow-xl disabled:opacity-60"
               >
-                نسيت كلمة المرور؟
-              </a>
-            </div>
-          </form>
+                {loginMutation.isPending ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    جاري تسجيل الدخول...
+                  </span>
+                ) : (
+                  "تسجيل الدخول"
+                )}
+              </Button>
+
+              <div className="text-center pt-2">
+                <a
+                  href="/admin/forgot-password"
+                  className="text-sm text-[#c8a45e]/70 hover:text-[#c8a45e] transition-colors"
+                >
+                  نسيت كلمة المرور؟
+                </a>
+              </div>
+            </form>
+          ) : (
+            /* 2FA Verification Form */
+            <form onSubmit={handle2FASubmit} className="space-y-5">
+              {error && (
+                <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-red-300 text-sm">
+                  <AlertCircle className="w-5 h-5 shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <div className="bg-[#c8a45e]/5 border border-[#c8a45e]/20 rounded-xl p-4 text-center">
+                <ShieldCheck className="w-8 h-8 text-[#c8a45e] mx-auto mb-2" />
+                <p className="text-white/70 text-sm">
+                  افتح تطبيق المصادقة (Google Authenticator أو Authy) وأدخل الرمز المكون من 6 أرقام
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="totpCode" className="text-white/80 text-sm font-medium">
+                  رمز التحقق
+                </Label>
+                <Input
+                  ref={codeInputRef}
+                  id="totpCode"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={8}
+                  value={totpCode}
+                  onChange={(e) => { setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 8)); setError(""); }}
+                  placeholder="000000"
+                  className="h-14 text-center text-2xl tracking-[0.5em] bg-white/5 border-white/10 text-white placeholder:text-white/20 rounded-xl focus:border-[#c8a45e] focus:ring-[#c8a45e]/30 transition-all font-mono"
+                  dir="ltr"
+                  autoComplete="one-time-code"
+                />
+                <p className="text-xs text-white/40 text-center">
+                  يمكنك أيضاً استخدام أحد رموز الاسترداد
+                </p>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={verify2FAMutation.isPending}
+                className="w-full h-12 bg-[#c8a45e] text-[#0f1b33] hover:bg-[#d4b36e] font-bold shadow-lg text-base rounded-xl transition-all duration-200 hover:shadow-[#c8a45e]/20 hover:shadow-xl disabled:opacity-60"
+              >
+                {verify2FAMutation.isPending ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    جاري التحقق...
+                  </span>
+                ) : (
+                  "تأكيد"
+                )}
+              </Button>
+
+              <button
+                type="button"
+                onClick={handleBack}
+                className="w-full flex items-center justify-center gap-2 text-sm text-white/50 hover:text-white/70 transition-colors pt-1"
+              >
+                <ArrowRight className="w-4 h-4" />
+                العودة لتسجيل الدخول
+              </button>
+            </form>
+          )}
         </div>
 
         {/* Back to website */}

@@ -7,11 +7,13 @@ import { getDb } from "../db";
 import {
   users, properties, projects, inquiries, media, pages,
   homepageSections, settings, auditLogs, notifications, messages, permissions, guides,
-  passwordResetTokens, userSessions,
+  passwordResetTokens, userSessions, activityLogs,
 } from "../../drizzle/schema";
 import crypto from "crypto";
 import { sendPasswordResetEmail } from "../email";
-import { eq, like, and, or, desc, asc, sql, isNull, count, ne, lt, gt } from "drizzle-orm";
+import { generateSecret as otpGenerateSecret, generateSync as otpGenerateSync, verifySync as otpVerifySync, generateURI as otpGenerateURI } from "otplib";
+import QRCode from "qrcode";
+import { eq, like, and, or, desc, asc, sql, isNull, count, ne, lt, gt, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { storagePut } from "../storage";
@@ -53,6 +55,32 @@ async function notifyAdmins(title: string, message: string, type: string, link?:
     if (admin.id !== excludeUserId) {
       await createNotification(admin.id, title, message, type, link);
     }
+  }
+}
+
+/** Log a user activity for the activity dashboard. */
+async function logActivity(
+  userId: number,
+  userName: string | null,
+  action: string,
+  category: "auth" | "property" | "project" | "inquiry" | "cms" | "media" | "settings" | "user" | "system",
+  description: string,
+  entityType?: string,
+  entityId?: number,
+  metadata?: any,
+  ipAddress?: string,
+  userAgent?: string,
+) {
+  const db = await getDb();
+  if (!db) return;
+  try {
+    await db.insert(activityLogs).values({
+      userId, userName, action, category, description,
+      entityType: entityType || null, entityId: entityId || null,
+      metadata: metadata || null, ipAddress: ipAddress || null, userAgent: userAgent || null,
+    });
+  } catch (e) {
+    console.error("[ActivityLog] Failed to log:", e);
   }
 }
 
@@ -168,14 +196,99 @@ export const adminRouter = router({
 
     await logAudit(user.id, user.displayName || user.name || user.username, "login", "user", user.id, { method: "local", username: input.username }, null, null);
 
+    // Check if 2FA is enabled
+    if (user.totpEnabled && user.totpSecret) {
+      // Return a pending 2FA response — don't set cookie yet
+      // Store a temporary 2FA token that expires in 5 minutes
+      const twoFaToken = crypto.randomBytes(32).toString("hex");
+      const twoFaTokenHash = crypto.createHash("sha256").update(twoFaToken).digest("hex");
+      // Store in password_reset_tokens table (reuse) with short expiry
+      await db.insert(passwordResetTokens).values({
+        userId: user.id,
+        token: twoFaTokenHash,
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000), // 5 minutes
+      });
+      return {
+        success: true,
+        requires2FA: true,
+        twoFaToken,
+        user: {
+          id: user.id,
+          name: user.displayName || user.name || user.fullName,
+          email: user.email,
+          role: user.role,
+        },
+      };
+    }
+
+    await logActivity(user.id, user.displayName || user.name || user.username, "login", "auth", "تسجيل دخول ناجح", "user", user.id, { method: "local" }, ctx.req.ip || ctx.req.headers["x-forwarded-for"]?.toString(), ctx.req.headers["user-agent"]);
+
     return {
       success: true,
+      requires2FA: false,
       user: {
         id: user.id,
         name: user.displayName || user.name || user.fullName,
         email: user.email,
         role: user.role,
       },
+    };
+  }),
+
+  // ============ 2FA VERIFICATION ON LOGIN ============
+  verify2FA: publicProcedure.input(z.object({
+    twoFaToken: z.string().min(1),
+    totpCode: z.string().min(6).max(6),
+  })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const tokenHash = crypto.createHash("sha256").update(input.twoFaToken).digest("hex");
+    const [resetRow] = await db.select().from(passwordResetTokens).where(
+      and(eq(passwordResetTokens.token, tokenHash), isNull(passwordResetTokens.usedAt))
+    ).limit(1);
+    if (!resetRow || new Date(resetRow.expiresAt) < new Date()) {
+      throw new TRPCError({ code: "UNAUTHORIZED", message: "انتهت صلاحية جلسة التحقق. أعد تسجيل الدخول" });
+    }
+    const [user] = await db.select().from(users).where(eq(users.id, resetRow.userId)).limit(1);
+    if (!user || !user.totpSecret) {
+      throw new TRPCError({ code: "UNAUTHORIZED", message: "خطأ في التحقق" });
+    }
+    // Check TOTP code
+    const result = otpVerifySync({ token: input.totpCode, secret: user.totpSecret });
+    if (!result.valid) {
+      // Check backup codes
+      const backupCodes = (user.totpBackupCodes as string[] | null) || [];
+      const codeIndex = backupCodes.indexOf(input.totpCode);
+      if (codeIndex === -1) {
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "رمز التحقق غير صحيح" });
+      }
+      // Remove used backup code
+      backupCodes.splice(codeIndex, 1);
+      await db.update(users).set({ totpBackupCodes: backupCodes }).where(eq(users.id, user.id));
+    }
+    // Mark token as used
+    await db.update(passwordResetTokens).set({ usedAt: new Date() }).where(eq(passwordResetTokens.id, resetRow.id));
+    // Now create the actual session
+    const token = await sdk.createSessionToken(user.openId, {
+      expiresInMs: SESSION_EXPIRY_MS,
+      name: user.displayName || user.name || user.fullName || user.username || "",
+    });
+    const cookieOptions = getSessionCookieOptions(ctx.req);
+    ctx.res.cookie(COOKIE_NAME, token, { ...cookieOptions, maxAge: SESSION_EXPIRY_MS });
+    try {
+      const sessionTokenHash = crypto.createHash("sha256").update(token).digest("hex");
+      const ua = ctx.req.headers["user-agent"] || "";
+      const ip = ctx.req.ip || ctx.req.headers["x-forwarded-for"]?.toString() || "unknown";
+      await db.insert(userSessions).values({
+        userId: user.id, tokenHash: sessionTokenHash, deviceInfo: parseDeviceInfo(ua),
+        ipAddress: ip, userAgent: ua, expiresAt: new Date(Date.now() + SESSION_EXPIRY_MS),
+      });
+    } catch (e) { console.error("[Session] Failed to track:", e); }
+    await logAudit(user.id, user.displayName || user.name || user.username, "login", "user", user.id, { method: "local", with2FA: true });
+    await logActivity(user.id, user.displayName || user.name || user.username, "login_2fa", "auth", "تسجيل دخول ناجح مع التحقق الثنائي", "user", user.id, { method: "local", with2FA: true }, ctx.req.ip || ctx.req.headers["x-forwarded-for"]?.toString(), ctx.req.headers["user-agent"]);
+    return {
+      success: true,
+      user: { id: user.id, name: user.displayName || user.name || user.fullName, email: user.email, role: user.role },
     };
   }),
 
@@ -1459,5 +1572,190 @@ export const adminRouter = router({
     await db.delete(users).where(eq(users.id, input.userId));
     await logAudit(ctx.user.id, ctx.user.name || null, "delete", "user", input.userId, { deletedUser: targetUser.fullName || targetUser.username });
     return { success: true };
+  }),
+
+  // ============ TWO-FACTOR AUTHENTICATION (2FA) SETUP ============
+  get2FAStatus: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const [user] = await db.select({ totpEnabled: users.totpEnabled, totpBackupCodes: users.totpBackupCodes }).from(users).where(eq(users.id, ctx.user.id)).limit(1);
+    if (!user) throw new TRPCError({ code: "NOT_FOUND" });
+    const backupCodes = (user.totpBackupCodes as string[] | null) || [];
+    return { enabled: user.totpEnabled, backupCodesRemaining: backupCodes.length };
+  }),
+
+  setup2FA: protectedProcedure.mutation(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const [user] = await db.select().from(users).where(eq(users.id, ctx.user.id)).limit(1);
+    if (!user) throw new TRPCError({ code: "NOT_FOUND" });
+    if (user.totpEnabled) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "التحقق الثنائي مفعّل بالفعل" });
+    }
+    const secret = otpGenerateSecret();
+    const otpauthUrl = otpGenerateURI({
+      secret,
+      issuer: "AlQasem-RealEstate",
+      label: user.username || user.email || user.openId,
+    });
+    const qrCodeDataUrl = await QRCode.toDataURL(otpauthUrl);
+    // Store secret temporarily (not enabled yet until verified)
+    await db.update(users).set({ totpSecret: secret }).where(eq(users.id, ctx.user.id));
+    return { secret, qrCodeDataUrl, otpauthUrl };
+  }),
+
+  verify2FASetup: protectedProcedure.input(z.object({
+    code: z.string().min(6).max(6),
+  })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const [user] = await db.select().from(users).where(eq(users.id, ctx.user.id)).limit(1);
+    if (!user || !user.totpSecret) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "يرجى إعداد التحقق الثنائي أولاً" });
+    }
+    const result = otpVerifySync({ token: input.code, secret: user.totpSecret });
+    if (!result.valid) {
+      throw new TRPCError({ code: "UNAUTHORIZED", message: "رمز التحقق غير صحيح. تأكد من مزامنة الوقت" });
+    }
+    // Generate backup codes
+    const backupCodes: string[] = [];
+    for (let i = 0; i < 8; i++) {
+      backupCodes.push(crypto.randomBytes(4).toString("hex").toUpperCase());
+    }
+    await db.update(users).set({ totpEnabled: true, totpBackupCodes: backupCodes }).where(eq(users.id, ctx.user.id));
+    await logAudit(ctx.user.id, ctx.user.name || null, "update", "user", ctx.user.id, { action: "2fa_enabled" });
+    await logActivity(ctx.user.id, ctx.user.name || ctx.user.username, "enable_2fa", "auth", "تم تفعيل التحقق الثنائي", "user", ctx.user.id, null, ctx.req.ip || ctx.req.headers["x-forwarded-for"]?.toString(), ctx.req.headers["user-agent"]);
+    return { success: true, backupCodes };
+  }),
+
+  disable2FA: protectedProcedure.input(z.object({
+    password: z.string().min(1, "كلمة المرور مطلوبة"),
+  })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const [user] = await db.select().from(users).where(eq(users.id, ctx.user.id)).limit(1);
+    if (!user) throw new TRPCError({ code: "NOT_FOUND" });
+    if (!user.totpEnabled) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "التحقق الثنائي غير مفعّل" });
+    }
+    if (!user.passwordHash) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "لا يمكن التحقق من الهوية" });
+    }
+    const isValid = await bcrypt.compare(input.password, user.passwordHash);
+    if (!isValid) {
+      throw new TRPCError({ code: "UNAUTHORIZED", message: "كلمة المرور غير صحيحة" });
+    }
+    await db.update(users).set({ totpEnabled: false, totpSecret: null, totpBackupCodes: null }).where(eq(users.id, ctx.user.id));
+    await logAudit(ctx.user.id, ctx.user.name || null, "update", "user", ctx.user.id, { action: "2fa_disabled" });
+    await logActivity(ctx.user.id, ctx.user.name || ctx.user.username, "disable_2fa", "auth", "تم تعطيل التحقق الثنائي", "user", ctx.user.id, null, ctx.req.ip || ctx.req.headers["x-forwarded-for"]?.toString(), ctx.req.headers["user-agent"]);
+    return { success: true, message: "تم تعطيل التحقق الثنائي بنجاح" };
+  }),
+
+  regenerateBackupCodes: protectedProcedure.input(z.object({
+    password: z.string().min(1),
+  })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const [user] = await db.select().from(users).where(eq(users.id, ctx.user.id)).limit(1);
+    if (!user || !user.totpEnabled) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "التحقق الثنائي غير مفعّل" });
+    }
+    if (!user.passwordHash) throw new TRPCError({ code: "BAD_REQUEST" });
+    const isValid = await bcrypt.compare(input.password, user.passwordHash);
+    if (!isValid) throw new TRPCError({ code: "UNAUTHORIZED", message: "كلمة المرور غير صحيحة" });
+    const backupCodes: string[] = [];
+    for (let i = 0; i < 8; i++) {
+      backupCodes.push(crypto.randomBytes(4).toString("hex").toUpperCase());
+    }
+    await db.update(users).set({ totpBackupCodes: backupCodes }).where(eq(users.id, ctx.user.id));
+    await logActivity(ctx.user.id, ctx.user.name || ctx.user.username, "regenerate_backup_codes", "auth", "تم إعادة إنشاء رموز الاسترداد", "user", ctx.user.id);
+    return { success: true, backupCodes };
+  }),
+
+  // ============ ACTIVITY DASHBOARD ============
+  getUserActivity: adminProcedure.input(z.object({
+    userId: z.number(),
+    limit: z.number().min(1).max(100).default(50),
+    offset: z.number().min(0).default(0),
+    category: z.string().optional(),
+  })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { activities: [], total: 0 };
+    const conditions: any[] = [eq(activityLogs.userId, input.userId)];
+    if (input.category && input.category !== "all") {
+      conditions.push(eq(activityLogs.category, input.category as any));
+    }
+    const whereClause = and(...conditions);
+    const [totalResult] = await db.select({ count: count() }).from(activityLogs).where(whereClause);
+    const activities = await db.select().from(activityLogs).where(whereClause).orderBy(desc(activityLogs.createdAt)).limit(input.limit).offset(input.offset);
+    return { activities, total: totalResult?.count || 0 };
+  }),
+
+  getMyActivity: protectedProcedure.input(z.object({
+    limit: z.number().min(1).max(100).default(50),
+    offset: z.number().min(0).default(0),
+    category: z.string().optional(),
+  })).query(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) return { activities: [], total: 0 };
+    const conditions: any[] = [eq(activityLogs.userId, ctx.user.id)];
+    if (input.category && input.category !== "all") {
+      conditions.push(eq(activityLogs.category, input.category as any));
+    }
+    const whereClause = and(...conditions);
+    const [totalResult] = await db.select({ count: count() }).from(activityLogs).where(whereClause);
+    const activities = await db.select().from(activityLogs).where(whereClause).orderBy(desc(activityLogs.createdAt)).limit(input.limit).offset(input.offset);
+    return { activities, total: totalResult?.count || 0 };
+  }),
+
+  getUserLoginHistory: adminProcedure.input(z.object({
+    userId: z.number(),
+    limit: z.number().min(1).max(50).default(20),
+  })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return [];
+    return db.select().from(userSessions).where(eq(userSessions.userId, input.userId)).orderBy(desc(userSessions.createdAt)).limit(input.limit);
+  }),
+
+  getUserActivitySummary: adminProcedure.input(z.object({
+    userId: z.number(),
+  })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { totalActions: 0, lastActive: null, categoryCounts: [], recentSessions: 0 };
+    const [totalResult] = await db.select({ count: count() }).from(activityLogs).where(eq(activityLogs.userId, input.userId));
+    const [lastActivity] = await db.select({ createdAt: activityLogs.createdAt }).from(activityLogs).where(eq(activityLogs.userId, input.userId)).orderBy(desc(activityLogs.createdAt)).limit(1);
+    const categoryCounts = await db.select({
+      category: activityLogs.category,
+      count: count(),
+    }).from(activityLogs).where(eq(activityLogs.userId, input.userId)).groupBy(activityLogs.category);
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const [recentSessionsResult] = await db.select({ count: count() }).from(userSessions).where(
+      and(eq(userSessions.userId, input.userId), sql`${userSessions.createdAt} >= ${thirtyDaysAgo}`)
+    );
+    return {
+      totalActions: totalResult?.count || 0,
+      lastActive: lastActivity?.createdAt || null,
+      categoryCounts,
+      recentSessions: recentSessionsResult?.count || 0,
+    };
+  }),
+
+  getAllActivity: adminProcedure.input(z.object({
+    limit: z.number().min(1).max(100).default(50),
+    offset: z.number().min(0).default(0),
+    category: z.string().optional(),
+    userId: z.number().optional(),
+  })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { activities: [], total: 0 };
+    const conditions: any[] = [];
+    if (input.userId) conditions.push(eq(activityLogs.userId, input.userId));
+    if (input.category && input.category !== "all") {
+      conditions.push(eq(activityLogs.category, input.category as any));
+    }
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+    const [totalResult] = await db.select({ count: count() }).from(activityLogs).where(whereClause);
+    const activities = await db.select().from(activityLogs).where(whereClause).orderBy(desc(activityLogs.createdAt)).limit(input.limit).offset(input.offset);
+    return { activities, total: totalResult?.count || 0 };
   }),
 });

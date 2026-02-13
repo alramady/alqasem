@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { User, Lock, Mail, Phone, Shield, Save, Eye, EyeOff, CheckCircle, Clock, KeyRound } from "lucide-react";
+import { User, Lock, Mail, Phone, Shield, Save, Eye, EyeOff, CheckCircle, Clock, KeyRound, ShieldCheck } from "lucide-react";
+import TwoFactorAuth from "./TwoFactorAuth";
 
 export default function AdminProfile() {
   const { data: profile, isLoading, refetch } = trpc.admin.getMyProfile.useQuery();
@@ -391,6 +392,13 @@ export default function AdminProfile() {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Two-Factor Authentication */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="bg-gradient-to-br from-[#0f1b33] to-[#1a2d4f]">
+              <TwoFactorAuth />
+            </div>
           </div>
 
           {/* Security Info */}

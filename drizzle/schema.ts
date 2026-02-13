@@ -19,6 +19,9 @@ export const users = mysqlTable("users", {
   status: mysqlEnum("userStatus", ["active", "inactive"]).default("active").notNull(),
   failedLoginAttempts: int("failedLoginAttempts").default(0),
   lockedUntil: timestamp("lockedUntil"),
+  totpSecret: varchar("totpSecret", { length: 255 }),
+  totpEnabled: boolean("totpEnabled").default(false).notNull(),
+  totpBackupCodes: json("totpBackupCodes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
@@ -324,3 +327,23 @@ export const userSessions = mysqlTable("user_sessions", {
 
 export type UserSession = typeof userSessions.$inferSelect;
 export type InsertUserSession = typeof userSessions.$inferInsert;
+
+/**
+ * Activity logs table for tracking user actions in detail.
+ */
+export const activityLogs = mysqlTable("activity_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  userName: varchar("userName", { length: 255 }),
+  action: varchar("activityAction", { length: 100 }).notNull(),
+  category: mysqlEnum("activityCategory", ["auth", "property", "project", "inquiry", "cms", "media", "settings", "user", "system"]).default("system").notNull(),
+  entityType: varchar("activityEntityType", { length: 100 }),
+  entityId: int("activityEntityId"),
+  description: text("activityDescription"),
+  metadata: json("activityMetadata"),
+  ipAddress: varchar("activityIpAddress", { length: 45 }),
+  userAgent: text("activityUserAgent"),
+  createdAt: timestamp("activityCreatedAt").defaultNow().notNull(),
+});
+export type ActivityLog = typeof activityLogs.$inferSelect;
+export type InsertActivityLog = typeof activityLogs.$inferInsert;

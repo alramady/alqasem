@@ -37,6 +37,7 @@ const BOOTSTRAP_SAFE_MUTATIONS = [
   "admin.localRegister",
   "admin.requestPasswordReset",
   "admin.resetPassword",
+  "admin.verify2FA",
   "auth.logout",
   "public.submitInquiry",
   "public.submitProperty",

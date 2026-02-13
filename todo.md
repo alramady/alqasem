@@ -177,3 +177,34 @@
   - [x] Admin password reset with session revocation
 - [x] Write comprehensive vitest tests for all three features (17 tests)
 - [x] All 185 tests passing
+
+## Advanced Security & Monitoring - Batch Implementation
+- [x] Feature 1: Configure SMTP credentials for production email sending
+  - [x] SMTP env vars requested (SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM_EMAIL)
+  - [x] Email service gracefully falls back to console logging when SMTP not configured
+  - [x] User can configure SMTP from Settings panel anytime
+- [x] Feature 2: TOTP-based Two-Factor Authentication (2FA)
+  - [x] Add totp_secret, totp_enabled, totp_backup_codes columns to users table
+  - [x] Install otplib and qrcode dependencies
+  - [x] Create 2FA setup endpoint (generate secret + QR code)
+  - [x] Create 2FA verify setup endpoint (validate TOTP code + generate backup codes)
+  - [x] Create 2FA disable endpoint (requires password)
+  - [x] Create backup codes regeneration endpoint
+  - [x] Create 2FA status endpoint
+  - [x] Modify login flow to require 2FA verification when enabled (two-step login)
+  - [x] Create verify2FA endpoint for login flow
+  - [x] Build 2FA setup/disable/backup UI in Profile page
+  - [x] Build 2FA verification step in Login page
+  - [x] Add verify2FA to CSRF bootstrap-safe mutations
+- [x] Feature 3: User Activity Dashboard
+  - [x] Add activity_logs table to schema
+  - [x] Create logActivity helper for tracking all user actions
+  - [x] Track login events, password changes, 2FA changes
+  - [x] Create server endpoints: getAllActivity, getUserActivity, getUserActivitySummary, getUserLoginHistory
+  - [x] Build full Activity Dashboard page with category filters and pagination
+  - [x] Build per-user detail view with summary stats, category breakdown, login history
+  - [x] Show login history with device/IP/timestamp
+  - [x] Show recent actions performed by user
+  - [x] Add activity link to admin sidebar
+- [x] Write comprehensive vitest tests for all new features (21 tests)
+- [x] All 206 tests passing

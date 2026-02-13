@@ -47,6 +47,7 @@ import {
   Maximize,
   ExternalLink,
   Monitor,
+  Activity,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -91,7 +92,8 @@ const menuGroups: MenuGroup[] = [
       { icon: Shield, label: "الصلاحيات", path: "/admin/permissions" },
       { icon: BarChart3, label: "التقارير", path: "/admin/reports" },
       { icon: Settings, label: "الإعدادات", path: "/admin/settings" },
-      { icon: ScrollText, label: "سجل النشاطات", path: "/admin/audit-log" },
+      { icon: ScrollText, label: "سجل المراجعة", path: "/admin/audit-log" },
+      { icon: Activity, label: "سجل النشاطات", path: "/admin/activity" },
       { icon: BookOpen, label: "أدلة الاستخدام", path: "/admin/guides" },
     ],
   },
