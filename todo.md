@@ -89,3 +89,7 @@
 - [x] Responsive design (mobile-first)
 - [x] Section alternation (white/sand and navy backgrounds)
 - [x] Card-based layouts with hover animations
+
+## Export & GitHub Update
+- [ ] Export entire project as zip file
+- [ ] Update GitHub repository with latest code
