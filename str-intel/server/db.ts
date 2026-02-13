@@ -17,8 +17,98 @@ export async function getDb() {
   return _db;
 }
 
+// ─── User Auth Helpers ───
+
+/** Get user by ID (excludes passwordHash from result) */
+export async function getUserById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select({
+    id: users.id,
+    username: users.username,
+    name: users.name,
+    displayName: users.displayName,
+    email: users.email,
+    mobile: users.mobile,
+    role: users.role,
+    isActive: users.isActive,
+    lastLoginIp: users.lastLoginIp,
+    lastSignedIn: users.lastSignedIn,
+    createdAt: users.createdAt,
+    updatedAt: users.updatedAt,
+    openId: users.openId,
+    loginMethod: users.loginMethod,
+  }).from(users).where(eq(users.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+/** Get user by username — INCLUDES passwordHash for login verification */
+export async function getUserByUsername(username: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users).where(eq(users.username, username)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+/** Update last login timestamp and IP */
+export async function updateUserLogin(userId: number, ipAddress: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({
+    lastSignedIn: new Date(),
+    lastLoginIp: ipAddress,
+  }).where(eq(users.id, userId));
+}
+
+/** Create a new user (admin action) */
+export async function createUser(data: {
+  username: string;
+  passwordHash: string;
+  name: string;
+  displayName?: string;
+  email?: string;
+  mobile?: string;
+  role?: "viewer" | "user" | "admin";
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(users).values({
+    username: data.username,
+    passwordHash: data.passwordHash,
+    name: data.name,
+    displayName: data.displayName || null,
+    email: data.email || null,
+    mobile: data.mobile || null,
+    role: data.role || "viewer",
+    isActive: true,
+    loginMethod: "local",
+    lastSignedIn: new Date(),
+  });
+  // Return the created user (without passwordHash)
+  return getUserByUsername(data.username).then(u => {
+    if (!u) return null;
+    const { passwordHash: _, ...safe } = u;
+    return safe;
+  });
+}
+
+/** Reset user password */
+export async function resetUserPassword(userId: number, newPasswordHash: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(users).set({ passwordHash: newPasswordHash }).where(eq(users.id, userId));
+}
+
+/** Legacy: Get user by openId (for backward compat) */
+export async function getUserByOpenId(openId: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+/** Legacy: upsert user by openId */
 export async function upsertUser(user: InsertUser): Promise<void> {
-  if (!user.openId) throw new Error("User openId is required for upsert");
   const db = await getDb();
   if (!db) { console.warn("[Database] Cannot upsert user: database not available"); return; }
   try {
@@ -36,18 +126,10 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     textFields.forEach(assignNullable);
     if (user.lastSignedIn !== undefined) { values.lastSignedIn = user.lastSignedIn; updateSet.lastSignedIn = user.lastSignedIn; }
     if (user.role !== undefined) { values.role = user.role; updateSet.role = user.role; }
-    else if (user.openId === ENV.ownerOpenId) { values.role = 'admin'; updateSet.role = 'admin'; }
     if (!values.lastSignedIn) values.lastSignedIn = new Date();
     if (Object.keys(updateSet).length === 0) updateSet.lastSignedIn = new Date();
     await db.insert(users).values(values).onDuplicateKeyUpdate({ set: updateSet });
   } catch (error) { console.error("[Database] Failed to upsert user:", error); throw error; }
-}
-
-export async function getUserByOpenId(openId: string) {
-  const db = await getDb();
-  if (!db) return undefined;
-  const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
 }
 
 // ─── Audit Log ───
@@ -76,7 +158,8 @@ export async function insertAuditLog(entry: {
 export async function getAuditLogs(limit = 50) {
   const db = await getDb();
   if (!db) return [];
-  return db.select({
+  // Join with users to get the username for each audit entry
+  const rows = await db.select({
     id: auditLog.id,
     userId: auditLog.userId,
     action: auditLog.action,
@@ -84,7 +167,13 @@ export async function getAuditLogs(limit = 50) {
     metadata: auditLog.metadata,
     ipAddress: auditLog.ipAddress,
     createdAt: auditLog.createdAt,
-  }).from(auditLog).orderBy(desc(auditLog.createdAt)).limit(limit);
+    userName: users.displayName,
+    userUsername: users.username,
+  }).from(auditLog)
+    .leftJoin(users, eq(auditLog.userId, users.id))
+    .orderBy(desc(auditLog.createdAt))
+    .limit(limit);
+  return rows;
 }
 
 // ─── User Management (Admin) ───
@@ -93,12 +182,15 @@ export async function getAllUsers() {
   if (!db) return [];
   return db.select({
     id: users.id,
-    openId: users.openId,
+    username: users.username,
     name: users.name,
+    displayName: users.displayName,
     email: users.email,
+    mobile: users.mobile,
     role: users.role,
     isActive: users.isActive,
     lastSignedIn: users.lastSignedIn,
+    lastLoginIp: users.lastLoginIp,
     createdAt: users.createdAt,
   }).from(users).orderBy(desc(users.lastSignedIn));
 }

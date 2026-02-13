@@ -3,13 +3,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   Settings, Play, Square, Globe, Shield, Database, Server, CheckCircle2, AlertTriangle,
-  Loader2, Users, UserCog, History, Activity, UserX, UserCheck,
+  Loader2, Users, UserCog, History, Activity, UserX, UserCheck, UserPlus, KeyRound, Eye, EyeOff,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -25,6 +27,17 @@ export default function AdminPanel() {
 
   const [selectedOtas, setSelectedOtas] = useState<string[]>([]);
   const [scheduleFreq, setScheduleFreq] = useState<"daily" | "weekly" | "biweekly" | "monthly">("weekly");
+
+  // Create user form state
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newUser, setNewUser] = useState({ username: "", password: "", name: "", displayName: "", email: "", mobile: "", role: "viewer" as "viewer" | "user" | "admin" });
+  const [showNewPw, setShowNewPw] = useState(false);
+
+  // Reset password form state
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetTarget, setResetTarget] = useState<{ id: number; name: string } | null>(null);
+  const [resetPassword, setResetPassword] = useState("");
+  const [showResetPw, setShowResetPw] = useState(false);
 
   const triggerMutation = trpc.scrapeJobs.trigger.useMutation({
     onSuccess: () => { toast.success("Scrape job started"); refetchAudit(); },
@@ -48,6 +61,26 @@ export default function AdminPanel() {
   });
   const activateMutation = trpc.admin.users.activate.useMutation({
     onSuccess: () => { toast.success("User activated"); refetchUsers(); refetchAudit(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const createUserMutation = trpc.admin.users.create.useMutation({
+    onSuccess: () => {
+      toast.success("User created successfully");
+      refetchUsers();
+      refetchAudit();
+      setCreateOpen(false);
+      setNewUser({ username: "", password: "", name: "", displayName: "", email: "", mobile: "", role: "viewer" });
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const resetPasswordMutation = trpc.admin.users.resetPassword.useMutation({
+    onSuccess: () => {
+      toast.success("Password reset successfully");
+      refetchAudit();
+      setResetOpen(false);
+      setResetTarget(null);
+      setResetPassword("");
+    },
     onError: (e) => toast.error(e.message),
   });
 
@@ -83,7 +116,6 @@ export default function AdminPanel() {
         <TabsContent value="scraping" className="space-y-4">
           <h2 className="text-lg font-semibold">Scraping & Scheduling</h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Trigger Scrape */}
             <Card className="bg-card/80 border-border/50">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Manual Scrape Trigger</CardTitle>
@@ -120,7 +152,6 @@ export default function AdminPanel() {
               </CardContent>
             </Card>
 
-            {/* Scheduler Controls */}
             <Card className="bg-card/80 border-border/50">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Scheduler Controls</CardTitle>
@@ -168,7 +199,6 @@ export default function AdminPanel() {
             </Card>
           </div>
 
-          {/* Recent Jobs */}
           <Card className="bg-card/80 border-border/50">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Recent Scrape Jobs</CardTitle>
@@ -214,12 +244,96 @@ export default function AdminPanel() {
 
         {/* ─── Users Tab ─── */}
         <TabsContent value="users" className="space-y-4">
-          <h2 className="text-lg font-semibold">User Management</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">User Management</h2>
+            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+              <DialogTrigger asChild>
+                <Button className="gap-2">
+                  <UserPlus className="h-4 w-4" />
+                  Create User
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Create New User</DialogTitle>
+                  <DialogDescription>Add a new user to the CoBNB Market Intelligence platform.</DialogDescription>
+                </DialogHeader>
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  createUserMutation.mutate(newUser);
+                }} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="cu-username">Username *</Label>
+                      <Input id="cu-username" placeholder="john.doe" value={newUser.username}
+                        onChange={e => setNewUser(p => ({ ...p, username: e.target.value }))} required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="cu-password">Password *</Label>
+                      <div className="relative">
+                        <Input id="cu-password" type={showNewPw ? "text" : "password"} placeholder="Min 8 characters"
+                          value={newUser.password} onChange={e => setNewUser(p => ({ ...p, password: e.target.value }))}
+                          required minLength={8} className="pr-10" />
+                        <button type="button" onClick={() => setShowNewPw(!showNewPw)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" tabIndex={-1}>
+                          {showNewPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="cu-name">Full Name *</Label>
+                      <Input id="cu-name" placeholder="John Doe" value={newUser.name}
+                        onChange={e => setNewUser(p => ({ ...p, name: e.target.value }))} required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="cu-display">Display Name</Label>
+                      <Input id="cu-display" placeholder="John" value={newUser.displayName}
+                        onChange={e => setNewUser(p => ({ ...p, displayName: e.target.value }))} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="cu-email">Email</Label>
+                      <Input id="cu-email" type="email" placeholder="john@cobnb.sa" value={newUser.email}
+                        onChange={e => setNewUser(p => ({ ...p, email: e.target.value }))} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="cu-mobile">Mobile</Label>
+                      <Input id="cu-mobile" placeholder="+966 5XX XXX XXXX" value={newUser.mobile}
+                        onChange={e => setNewUser(p => ({ ...p, mobile: e.target.value }))} />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cu-role">Role</Label>
+                    <Select value={newUser.role} onValueChange={(v: any) => setNewUser(p => ({ ...p, role: v }))}>
+                      <SelectTrigger className="bg-background/50"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="viewer">Viewer — Read-only access</SelectItem>
+                        <SelectItem value="user">User — Read + Export access</SelectItem>
+                        <SelectItem value="admin">Admin — Full access</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
+                    <Button type="submit" disabled={createUserMutation.isPending} className="gap-2">
+                      {createUserMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                      Create User
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+
           <Card className="bg-card/80 border-border/50">
             <CardContent className="pt-4">
               <Table>
                 <TableHeader>
                   <TableRow className="border-border/50">
+                    <TableHead className="text-muted-foreground">Username</TableHead>
                     <TableHead className="text-muted-foreground">Name</TableHead>
                     <TableHead className="text-muted-foreground">Email</TableHead>
                     <TableHead className="text-muted-foreground">Role</TableHead>
@@ -231,7 +345,8 @@ export default function AdminPanel() {
                 <TableBody>
                   {usersList?.map(u => (
                     <TableRow key={u.id} className="border-border/30">
-                      <TableCell className="font-medium">{u.name || "—"}</TableCell>
+                      <TableCell className="font-mono text-sm">{(u as any).username || "—"}</TableCell>
+                      <TableCell className="font-medium">{(u as any).displayName || u.name || "—"}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{u.email || "—"}</TableCell>
                       <TableCell>
                         <Select
@@ -265,37 +380,87 @@ export default function AdminPanel() {
                         {u.lastSignedIn ? new Date(u.lastSignedIn).toLocaleString() : "Never"}
                       </TableCell>
                       <TableCell className="text-right">
-                        {u.isActive ? (
+                        <div className="flex items-center justify-end gap-2">
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-7 text-xs border-red-500/30 text-red-400 hover:bg-red-500/10"
-                            onClick={() => deactivateMutation.mutate({ userId: u.id })}
-                            disabled={deactivateMutation.isPending}
+                            className="h-7 text-xs gap-1"
+                            onClick={() => {
+                              setResetTarget({ id: u.id, name: (u as any).displayName || u.name || (u as any).username || "User" });
+                              setResetPassword("");
+                              setResetOpen(true);
+                            }}
                           >
-                            <UserX className="h-3 w-3 mr-1" /> Deactivate
+                            <KeyRound className="h-3 w-3" /> Reset PW
                           </Button>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-7 text-xs border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
-                            onClick={() => activateMutation.mutate({ userId: u.id })}
-                            disabled={activateMutation.isPending}
-                          >
-                            <UserCheck className="h-3 w-3 mr-1" /> Activate
-                          </Button>
-                        )}
+                          {u.isActive ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs border-red-500/30 text-red-400 hover:bg-red-500/10"
+                              onClick={() => deactivateMutation.mutate({ userId: u.id })}
+                              disabled={deactivateMutation.isPending}
+                            >
+                              <UserX className="h-3 w-3 mr-1" /> Deactivate
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                              onClick={() => activateMutation.mutate({ userId: u.id })}
+                              disabled={activateMutation.isPending}
+                            >
+                              <UserCheck className="h-3 w-3 mr-1" /> Activate
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
                   {(!usersList || usersList.length === 0) && (
-                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No users found</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No users found</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
             </CardContent>
           </Card>
+
+          {/* Reset Password Dialog */}
+          <Dialog open={resetOpen} onOpenChange={setResetOpen}>
+            <DialogContent className="sm:max-w-sm">
+              <DialogHeader>
+                <DialogTitle>Reset Password</DialogTitle>
+                <DialogDescription>Set a new password for <strong>{resetTarget?.name}</strong>.</DialogDescription>
+              </DialogHeader>
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                if (resetTarget) {
+                  resetPasswordMutation.mutate({ userId: resetTarget.id, newPassword: resetPassword });
+                }
+              }} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="rp-password">New Password</Label>
+                  <div className="relative">
+                    <Input id="rp-password" type={showResetPw ? "text" : "password"} placeholder="Min 8 characters"
+                      value={resetPassword} onChange={e => setResetPassword(e.target.value)}
+                      required minLength={8} className="pr-10" />
+                    <button type="button" onClick={() => setShowResetPw(!showResetPw)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" tabIndex={-1}>
+                      {showResetPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setResetOpen(false)}>Cancel</Button>
+                  <Button type="submit" disabled={resetPasswordMutation.isPending} className="gap-2">
+                    {resetPasswordMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                    Reset Password
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
 
           <Card className="bg-card/80 border-border/50 border-blue-500/20">
             <CardContent className="p-5">
@@ -415,7 +580,7 @@ export default function AdminPanel() {
                       <TableRow key={nb.id} className="border-border/30">
                         <TableCell className="font-medium">{nb.name}</TableCell>
                         <TableCell className="text-right">{nbMetric?.totalListings || 0}</TableCell>
-                        <TableCell className="text-right">{nbMetric ? "Yes" : "No"}</TableCell>
+                        <TableCell className="text-right">{hasData ? "Yes" : "No"}</TableCell>
                         <TableCell>
                           {hasData ? (
                             <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-xs gap-1">
@@ -445,28 +610,38 @@ export default function AdminPanel() {
                 <TableHeader>
                   <TableRow className="border-border/50">
                     <TableHead className="text-muted-foreground">Timestamp</TableHead>
-                    <TableHead className="text-muted-foreground">User ID</TableHead>
+                    <TableHead className="text-muted-foreground">User</TableHead>
                     <TableHead className="text-muted-foreground">Action</TableHead>
                     <TableHead className="text-muted-foreground">Target</TableHead>
                     <TableHead className="text-muted-foreground">IP Address</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {auditLogs?.map((log: any) => (
-                    <TableRow key={log.id} className="border-border/30">
-                      <TableCell className="text-xs text-muted-foreground">
-                        {log.createdAt ? new Date(log.createdAt).toLocaleString() : "—"}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">{log.userId || "system"}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-xs capitalize">
-                          {log.action?.replace(/_/g, " ")}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{log.target || "—"}</TableCell>
-                      <TableCell className="text-xs font-mono text-muted-foreground">{log.ipAddress || "—"}</TableCell>
-                    </TableRow>
-                  ))}
+                  {auditLogs?.map((log: any) => {
+                    const logUser = usersList?.find(u => u.id === log.userId);
+                    return (
+                      <TableRow key={log.id} className="border-border/30">
+                        <TableCell className="text-xs text-muted-foreground">
+                          {log.createdAt ? new Date(log.createdAt).toLocaleString() : "—"}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {logUser ? ((logUser as any).displayName || logUser.name || (logUser as any).username) : `ID:${log.userId || "system"}`}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={`text-xs capitalize ${
+                            log.action?.includes("deactivate") || log.action?.includes("delete") ? "border-red-500/30 text-red-400" :
+                            log.action?.includes("create") || log.action?.includes("activate") ? "border-emerald-500/30 text-emerald-400" :
+                            log.action?.includes("login") ? "border-blue-500/30 text-blue-400" :
+                            ""
+                          }`}>
+                            {log.action?.replace(/_/g, " ")}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{log.target || "—"}</TableCell>
+                        <TableCell className="text-xs font-mono text-muted-foreground">{log.ipAddress || "—"}</TableCell>
+                      </TableRow>
+                    );
+                  })}
                   {(!auditLogs || auditLogs.length === 0) && (
                     <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No audit log entries yet</TableCell></TableRow>
                   )}
@@ -517,8 +692,8 @@ export default function AdminPanel() {
                     <span className="font-medium">{otaSources?.length || 0} active</span>
                   </div>
                   <div className="flex justify-between py-2 border-b border-border/30">
-                    <span className="text-muted-foreground">Scrapers</span>
-                    <span className="font-medium">Airbnb, Gathern, Booking, Agoda</span>
+                    <span className="text-muted-foreground">Authentication</span>
+                    <span className="font-medium">Local (bcrypt + JWT)</span>
                   </div>
                 </div>
               </div>

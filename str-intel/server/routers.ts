@@ -1,4 +1,4 @@
-import { COOKIE_NAME } from "@shared/const";
+import { COOKIE_NAME, BCRYPT_SALT_ROUNDS } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
@@ -8,13 +8,10 @@ import { getOrchestrator } from "./scrapers/orchestrator";
 import { generateExcelReport } from "./excel-export";
 import { getScheduler } from "./scheduler";
 import { TRPCError } from "@trpc/server";
+import bcrypt from "bcryptjs";
 
 // ─── Role-based middleware ───
-// viewer: read-only access to dashboard data
-// user: read + export access
-// admin: full access including scraping, scheduling, user management
-
-const viewerProcedure = protectedProcedure; // Any authenticated user can view
+const viewerProcedure = protectedProcedure;
 
 const exportProcedure = protectedProcedure.use(async ({ ctx, next }) => {
   if (ctx.user.role === "viewer") {
@@ -32,6 +29,31 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+    changePassword: protectedProcedure
+      .input(z.object({
+        currentPassword: z.string().min(1),
+        newPassword: z.string().min(8),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        // Get user with password hash
+        const userWithPw = await db.getUserByUsername(ctx.user.username || "");
+        if (!userWithPw || !userWithPw.passwordHash) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot change password for this account." });
+        }
+        const valid = await bcrypt.compare(input.currentPassword, userWithPw.passwordHash);
+        if (!valid) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Current password is incorrect." });
+        }
+        const newHash = await bcrypt.hash(input.newPassword, BCRYPT_SALT_ROUNDS);
+        await db.resetUserPassword(ctx.user.id, newHash);
+        await db.insertAuditLog({
+          userId: ctx.user.id,
+          action: "password_change",
+          target: `user:${ctx.user.id}`,
+          ipAddress: ctx.req.ip,
+        });
+        return { success: true };
+      }),
   }),
 
   // ─── Dashboard (protected — any authenticated user) ───
@@ -127,7 +149,7 @@ export const appRouter = router({
     }),
   }),
 
-  // ─── Scrape Jobs (admin only for trigger, protected for list) ───
+  // ─── Scrape Jobs ───
   scrapeJobs: router({
     list: viewerProcedure
       .input(z.object({ limit: z.number().optional() }))
@@ -141,7 +163,6 @@ export const appRouter = router({
         jobType: z.enum(["full_scan", "price_update", "calendar_check", "review_scan"]).optional(),
       }))
       .mutation(async ({ input, ctx }) => {
-        // Audit log
         await db.insertAuditLog({
           userId: ctx.user.id,
           action: "scrape_trigger",
@@ -149,7 +170,6 @@ export const appRouter = router({
           metadata: { jobType: input.jobType || "full_scan" },
           ipAddress: ctx.req.ip,
         });
-
         const orchestrator = getOrchestrator();
         const promise = orchestrator.runScrapeJob({
           otaSlugs: input.otaSlugs,
@@ -257,6 +277,41 @@ export const appRouter = router({
       list: adminProcedure.query(async () => {
         return db.getAllUsers();
       }),
+      create: adminProcedure
+        .input(z.object({
+          username: z.string().min(3).max(50).regex(/^[a-zA-Z0-9_.-]+$/, "Username can only contain letters, numbers, dots, hyphens, and underscores"),
+          password: z.string().min(8),
+          name: z.string().min(1),
+          displayName: z.string().optional(),
+          email: z.string().email().optional().or(z.literal("")),
+          mobile: z.string().optional(),
+          role: z.enum(["viewer", "user", "admin"]).optional(),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          // Check if username already exists
+          const existing = await db.getUserByUsername(input.username);
+          if (existing) {
+            throw new TRPCError({ code: "CONFLICT", message: "Username already exists." });
+          }
+          const passwordHash = await bcrypt.hash(input.password, BCRYPT_SALT_ROUNDS);
+          const user = await db.createUser({
+            username: input.username,
+            passwordHash,
+            name: input.name,
+            displayName: input.displayName,
+            email: input.email || undefined,
+            mobile: input.mobile,
+            role: input.role,
+          });
+          await db.insertAuditLog({
+            userId: ctx.user.id,
+            action: "user_create",
+            target: `user:${input.username}`,
+            metadata: { role: input.role || "viewer" },
+            ipAddress: ctx.req.ip,
+          });
+          return { success: true, user };
+        }),
       updateRole: adminProcedure
         .input(z.object({
           userId: z.number(),
@@ -272,6 +327,22 @@ export const appRouter = router({
             action: "role_change",
             target: `user:${input.userId}`,
             metadata: { newRole: input.role },
+            ipAddress: ctx.req.ip,
+          });
+          return { success: true };
+        }),
+      resetPassword: adminProcedure
+        .input(z.object({
+          userId: z.number(),
+          newPassword: z.string().min(8),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          const passwordHash = await bcrypt.hash(input.newPassword, BCRYPT_SALT_ROUNDS);
+          await db.resetUserPassword(input.userId, passwordHash);
+          await db.insertAuditLog({
+            userId: ctx.user.id,
+            action: "password_reset",
+            target: `user:${input.userId}`,
             ipAddress: ctx.req.ip,
           });
           return { success: true };

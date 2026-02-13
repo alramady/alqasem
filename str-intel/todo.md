@@ -98,3 +98,64 @@
 ### Branding
 - [x] Rename "STR Intelligence" to "CoBNB Market Intelligence" throughout
 - [x] Update color scheme to CoBNB brand (teal primary #00BFA6, dark background)
+
+## Phase 10: Auth Overhaul + User Management
+
+### Auth System Replacement
+- [x] Install bcryptjs and @types/bcryptjs
+- [x] Add username, passwordHash, displayName, mobile, lastLoginIp columns to users table
+- [x] Make openId nullable (legacy)
+- [x] Seed root admin user (Khalid Abdullah / Hobart / hashed password)
+- [x] Build POST /api/auth/login Express route (JWT cookie)
+- [x] Build POST /api/auth/logout Express route
+- [x] Build GET /api/auth/me Express route
+- [x] Rewrite authenticateRequest to use new JWT flow (userId, username, role, name)
+- [x] Remove Manus OAuth code (oauth.ts, OAuth callback, getLoginUrl, openId dependency)
+- [x] Build login page at /login with CoBNB branding
+- [x] 30-day JWT session expiry
+
+### Role-Based Access Control
+- [x] Update all data routes to protectedProcedure
+- [x] Add userProcedure for export routes (user + admin only)
+- [x] Admin routes use adminProcedure
+- [x] Frontend sidebar: show Export only for user/admin, Admin Panel only for admin
+- [x] Access Denied page for unauthorized route access
+- [x] Route guards on /export and /admin
+
+### User Management Admin Tab
+- [x] admin.users.list route
+- [x] admin.users.create route (hash password with bcrypt)
+- [x] admin.users.updateRole route (cannot change own role)
+- [x] admin.users.deactivate route (cannot deactivate self)
+- [x] admin.users.activate route
+- [x] admin.users.resetPassword route
+- [x] Users tab in Admin Panel with full table (display name, username, email, mobile, role, status, last login, actions)
+- [x] Add New User dialog
+- [x] Reset Password dialog
+- [x] Activity Log sub-section (last 50 audit entries)
+
+### Security Hardening
+- [x] Login rate limiting (5 attempts per 15 min per username)
+- [x] Inactive user login block
+- [x] bcrypt 12 salt rounds
+- [x] Exclude passwordHash from all API responses
+- [x] HttpOnly, SameSite Lax, Secure cookies
+
+### Audit Logging
+- [x] Log login, logout, scrape_trigger, scheduler_start/stop, export_csv, export_excel
+- [x] Log user_create, user_role_change, user_deactivate, user_activate, user_password_reset
+
+### Branding
+- [x] Login page subtitle: "Riyadh Short-Term Rental Market Intelligence"
+- [x] Browser tab title update
+
+### Testing
+- [x] Update vitest tests for new auth system
+- [x] Tests for login success/failure
+- [x] Tests for role-based route access
+- [x] Tests for user CRUD operations
+- [x] Tests for audit log entries
+
+### Delivery
+- [x] Export to ZIP
+- [x] Push to GitHub

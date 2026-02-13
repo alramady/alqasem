@@ -19,7 +19,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { getLoginUrl } from "@/const";
+// Login is now handled via /login route
 import { useIsMobile } from "@/hooks/useMobile";
 import {
   LayoutDashboard,
@@ -36,7 +36,7 @@ import {
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
-import { Button } from "./ui/button";
+
 
 const baseMenuItems = [
   { icon: LayoutDashboard, label: "Market Overview", path: "/" },
@@ -81,38 +81,8 @@ export default function DashboardLayout({
   }
 
   if (!user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
-          <div className="flex flex-col items-center gap-4">
-            <div className="flex items-center gap-3">
-              <TrendingUp className="h-10 w-10 text-primary" />
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                  CoBNB Market Intelligence
-                </h1>
-                <p className="text-xs text-muted-foreground font-medium tracking-wider uppercase">
-                  CoBNB KSA
-                </p>
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground text-center max-w-sm mt-2">
-              Riyadh Short-Term Rental Market Intelligence Platform. Sign in to
-              access market data, analytics, and competitor insights.
-            </p>
-          </div>
-          <Button
-            onClick={() => {
-              window.location.href = getLoginUrl();
-            }}
-            size="lg"
-            className="w-full shadow-lg hover:shadow-xl transition-all"
-          >
-            Sign in
-          </Button>
-        </div>
-      </div>
-    );
+    // RequireAuth in App.tsx handles redirect to /login
+    return <DashboardLayoutSkeleton />;
   }
 
   return (
@@ -239,15 +209,15 @@ function DashboardLayoutContent({
                 <button className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-accent/50 transition-colors w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                   <Avatar className="h-9 w-9 border shrink-0">
                     <AvatarFallback className="text-xs font-medium bg-primary/10 text-primary">
-                      {user?.name?.charAt(0).toUpperCase()}
+                      {(user?.displayName || user?.name || "U")?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
                     <p className="text-sm font-medium truncate leading-none">
-                      {user?.name || "-"}
+                      {user?.displayName || user?.name || "-"}
                     </p>
                     <p className="text-xs text-muted-foreground truncate mt-1.5">
-                      {user?.email || "-"}
+                      {user?.role === "admin" ? "Administrator" : user?.role === "user" ? "Analyst" : "Viewer"}
                     </p>
                   </div>
                 </button>

@@ -1,53 +1,183 @@
-import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+import { COOKIE_NAME, SESSION_MAX_AGE_MS, BCRYPT_SALT_ROUNDS, MAX_LOGIN_ATTEMPTS, LOGIN_LOCKOUT_MINUTES } from "@shared/const";
 import type { Express, Request, Response } from "express";
+import bcrypt from "bcryptjs";
 import * as db from "../db";
 import { getSessionCookieOptions } from "./cookies";
 import { sdk } from "./sdk";
 
-function getQueryParam(req: Request, key: string): string | undefined {
-  const value = req.query[key];
-  return typeof value === "string" ? value : undefined;
+// In-memory rate limiting store
+const loginAttempts = new Map<string, { count: number; firstAttempt: number }>();
+
+function checkRateLimit(username: string): { allowed: boolean; retryAfterSeconds?: number } {
+  const now = Date.now();
+  const record = loginAttempts.get(username);
+
+  if (!record) return { allowed: true };
+
+  const windowMs = LOGIN_LOCKOUT_MINUTES * 60 * 1000;
+  if (now - record.firstAttempt > windowMs) {
+    loginAttempts.delete(username);
+    return { allowed: true };
+  }
+
+  if (record.count >= MAX_LOGIN_ATTEMPTS) {
+    const retryAfterSeconds = Math.ceil((record.firstAttempt + windowMs - now) / 1000);
+    return { allowed: false, retryAfterSeconds };
+  }
+
+  return { allowed: true };
+}
+
+function recordFailedAttempt(username: string) {
+  const now = Date.now();
+  const record = loginAttempts.get(username);
+  if (!record) {
+    loginAttempts.set(username, { count: 1, firstAttempt: now });
+  } else {
+    record.count++;
+  }
+}
+
+function clearAttempts(username: string) {
+  loginAttempts.delete(username);
 }
 
 export function registerOAuthRoutes(app: Express) {
-  app.get("/api/oauth/callback", async (req: Request, res: Response) => {
-    const code = getQueryParam(req, "code");
-    const state = getQueryParam(req, "state");
-
-    if (!code || !state) {
-      res.status(400).json({ error: "code and state are required" });
-      return;
-    }
-
+  // POST /api/auth/login — local username/password login
+  app.post("/api/auth/login", async (req: Request, res: Response) => {
     try {
-      const tokenResponse = await sdk.exchangeCodeForToken(code, state);
-      const userInfo = await sdk.getUserInfo(tokenResponse.accessToken);
+      const { username, password } = req.body;
 
-      if (!userInfo.openId) {
-        res.status(400).json({ error: "openId missing from user info" });
+      if (!username || !password) {
+        res.status(400).json({ error: "Username and password are required" });
         return;
       }
 
-      await db.upsertUser({
-        openId: userInfo.openId,
-        name: userInfo.name || null,
-        email: userInfo.email ?? null,
-        loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
-        lastSignedIn: new Date(),
+      // Rate limiting check
+      const rateCheck = checkRateLimit(username);
+      if (!rateCheck.allowed) {
+        res.status(429).json({
+          error: `Too many login attempts. Try again in ${rateCheck.retryAfterSeconds} seconds.`,
+          retryAfterSeconds: rateCheck.retryAfterSeconds,
+        });
+        return;
+      }
+
+      // Look up user by username (includes passwordHash for verification)
+      const user = await db.getUserByUsername(username);
+      if (!user || !user.passwordHash) {
+        recordFailedAttempt(username);
+        res.status(401).json({ error: "Invalid username or password" });
+        return;
+      }
+
+      // Check if account is active
+      if (!user.isActive) {
+        res.status(403).json({ error: "Account is deactivated. Contact your administrator." });
+        return;
+      }
+
+      // Verify password
+      const valid = await bcrypt.compare(password, user.passwordHash);
+      if (!valid) {
+        recordFailedAttempt(username);
+        res.status(401).json({ error: "Invalid username or password" });
+        return;
+      }
+
+      // Clear rate limit on success
+      clearAttempts(username);
+
+      // Create JWT session
+      const sessionToken = await sdk.createSessionToken({
+        userId: user.id,
+        username: user.username || "",
+        role: user.role,
+        name: user.displayName || user.name || "",
       });
 
-      const sessionToken = await sdk.createSessionToken(userInfo.openId, {
-        name: userInfo.name || "",
-        expiresInMs: ONE_YEAR_MS,
+      // Update last sign-in
+      const clientIp = req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() || req.ip || "";
+      await db.updateUserLogin(user.id, clientIp);
+
+      // Audit log
+      await db.insertAuditLog({
+        userId: user.id,
+        action: "login",
+        target: username,
+        ipAddress: clientIp,
       });
+
+      // Set cookie
+      const cookieOptions = getSessionCookieOptions(req);
+      res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: SESSION_MAX_AGE_MS });
+
+      // Return user info (without passwordHash)
+      res.json({
+        success: true,
+        user: {
+          id: user.id,
+          username: user.username,
+          name: user.name,
+          displayName: user.displayName,
+          email: user.email,
+          mobile: user.mobile,
+          role: user.role,
+          isActive: user.isActive,
+        },
+      });
+    } catch (error) {
+      console.error("[Auth] Login failed:", error);
+      res.status(500).json({ error: "Login failed" });
+    }
+  });
+
+  // POST /api/auth/logout
+  app.post("/api/auth/logout", async (req: Request, res: Response) => {
+    try {
+      // Try to get user for audit log
+      try {
+        const user = await sdk.authenticateRequest(req);
+        if (user) {
+          const clientIp = req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() || req.ip || "";
+          await db.insertAuditLog({
+            userId: user.id,
+            action: "logout",
+            target: user.username || undefined,
+            ipAddress: clientIp,
+          });
+        }
+      } catch {
+        // Ignore auth errors during logout
+      }
 
       const cookieOptions = getSessionCookieOptions(req);
-      res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
-
-      res.redirect(302, "/");
+      res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+      res.json({ success: true });
     } catch (error) {
-      console.error("[OAuth] Callback failed", error);
-      res.status(500).json({ error: "OAuth callback failed" });
+      console.error("[Auth] Logout failed:", error);
+      res.status(500).json({ error: "Logout failed" });
+    }
+  });
+
+  // GET /api/auth/me — return current user from JWT cookie
+  app.get("/api/auth/me", async (req: Request, res: Response) => {
+    try {
+      const user = await sdk.authenticateRequest(req);
+      res.json({
+        id: user.id,
+        username: user.username,
+        name: user.name,
+        displayName: user.displayName,
+        email: user.email,
+        mobile: user.mobile,
+        role: user.role,
+        isActive: user.isActive,
+        lastSignedIn: user.lastSignedIn,
+        createdAt: user.createdAt,
+      });
+    } catch {
+      res.json(null);
     }
   });
 }

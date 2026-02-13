@@ -1,18 +1,25 @@
 import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, json, boolean, bigint, index } from "drizzle-orm/mysql-core";
 
-// ─── Users (from template) ───
+// ─── Users ───
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
-  openId: varchar("openId", { length: 64 }).notNull().unique(),
+  openId: varchar("openId", { length: 64 }), // legacy, now nullable
+  username: varchar("username", { length: 64 }).unique(),
+  passwordHash: varchar("passwordHash", { length: 256 }),
   name: text("name"),
+  displayName: varchar("displayName", { length: 128 }),
   email: varchar("email", { length: 320 }),
+  mobile: varchar("mobile", { length: 20 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["viewer", "user", "admin"]).default("user").notNull(),
   isActive: boolean("isActive").default(true).notNull(),
+  lastLoginIp: varchar("lastLoginIp", { length: 45 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_users_username").on(table.username),
+]);
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
