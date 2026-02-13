@@ -6,6 +6,7 @@ import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
 import "./index.css";
+import { getCsrfToken, resetCsrfToken } from "./hooks/useCsrfToken";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,15 @@ queryClient.getMutationCache().subscribe(event => {
   if (event.type === "updated" && event.action.type === "error") {
     const error = event.mutation.state.error;
     redirectToLoginIfUnauthorized(error);
+
+    // If CSRF token error, reset the cached token so next request fetches a fresh one
+    if (
+      error instanceof TRPCClientError &&
+      (error.message?.includes("CSRF") || error.message?.includes("csrf"))
+    ) {
+      resetCsrfToken();
+    }
+
     console.error("[API Mutation Error]", error);
   }
 });
@@ -44,6 +54,20 @@ const trpcClient = trpc.createClient({
     httpBatchLink({
       url: "/api/trpc",
       transformer: superjson,
+      async headers() {
+        // Attach the CSRF token to every request as a custom header.
+        // The server validates this on all POST (mutation) requests.
+        try {
+          const csrfToken = await getCsrfToken();
+          return {
+            "x-csrf-token": csrfToken,
+          };
+        } catch {
+          // If we can't get the token, send request without it.
+          // The server will reject mutations but queries will still work.
+          return {};
+        }
+      },
       fetch(input, init) {
         return globalThis.fetch(input, {
           ...(init ?? {}),
