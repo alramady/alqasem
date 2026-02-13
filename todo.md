@@ -137,3 +137,15 @@
 
 ## UI Adjustments
 - [x] Remove address/location text from the top bar
+
+## Remove Manus OAuth - Local Auth Only
+- [x] Audit current auth system (OAuth vs local auth flow)
+- [x] Remove Manus OAuth routes from server (_core/oauth.ts, callback handler)
+- [x] Update server context.ts to resolve user from local JWT only
+- [x] Update tRPC procedures to use local auth context
+- [x] Remove OAuth-related client code (getLoginUrl, OAuth redirect)
+- [x] Make admin login page the sole entry point for authentication
+- [x] Update useAuth hook to work with local auth only
+- [x] Seed root admin: Khalid Abdullah / Hobart / 15001500 / hobarti@protonmail.com
+- [x] Update all tests to reflect local-only auth
+- [x] Verify all admin and public pages work correctly

@@ -5,7 +5,6 @@ import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import rateLimit from "express-rate-limit";
 import { csrfProtection, csrfTokenEndpoint } from "./csrf";
-import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -105,8 +104,6 @@ async function startServer() {
   // CSRF protection middleware — validates token on all POST /api/trpc requests
   app.use(csrfProtection());
 
-  // OAuth callback under /api/oauth/callback
-  registerOAuthRoutes(app);
   // tRPC API
   app.use(
     "/api/trpc",

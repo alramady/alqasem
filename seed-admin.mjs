@@ -2,7 +2,6 @@ import { drizzle } from "drizzle-orm/mysql2";
 import { sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import dotenv from "dotenv";
-import crypto from "crypto";
 dotenv.config();
 
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -13,30 +12,32 @@ const db = drizzle(DATABASE_URL);
 async function seedAdmin() {
   console.log("🔐 Seeding root admin account...");
   
-  // Use ADMIN_PASSWORD env var, or generate a random secure password
-  let adminPassword = process.env.ADMIN_PASSWORD;
-  let wasGenerated = false;
-  if (!adminPassword) {
-    adminPassword = crypto.randomBytes(16).toString("base64url").slice(0, 20);
-    wasGenerated = true;
-  }
-  
+  // Root admin credentials
+  const adminPassword = process.env.ADMIN_PASSWORD || "15001500";
   const passwordHash = await bcrypt.hash(adminPassword, 12);
   
   await db.execute(sql`
     INSERT INTO users (openId, username, passwordHash, displayName, name, fullName, email, phone, role, userStatus, loginMethod)
-    VALUES ('root-admin-001', 'admin', ${passwordHash}, 'خالد عبدالله', 'Khalid Abdullah', 'خالد عبدالله القاسم', 'admin@alqasem.com.sa', '0500051679', 'admin', 'active', 'local')
-    ON DUPLICATE KEY UPDATE passwordHash = ${passwordHash}, role = 'admin', userStatus = 'active'
+    VALUES ('root-admin-001', 'Hobart', ${passwordHash}, 'Admin', 'Khalid Abdullah', 'خالد عبدالله', 'hobarti@protonmail.com', '+966504466528', 'admin', 'active', 'local')
+    ON DUPLICATE KEY UPDATE 
+      username = 'Hobart',
+      passwordHash = ${passwordHash}, 
+      displayName = 'Admin',
+      name = 'Khalid Abdullah',
+      fullName = 'خالد عبدالله',
+      email = 'hobarti@protonmail.com',
+      phone = '+966504466528',
+      role = 'admin', 
+      userStatus = 'active'
   `);
   
-  if (wasGenerated) {
-    console.log(`  ✅ Root admin account seeded (username: admin)`);
-    console.log(`  🔑 Generated password: ${adminPassword}`);
-    console.log(`  ⚠️  Save this password securely! It will not be shown again.`);
-    console.log(`  💡 Tip: Set ADMIN_PASSWORD env var before running this script to use a custom password.`);
-  } else {
-    console.log(`  ✅ Root admin account seeded (username: admin, password from ADMIN_PASSWORD env var)`);
-  }
+  console.log(`  ✅ Root admin account seeded`);
+  console.log(`     Name: Khalid Abdullah`);
+  console.log(`     User ID: Hobart`);
+  console.log(`     Email: hobarti@protonmail.com`);
+  console.log(`     Mobile: +966504466528`);
+  console.log(`     Display Name: Admin`);
+  console.log(`     Role: admin`);
   
   // Also seed permissions for all roles
   console.log("🔑 Seeding permissions...");
