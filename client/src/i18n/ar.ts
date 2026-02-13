@@ -20,7 +20,7 @@ export const ar: Record<string, string> = {
 
   // Hero
   "hero.badge": "شركة القاسم العقارية",
-  "hero.title1": "ابحث عن منزلك مع",
+  "hero.title1": "ابحث عن عقارك مع",
   "hero.title2": "القاسم",
   "hero.subtitle": "نقدم أفضل تجربة في البحث عن العقارات المميزة في المملكة العربية السعودية",
   "hero.search": "ابحث بالحي أو المدينة...",

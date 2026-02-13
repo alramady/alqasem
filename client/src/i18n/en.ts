@@ -20,7 +20,7 @@ export const en: Record<string, string> = {
 
   // Hero
   "hero.badge": "Al-Qasim Real Estate Co.",
-  "hero.title1": "Find Your Home with",
+  "hero.title1": "Find Your Property with",
   "hero.title2": "Al-Qasim",
   "hero.subtitle": "We offer the best experience in finding premium real estate in Saudi Arabia",
   "hero.search": "Search by district or city...",
