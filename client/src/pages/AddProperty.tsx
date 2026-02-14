@@ -6,9 +6,11 @@ import { Building2, Home, Landmark, Store, MapPin, Upload, Phone, CheckCircle, A
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useMemo } from "react";
 
 export default function AddProperty() {
   const { t, isAr } = useLanguage();
+  const { data: citiesWithDistricts } = trpc.public.getCitiesWithDistricts.useQuery();
 
   const steps = isAr ? ["نوع العقار", "الموقع", "التفاصيل", "الصور", "التواصل"] : ["Property Type", "Location", "Details", "Photos", "Contact"];
 
@@ -137,18 +139,22 @@ export default function AddProperty() {
                   <h3 className="text-xl font-bold text-[#0f1b33] mb-4">{steps[1]}</h3>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">{isAr ? "المدينة *" : "City *"}</label>
-                    <select value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} className="w-full px-4 py-3 bg-[#f8f5f0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30">
+                    <select value={form.city} onChange={e => setForm({ ...form, city: e.target.value, district: "" })} className="w-full px-4 py-3 bg-[#f8f5f0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30">
                       <option value="">{isAr ? "اختر المدينة" : "Select City"}</option>
-                      <option value="الرياض">{isAr ? "الرياض" : "Riyadh"}</option>
-                      <option value="جدة">{isAr ? "جدة" : "Jeddah"}</option>
-                      <option value="الدمام">{isAr ? "الدمام" : "Dammam"}</option>
-                      <option value="مكة">{isAr ? "مكة المكرمة" : "Makkah"}</option>
-                      <option value="المدينة">{isAr ? "المدينة المنورة" : "Madinah"}</option>
+                      {citiesWithDistricts?.map(c => (
+                        <option key={c.id} value={c.nameAr}>{isAr ? c.nameAr : c.nameEn}</option>
+                      ))}
                     </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">{isAr ? "الحي" : "District"}</label>
-                    <input type="text" value={form.district} onChange={e => setForm({ ...form, district: e.target.value })} className="w-full px-4 py-3 bg-[#f8f5f0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30" placeholder={isAr ? "مثال: حي النرجس" : "e.g. Al-Narjis"} />
+                    <select value={form.district} onChange={e => setForm({ ...form, district: e.target.value })} disabled={!form.city}
+                      className="w-full px-4 py-3 bg-[#f8f5f0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30 disabled:opacity-50 disabled:cursor-not-allowed">
+                      <option value="">{isAr ? "اختر الحي" : "Select District"}</option>
+                      {citiesWithDistricts?.find(c => c.nameAr === form.city)?.districts.map(d => (
+                        <option key={d.id} value={d.nameAr}>{isAr ? d.nameAr : d.nameEn}</option>
+                      ))}
+                    </select>
                   </div>
                   <div className="bg-[#f8f5f0] rounded-xl p-8 flex items-center justify-center text-gray-400">
                     <MapPin className="w-6 h-6 me-2" /><span>{isAr ? "سيتم تحديد الموقع على الخريطة لاحقاً" : "Location will be pinned on map later"}</span>

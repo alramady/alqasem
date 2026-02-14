@@ -289,3 +289,13 @@
 - [x] Include inquiry details in email body (Arabic)
 - [x] Push notification to project owner via notifyOwner
 - [x] All 245 tests passing
+
+## Dynamic City-District Filter Linking
+- [x] Link city filter to district filter on public Properties page
+- [x] When a city is selected, show only its districts in the district dropdown
+- [x] Reset district selection when city changes
+- [x] Update HeroSection city dropdown with dynamic cities from database
+- [x] Update AddProperty page city/district with dynamic linked dropdowns
+- [x] Update RequestProperty page city/district with dynamic linked dropdowns
+- [x] Add district filtering to searchProperties backend endpoint
+- [x] All 245 tests passing

@@ -48,6 +48,7 @@ export default function Properties() {
   const [selectedType, setSelectedType] = useState<PropertyType | undefined>(urlType || undefined);
   const [selectedListing, setSelectedListing] = useState<ListingType | undefined>(urlListing || undefined);
   const [selectedCity, setSelectedCity] = useState<string | undefined>(undefined);
+  const [selectedDistrict, setSelectedDistrict] = useState<string | undefined>(undefined);
   const [minPrice, setMinPrice] = useState<string>("");
   const [maxPrice, setMaxPrice] = useState<string>("");
   const [minArea, setMinArea] = useState<string>("");
@@ -78,6 +79,7 @@ export default function Properties() {
     type: selectedType,
     listingType: selectedListing,
     city: selectedCity,
+    district: selectedDistrict,
     minPrice: minPrice ? Number(minPrice) : undefined,
     maxPrice: maxPrice ? Number(maxPrice) : undefined,
     minArea: minArea ? Number(minArea) : undefined,
@@ -86,16 +88,23 @@ export default function Properties() {
     sort,
     page,
     limit: 12,
-  }), [debouncedQuery, selectedType, selectedListing, selectedCity, minPrice, maxPrice, minArea, maxArea, minRooms, sort, page]);
+  }), [debouncedQuery, selectedType, selectedListing, selectedCity, selectedDistrict, minPrice, maxPrice, minArea, maxArea, minRooms, sort, page]);
 
   const { data, isLoading, isFetching } = trpc.public.searchProperties.useQuery(searchInput);
-  const { data: cities } = trpc.public.getPropertyCities.useQuery();
+  const { data: citiesWithDistricts } = trpc.public.getCitiesWithDistricts.useQuery();
 
-  const hasActiveFilters = selectedType || selectedListing || selectedCity || minPrice || maxPrice || minArea || maxArea || minRooms || debouncedQuery;
+  // Get districts for the selected city
+  const availableDistricts = useMemo(() => {
+    if (!selectedCity || !citiesWithDistricts) return [];
+    const city = citiesWithDistricts.find(c => c.nameAr === selectedCity);
+    return city?.districts || [];
+  }, [selectedCity, citiesWithDistricts]);
+
+  const hasActiveFilters = selectedType || selectedListing || selectedCity || selectedDistrict || minPrice || maxPrice || minArea || maxArea || minRooms || debouncedQuery;
 
   const clearFilters = () => {
     setQuery(""); setDebouncedQuery(""); setSelectedType(undefined); setSelectedListing(undefined);
-    setSelectedCity(undefined); setMinPrice(""); setMaxPrice(""); setMinArea(""); setMaxArea("");
+    setSelectedCity(undefined); setSelectedDistrict(undefined); setMinPrice(""); setMaxPrice(""); setMinArea(""); setMaxArea("");
     setMinRooms(""); setSort("newest"); setPage(1);
   };
 
@@ -264,13 +273,22 @@ export default function Properties() {
           <AnimatePresence>
             {showAdvanced && (
               <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 pt-4 mt-4 border-t border-gray-100">
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 pt-4 mt-4 border-t border-gray-100">
                   <div>
-                    <label className="text-xs text-gray-500 mb-1 block">{t("filter.allCities")}</label>
-                    <select value={selectedCity || ""} onChange={(e) => { setSelectedCity(e.target.value || undefined); setPage(1); }}
+                    <label className="text-xs text-gray-500 mb-1 block">{isAr ? "المدينة" : "City"}</label>
+                    <select value={selectedCity || ""} onChange={(e) => { setSelectedCity(e.target.value || undefined); setSelectedDistrict(undefined); setPage(1); }}
                       className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30">
                       <option value="">{t("filter.allCities")}</option>
-                      {cities?.map(city => <option key={city} value={city}>{city}</option>)}
+                      {citiesWithDistricts?.map(city => <option key={city.id} value={city.nameAr}>{isAr ? city.nameAr : city.nameEn}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">{isAr ? "الحي" : "District"}</label>
+                    <select value={selectedDistrict || ""} onChange={(e) => { setSelectedDistrict(e.target.value || undefined); setPage(1); }}
+                      disabled={!selectedCity}
+                      className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30 disabled:opacity-50 disabled:cursor-not-allowed">
+                      <option value="">{isAr ? "جميع الأحياء" : "All Districts"}</option>
+                      {availableDistricts.map(d => <option key={d.id} value={d.nameAr}>{isAr ? d.nameAr : d.nameEn}</option>)}
                     </select>
                   </div>
                   <div>

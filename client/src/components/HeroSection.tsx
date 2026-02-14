@@ -4,6 +4,7 @@ import { Search, MapPin, ChevronDown, Building2, Home, Landmark, Store } from "l
 import { Link } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSiteConfig, useSection } from "@/contexts/SiteConfigContext";
+import { trpc } from "@/lib/trpc";
 
 const DEFAULT_HERO_IMG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663331132774/tcOWiOdepqYboEov.webp";
 
@@ -15,6 +16,8 @@ export default function HeroSection() {
   const [searchQuery, setSearchQuery] = useState("");
   const [propertyType, setPropertyType] = useState("all");
   const [city, setCity] = useState("all");
+
+  const { data: citiesWithDistricts } = trpc.public.getCitiesWithDistricts.useQuery();
 
   // Dynamic hero image from settings or CMS
   const heroImg = settings.hero_image || (heroSection?.content as any)?.image || DEFAULT_HERO_IMG;
@@ -122,9 +125,9 @@ export default function HeroSection() {
                   <select value={city} onChange={(e) => setCity(e.target.value)}
                     className="w-full ps-10 pe-8 py-3 bg-[#f8f5f0] rounded-lg text-[#0f1b33] text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30">
                     <option value="all">{t("hero.allCities")}</option>
-                    <option value="riyadh">{isAr ? "الرياض" : "Riyadh"}</option>
-                    <option value="jeddah">{isAr ? "جدة" : "Jeddah"}</option>
-                    <option value="dammam">{isAr ? "الدمام" : "Dammam"}</option>
+                    {citiesWithDistricts?.map(c => (
+                      <option key={c.id} value={c.nameAr}>{isAr ? c.nameAr : c.nameEn}</option>
+                    ))}
                   </select>
                   <ChevronDown className="absolute inset-inline-end-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 </div>

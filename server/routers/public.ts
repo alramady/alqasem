@@ -104,6 +104,7 @@ export const publicRouter = router({
     listingType: z.enum(["sale", "rent"]).optional(),
     status: z.enum(["active", "sold", "rented", "draft"]).optional(),
     city: z.string().optional(),
+    district: z.string().optional(),
     minPrice: z.number().min(0).optional(),
     maxPrice: z.number().min(0).optional(),
     minArea: z.number().min(0).optional(),
@@ -133,6 +134,7 @@ export const publicRouter = router({
     if (input?.type) conditions.push(eq(properties.type, input.type));
     if (input?.listingType) conditions.push(eq(properties.listingType, input.listingType));
     if (input?.city) conditions.push(eq(properties.city, input.city));
+    if (input?.district) conditions.push(eq(properties.district, input.district));
     if (input?.minPrice) conditions.push(gte(properties.price, String(input.minPrice)));
     if (input?.maxPrice) conditions.push(lte(properties.price, String(input.maxPrice)));
     if (input?.minArea) conditions.push(gte(properties.area, String(input.minArea)));

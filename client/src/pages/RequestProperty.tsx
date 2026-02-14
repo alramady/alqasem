@@ -9,6 +9,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function RequestProperty() {
   const { t, isAr } = useLanguage();
+  const { data: citiesWithDistricts } = trpc.public.getCitiesWithDistricts.useQuery();
 
   const steps = isAr
     ? ["نوع العقار", "الموقع والمواصفات", "الميزانية", "بيانات التواصل"]
@@ -153,16 +154,22 @@ export default function RequestProperty() {
                   <h3 className="text-xl font-bold text-[#0f1b33]">{steps[1]}</h3>
                   <div className="grid md:grid-cols-2 gap-4">
                     <div><label className="block text-sm font-medium text-gray-700 mb-1.5">{isAr ? "المدينة" : "City"}</label>
-                      <select value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} className="w-full px-4 py-3 bg-[#f8f5f0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30">
+                      <select value={form.city} onChange={e => setForm({ ...form, city: e.target.value, district: "" })} className="w-full px-4 py-3 bg-[#f8f5f0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30">
                         <option value="">{isAr ? "اختر المدينة" : "Select City"}</option>
-                        <option value="الرياض">{isAr ? "الرياض" : "Riyadh"}</option>
-                        <option value="جدة">{isAr ? "جدة" : "Jeddah"}</option>
-                        <option value="الدمام">{isAr ? "الدمام" : "Dammam"}</option>
-                        <option value="مكة">{isAr ? "مكة المكرمة" : "Makkah"}</option>
-                        <option value="المدينة">{isAr ? "المدينة المنورة" : "Madinah"}</option>
+                        {citiesWithDistricts?.map(c => (
+                          <option key={c.id} value={c.nameAr}>{isAr ? c.nameAr : c.nameEn}</option>
+                        ))}
                       </select>
                     </div>
-                    <div><label className="block text-sm font-medium text-gray-700 mb-1.5">{isAr ? "الحي المفضل" : "Preferred District"}</label><input type="text" value={form.district} onChange={e => setForm({ ...form, district: e.target.value })} className="w-full px-4 py-3 bg-[#f8f5f0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30" placeholder={isAr ? "مثال: حي النرجس" : "e.g. Al-Narjis"} /></div>
+                    <div><label className="block text-sm font-medium text-gray-700 mb-1.5">{isAr ? "الحي المفضل" : "Preferred District"}</label>
+                      <select value={form.district} onChange={e => setForm({ ...form, district: e.target.value })} disabled={!form.city}
+                        className="w-full px-4 py-3 bg-[#f8f5f0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <option value="">{isAr ? "اختر الحي" : "Select District"}</option>
+                        {citiesWithDistricts?.find(c => c.nameAr === form.city)?.districts.map(d => (
+                          <option key={d.id} value={d.nameAr}>{isAr ? d.nameAr : d.nameEn}</option>
+                        ))}
+                      </select>
+                    </div>
                     <div><label className="block text-sm font-medium text-gray-700 mb-1.5">{isAr ? "المساحة من (م²)" : "Min Area (sqm)"}</label><input type="number" value={form.minArea} onChange={e => setForm({ ...form, minArea: e.target.value })} className="w-full px-4 py-3 bg-[#f8f5f0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30" placeholder="150" /></div>
                     <div><label className="block text-sm font-medium text-gray-700 mb-1.5">{isAr ? "المساحة إلى (م²)" : "Max Area (sqm)"}</label><input type="number" value={form.maxArea} onChange={e => setForm({ ...form, maxArea: e.target.value })} className="w-full px-4 py-3 bg-[#f8f5f0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30" placeholder="500" /></div>
                     <div><label className="block text-sm font-medium text-gray-700 mb-1.5">{isAr ? "عدد الغرف" : "Rooms"}</label><input type="number" value={form.rooms} onChange={e => setForm({ ...form, rooms: e.target.value })} className="w-full px-4 py-3 bg-[#f8f5f0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30" placeholder="4" /></div>
