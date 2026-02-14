@@ -2,11 +2,12 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { trpc } from "@/lib/trpc";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import {
   Search, MapPin, BedDouble, Bath, Maximize, Heart, Scale,
   SlidersHorizontal, Grid3X3, List, ChevronDown, X,
-  ChevronLeft, ChevronRight, Loader2, ArrowUpDown, Map as MapIcon
+  ChevronLeft, ChevronRight, Loader2, ArrowUpDown, Map as MapIcon,
+  Check
 } from "lucide-react";
 import { lazy, Suspense } from "react";
 const PropertyMapView = lazy(() => import("@/components/PropertyMapView"));
@@ -18,6 +19,8 @@ import { useFavorites } from "@/hooks/useFavorites";
 type PropertyType = "villa" | "apartment" | "land" | "commercial" | "office" | "building";
 type ListingType = "sale" | "rent";
 type SortOption = "newest" | "oldest" | "price_asc" | "price_desc" | "area_asc" | "area_desc";
+type DirectionType = "north" | "south" | "east" | "west" | "north_east" | "north_west" | "south_east" | "south_west";
+type FurnishingType = "furnished" | "semi_furnished" | "unfurnished";
 
 const typeIcons: Record<string, string> = {
   villa: "🏠", apartment: "🏢", land: "🏗️", commercial: "🏪", office: "🏛️", building: "🏘️",
@@ -58,6 +61,13 @@ export default function Properties() {
   const [minArea, setMinArea] = useState<string>("");
   const [maxArea, setMaxArea] = useState<string>("");
   const [minRooms, setMinRooms] = useState<string>("");
+  const [minBathrooms, setMinBathrooms] = useState<string>("");
+  const [selectedDirection, setSelectedDirection] = useState<DirectionType | undefined>(undefined);
+  const [selectedFurnishing, setSelectedFurnishing] = useState<FurnishingType | undefined>(undefined);
+  const [maxBuildingAge, setMaxBuildingAge] = useState<string>("");
+  const [selectedAmenityIds, setSelectedAmenityIds] = useState<number[]>([]);
+  const [showAmenityDropdown, setShowAmenityDropdown] = useState(false);
+  const amenityDropdownRef = useRef<HTMLDivElement>(null);
   const [sort, setSort] = useState<SortOption>("newest");
   const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState<"grid" | "list" | "map">("grid");
@@ -67,6 +77,9 @@ export default function Properties() {
     try { return JSON.parse(localStorage.getItem("alqasim_compare") || "[]"); } catch { return []; }
   });
 
+  // Fetch amenities for the filter dropdown
+  const { data: amenitiesData } = trpc.public.getAmenities.useQuery();
+
   // Sync URL params with filter state when navigating from external links
   useEffect(() => {
     if (urlType) setSelectedType(urlType);
@@ -74,6 +87,17 @@ export default function Properties() {
     if (urlCity) setSelectedCity(urlCity);
     if (urlQuery) { setQuery(urlQuery); setDebouncedQuery(urlQuery); }
   }, [searchParams]);
+
+  // Close amenity dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (amenityDropdownRef.current && !amenityDropdownRef.current.contains(e.target as Node)) {
+        setShowAmenityDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   const handleSearchChange = useCallback((value: string) => {
     setQuery(value);
@@ -95,10 +119,15 @@ export default function Properties() {
     minArea: minArea ? Number(minArea) : undefined,
     maxArea: maxArea ? Number(maxArea) : undefined,
     minRooms: minRooms ? Number(minRooms) : undefined,
+    minBathrooms: minBathrooms ? Number(minBathrooms) : undefined,
+    direction: selectedDirection,
+    furnishing: selectedFurnishing,
+    maxBuildingAge: maxBuildingAge ? Number(maxBuildingAge) : undefined,
+    amenityIds: selectedAmenityIds.length > 0 ? selectedAmenityIds : undefined,
     sort,
     page,
     limit: 12,
-  }), [debouncedQuery, selectedType, selectedListing, selectedCity, selectedDistrict, minPrice, maxPrice, minArea, maxArea, minRooms, sort, page]);
+  }), [debouncedQuery, selectedType, selectedListing, selectedCity, selectedDistrict, minPrice, maxPrice, minArea, maxArea, minRooms, minBathrooms, selectedDirection, selectedFurnishing, maxBuildingAge, selectedAmenityIds, sort, page]);
 
   const { data, isLoading, isFetching } = trpc.public.searchProperties.useQuery(searchInput);
   const { data: citiesWithDistricts } = trpc.public.getCitiesWithDistricts.useQuery();
@@ -110,12 +139,15 @@ export default function Properties() {
     return city?.districts || [];
   }, [selectedCity, citiesWithDistricts]);
 
-  const hasActiveFilters = selectedType || selectedListing || selectedCity || selectedDistrict || minPrice || maxPrice || minArea || maxArea || minRooms || debouncedQuery;
+  const hasActiveFilters = selectedType || selectedListing || selectedCity || selectedDistrict || minPrice || maxPrice || minArea || maxArea || minRooms || minBathrooms || selectedDirection || selectedFurnishing || maxBuildingAge || selectedAmenityIds.length > 0 || debouncedQuery;
+
+  const activeFilterCount = [selectedType, selectedListing, selectedCity, selectedDistrict, minPrice, maxPrice, minArea, maxArea, minRooms, minBathrooms, selectedDirection, selectedFurnishing, maxBuildingAge, selectedAmenityIds.length > 0 ? "yes" : ""].filter(Boolean).length;
 
   const clearFilters = () => {
     setQuery(""); setDebouncedQuery(""); setSelectedType(undefined); setSelectedListing(undefined);
     setSelectedCity(undefined); setSelectedDistrict(undefined); setMinPrice(""); setMaxPrice(""); setMinArea(""); setMaxArea("");
-    setMinRooms(""); setSort("newest"); setPage(1);
+    setMinRooms(""); setMinBathrooms(""); setSelectedDirection(undefined); setSelectedFurnishing(undefined);
+    setMaxBuildingAge(""); setSelectedAmenityIds([]); setSort("newest"); setPage(1);
   };
 
   const toggleFav = (id: number, e: React.MouseEvent) => {
@@ -140,6 +172,13 @@ export default function Properties() {
     });
   };
 
+  const toggleAmenity = (id: number) => {
+    setSelectedAmenityIds(prev =>
+      prev.includes(id) ? prev.filter(a => a !== id) : [...prev, id]
+    );
+    setPage(1);
+  };
+
   const propertyTypes: { value: PropertyType; label: string }[] = [
     { value: "villa", label: t("filter.villa") },
     { value: "apartment", label: t("filter.apartment") },
@@ -157,6 +196,44 @@ export default function Properties() {
     { value: "area_asc", label: t("filter.areaAsc") },
     { value: "area_desc", label: t("filter.areaDesc") },
   ];
+
+  const directions = [
+    { value: "north", label: t("filter.north") },
+    { value: "south", label: t("filter.south") },
+    { value: "east", label: t("filter.east") },
+    { value: "west", label: t("filter.west") },
+    { value: "north_east", label: t("filter.northeast") },
+    { value: "north_west", label: t("filter.northwest") },
+    { value: "south_east", label: t("filter.southeast") },
+    { value: "south_west", label: t("filter.southwest") },
+  ];
+
+  const furnishingOptions = [
+    { value: "furnished", label: t("filter.furnished") },
+    { value: "semi_furnished", label: t("filter.semifurnished") },
+    { value: "unfurnished", label: t("filter.unfurnished") },
+  ];
+
+  // Group amenities by category
+  const amenitiesByCategory = useMemo(() => {
+    if (!amenitiesData) return {};
+    const grouped: Record<string, typeof amenitiesData> = {};
+    for (const a of amenitiesData) {
+      const cat = a.category || "other";
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(a);
+    }
+    return grouped;
+  }, [amenitiesData]);
+
+  const categoryLabels: Record<string, { ar: string; en: string }> = {
+    basic: { ar: "أساسيات", en: "Basic" },
+    comfort: { ar: "راحة", en: "Comfort" },
+    security: { ar: "أمان", en: "Security" },
+    outdoor: { ar: "خارجي", en: "Outdoor" },
+    entertainment: { ar: "ترفيه", en: "Entertainment" },
+    other: { ar: "أخرى", en: "Other" },
+  };
 
   return (
     <div className="min-h-screen bg-[#f8f5f0]">
@@ -243,9 +320,12 @@ export default function Properties() {
 
             <div className="flex items-center gap-2">
               <button onClick={() => setShowAdvanced(!showAdvanced)}
-                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 hover:text-[#0f1b33] bg-gray-50 rounded-lg border border-gray-200 transition-colors">
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${showAdvanced || activeFilterCount > 0 ? "bg-[#c8a45e]/10 text-[#c8a45e] border-[#c8a45e]/30" : "text-gray-600 hover:text-[#0f1b33] bg-gray-50 border-gray-200"}`}>
                 <SlidersHorizontal className="w-4 h-4" />
                 {t("filter.advancedFilters")}
+                {activeFilterCount > 0 && (
+                  <span className="bg-[#c8a45e] text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">{activeFilterCount}</span>
+                )}
                 <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showAdvanced ? "rotate-180" : ""}`} />
               </button>
 
@@ -277,6 +357,7 @@ export default function Properties() {
           <AnimatePresence>
             {showAdvanced && (
               <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                {/* Row 1: Location + Price + Area + Rooms */}
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 pt-4 mt-4 border-t border-gray-100">
                   <div>
                     <label className="text-xs text-gray-500 mb-1 block">{isAr ? "المدينة" : "City"}</label>
@@ -330,6 +411,140 @@ export default function Properties() {
                     </select>
                   </div>
                 </div>
+
+                {/* Row 2: New Advanced Filters */}
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mt-3">
+                  {/* Bathrooms */}
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">{t("filter.bathrooms")}</label>
+                    <select value={minBathrooms} onChange={(e) => { setMinBathrooms(e.target.value); setPage(1); }}
+                      className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30">
+                      <option value="">{t("filter.allPurposes")}</option>
+                      {[1, 2, 3, 4, 5, 6].map(n => (
+                        <option key={n} value={n}>{n}+ {t("filter.bathrooms")}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Direction */}
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">{t("filter.direction")}</label>
+                    <select value={selectedDirection || ""} onChange={(e) => { setSelectedDirection((e.target.value || undefined) as DirectionType | undefined); setPage(1); }}
+                      className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30">
+                      <option value="">{t("filter.allDirections")}</option>
+                      {directions.map(d => (
+                        <option key={d.value} value={d.value}>{d.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Furnishing */}
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">{t("filter.furnishing")}</label>
+                    <select value={selectedFurnishing || ""} onChange={(e) => { setSelectedFurnishing((e.target.value || undefined) as FurnishingType | undefined); setPage(1); }}
+                      className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30">
+                      <option value="">{t("filter.allFurnishing")}</option>
+                      {furnishingOptions.map(f => (
+                        <option key={f.value} value={f.value}>{f.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Building Age */}
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">{t("filter.buildingAge")}</label>
+                    <select value={maxBuildingAge} onChange={(e) => { setMaxBuildingAge(e.target.value); setPage(1); }}
+                      className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30">
+                      <option value="">{t("filter.allPurposes")}</option>
+                      <option value="0">{t("filter.new")}</option>
+                      <option value="5">≤ 5 {t("filter.yearsOld")}</option>
+                      <option value="10">≤ 10 {t("filter.yearsOld")}</option>
+                      <option value="20">≤ 20 {t("filter.yearsOld")}</option>
+                      <option value="30">≤ 30 {t("filter.yearsOld")}</option>
+                    </select>
+                  </div>
+
+                  {/* Amenities Multi-Select Dropdown */}
+                  <div className="col-span-2 relative" ref={amenityDropdownRef}>
+                    <label className="text-xs text-gray-500 mb-1 block">{t("filter.amenities")}</label>
+                    <button
+                      onClick={() => setShowAmenityDropdown(!showAmenityDropdown)}
+                      className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30 flex items-center justify-between text-start"
+                    >
+                      <span className={selectedAmenityIds.length > 0 ? "text-[#0f1b33]" : "text-gray-400"}>
+                        {selectedAmenityIds.length > 0
+                          ? `${selectedAmenityIds.length} ${t("filter.selectedAmenities")}`
+                          : t("filter.selectAmenities")}
+                      </span>
+                      <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showAmenityDropdown ? "rotate-180" : ""}`} />
+                    </button>
+
+                    {/* Amenity Dropdown */}
+                    <AnimatePresence>
+                      {showAmenityDropdown && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -5 }}
+                          className="absolute top-full mt-1 inset-x-0 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-72 overflow-y-auto"
+                        >
+                          <div className="p-3">
+                            {Object.entries(amenitiesByCategory).map(([cat, items]) => (
+                              <div key={cat} className="mb-3 last:mb-0">
+                                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                                  {isAr ? categoryLabels[cat]?.ar : categoryLabels[cat]?.en}
+                                </p>
+                                <div className="grid grid-cols-2 gap-1">
+                                  {items.map(amenity => (
+                                    <button
+                                      key={amenity.id}
+                                      onClick={() => toggleAmenity(amenity.id)}
+                                      className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-all text-start ${
+                                        selectedAmenityIds.includes(amenity.id)
+                                          ? "bg-[#c8a45e]/15 text-[#c8a45e] font-medium"
+                                          : "hover:bg-gray-50 text-gray-600"
+                                      }`}
+                                    >
+                                      <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                                        selectedAmenityIds.includes(amenity.id)
+                                          ? "bg-[#c8a45e] border-[#c8a45e]"
+                                          : "border-gray-300"
+                                      }`}>
+                                        {selectedAmenityIds.includes(amenity.id) && <Check className="w-3 h-3 text-white" />}
+                                      </span>
+                                      {amenity.icon && <span>{amenity.icon}</span>}
+                                      <span className="truncate">{isAr ? amenity.nameAr : (amenity.nameEn || amenity.nameAr)}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+
+                {/* Selected amenity tags */}
+                {selectedAmenityIds.length > 0 && amenitiesData && (
+                  <div className="flex flex-wrap gap-1.5 mt-3">
+                    {selectedAmenityIds.map(id => {
+                      const amenity = amenitiesData.find(a => a.id === id);
+                      if (!amenity) return null;
+                      return (
+                        <span key={id} className="inline-flex items-center gap-1 bg-[#c8a45e]/10 text-[#c8a45e] px-2.5 py-1 rounded-full text-xs font-medium">
+                          {amenity.icon && <span>{amenity.icon}</span>}
+                          {isAr ? amenity.nameAr : (amenity.nameEn || amenity.nameAr)}
+                          <button onClick={() => toggleAmenity(id)} className="hover:text-[#E31E24] transition-colors">
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+
                 {hasActiveFilters && (
                   <div className="flex justify-end pt-3">
                     <button onClick={clearFilters}
@@ -384,7 +599,7 @@ export default function Properties() {
                           {/* Image */}
                           <div className={`relative overflow-hidden ${viewMode === "list" ? "w-64 md:w-72 shrink-0" : "aspect-[4/3]"}`}>
                             {coverImage ? (
-                              <img src={coverImage} alt={property.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                              <img src={coverImage} alt={property.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" loading="lazy" />
                             ) : (
                               <div className="w-full h-full bg-gradient-to-br from-[#0f1b33] to-[#1a2b4a] flex items-center justify-center">
                                 <span className="text-4xl">{typeIcons[property.type] || "🏠"}</span>

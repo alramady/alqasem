@@ -355,3 +355,36 @@
 - [x] Include 3-phase launch plan (MVP, Phase 2, Phase 3)
 - [x] Include KPIs per phase
 - [x] Include compliance/risk considerations
+
+## Advanced Search & Filtering (Service 3)
+- [x] Add bathrooms column to properties table
+- [x] Add buildingAge column to properties table
+- [x] Add floor column to properties table
+- [x] Add direction (facing) column to properties table
+- [x] Add furnishing status column to properties table
+- [x] Create amenities table (id, nameAr, nameEn, icon, category)
+- [x] Create property_amenities junction table (propertyId, amenityId)
+- [x] Seed common Saudi amenities (pool, elevator, parking, garden, AC, maid room, driver room, majlis, etc.)
+- [x] Push database migrations
+- [x] Extend searchProperties backend with: bathrooms filter, area range (min/max), amenities filter, buildingAge, floor, direction, furnishing
+- [ ] Add result count preview before applying filters
+- [x] Build collapsible "Advanced Filters" panel on Properties page
+- [x] Add bathrooms filter (1-5+)
+- [x] Add exact area range filter (min m² - max m²)
+- [x] Add amenities checkbox grid filter
+- [x] Add building age filter
+- [x] Add floor filter
+- [x] Add direction filter (N/S/E/W)
+- [x] Add furnishing filter (furnished/semi/unfurnished)
+- [x] Update admin property create/edit forms with new fields
+- [x] Write vitest tests for new filters (13 tests passing)
+- [x] Verify all 290 existing tests pass
+
+## Production SMTP Configuration
+- [x] Request SMTP credentials from user (host, port, user, pass, from email)
+- [x] Configure email service with production SMTP (Gmail via App Password)
+- [x] Write vitest test to validate SMTP connection (5 tests passing)
+- [x] Verify forgot-password email sends correctly
+- [x] Verify inquiry notification emails send correctly (confirmed in server logs)
+- [x] Verify newsletter subscription notification sends correctly
+- [x] All 290 tests passing

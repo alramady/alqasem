@@ -8,6 +8,7 @@ import {
   users, properties, projects, inquiries, media, pages,
   homepageSections, settings, auditLogs, notifications, messages, permissions, guides,
   passwordResetTokens, userSessions, activityLogs, cities, districts,
+  amenities, propertyAmenities,
 } from "../../drizzle/schema";
 import crypto from "crypto";
 import { sendPasswordResetEmail } from "../email";
@@ -569,6 +570,9 @@ export const adminRouter = router({
     address: z.string().optional(), addressEn: z.string().optional(),
     videoUrl: z.string().optional(), images: z.array(z.string()).optional(), features: z.array(z.string()).optional(),
     latitude: z.number().optional(), longitude: z.number().optional(),
+    floor: z.number().int().optional(), direction: z.string().optional(),
+    furnishing: z.string().optional(), buildingAge: z.number().int().optional(),
+    amenityIds: z.array(z.number()).optional(),
   })).mutation(async ({ input, ctx }) => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
@@ -588,8 +592,19 @@ export const adminRouter = router({
       latitude: input.latitude ? String(input.latitude) : null,
       longitude: input.longitude ? String(input.longitude) : null,
       images: input.images || null, features: input.features || null,
+      floor: input.floor ?? null, direction: (input.direction || null) as any,
+      furnishing: (input.furnishing || null) as any, buildingAge: input.buildingAge ?? null,
       createdBy: ctx.user.id,
     });
+    // Set amenities if provided
+    if (input.amenityIds && input.amenityIds.length > 0) {
+      const insertedId = (result as any).insertId;
+      if (insertedId) {
+        await db.insert(propertyAmenities).values(
+          input.amenityIds.map(amenityId => ({ propertyId: insertedId, amenityId }))
+        );
+      }
+    }
     await logAudit(ctx.user.id, ctx.user.name || null, "create", "property", null, { title: input.title });
     await logActivity(ctx.user.id, ctx.user.name || ctx.user.username, "create_property", "property", `إضافة عقار: ${input.title}`, "property", undefined, { title: input.title, type: input.type });
     await notifyAdmins("عقار جديد", `تم إضافة عقار: ${input.title}`, "property", "/admin/properties");
@@ -605,6 +620,9 @@ export const adminRouter = router({
     address: z.string().optional(), addressEn: z.string().optional(),
     videoUrl: z.string().optional(), images: z.array(z.string()).optional(), features: z.array(z.string()).optional(),
     latitude: z.number().optional(), longitude: z.number().optional(),
+    floor: z.number().int().nullable().optional(), direction: z.string().nullable().optional(),
+    furnishing: z.string().nullable().optional(), buildingAge: z.number().int().nullable().optional(),
+    amenityIds: z.array(z.number()).optional(),
   })).mutation(async ({ input, ctx }) => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
@@ -632,7 +650,20 @@ export const adminRouter = router({
     if (s.videoUrl !== undefined) updateData.videoUrl = s.videoUrl;
     if (input.images !== undefined) updateData.images = input.images;
     if (input.features !== undefined) updateData.features = input.features;
-     await db.update(properties).set(updateData).where(eq(properties.id, input.id));
+    if (input.floor !== undefined) updateData.floor = input.floor;
+    if (input.direction !== undefined) updateData.direction = input.direction;
+    if (input.furnishing !== undefined) updateData.furnishing = input.furnishing;
+    if (input.buildingAge !== undefined) updateData.buildingAge = input.buildingAge;
+    await db.update(properties).set(updateData).where(eq(properties.id, input.id));
+    // Update amenities if provided
+    if (input.amenityIds !== undefined) {
+      await db.delete(propertyAmenities).where(eq(propertyAmenities.propertyId, input.id));
+      if (input.amenityIds.length > 0) {
+        await db.insert(propertyAmenities).values(
+          input.amenityIds.map(amenityId => ({ propertyId: input.id, amenityId }))
+        );
+      }
+    }
     await logAudit(ctx.user.id, ctx.user.name || null, "update", "property", input.id, {}, oldProp, updateData);
     await logActivity(ctx.user.id, ctx.user.name || ctx.user.username, "update_property", "property", `تعديل عقار #${input.id}`, "property", input.id, { changes: Object.keys(updateData) });
     return { success: true };
@@ -1941,5 +1972,91 @@ export const adminRouter = router({
     await logAudit(ctx.user.id, ctx.user.name || null, "delete", "district", input.id, {});
     await logActivity(ctx.user.id, ctx.user.name || null, "delete_district", "settings", "حذف حي", "district", input.id);
     return { success: true };
+  }),
+
+  // ============ AMENITIES MANAGEMENT =============
+  listAmenities: adminProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    return db.select().from(amenities).orderBy(asc(amenities.sortOrder));
+  }),
+  createAmenity: adminProcedure.input(z.object({
+    nameAr: z.string().min(1),
+    nameEn: z.string().optional(),
+    icon: z.string().optional(),
+    category: z.enum(["basic", "comfort", "security", "outdoor", "entertainment", "other"]).optional(),
+    sortOrder: z.number().optional(),
+  })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    await db.insert(amenities).values({
+      nameAr: input.nameAr,
+      nameEn: input.nameEn || null,
+      icon: input.icon || null,
+      category: (input.category || "basic") as any,
+      sortOrder: input.sortOrder ?? 0,
+    });
+    await logActivity(ctx.user.id, ctx.user.name || null, "create_amenity", "settings", `إضافة ميزة: ${input.nameAr}`);
+    return { success: true };
+  }),
+  updateAmenity: adminProcedure.input(z.object({
+    id: z.number(),
+    nameAr: z.string().min(1),
+    nameEn: z.string().optional(),
+    icon: z.string().optional(),
+    category: z.enum(["basic", "comfort", "security", "outdoor", "entertainment", "other"]).optional(),
+    sortOrder: z.number().optional(),
+  })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    await db.update(amenities).set({
+      nameAr: input.nameAr,
+      nameEn: input.nameEn || null,
+      icon: input.icon || null,
+      category: (input.category || "basic") as any,
+      sortOrder: input.sortOrder ?? 0,
+    }).where(eq(amenities.id, input.id));
+    await logActivity(ctx.user.id, ctx.user.name || null, "update_amenity", "settings", `تحديث ميزة: ${input.nameAr}`);
+    return { success: true };
+  }),
+  toggleAmenityActive: adminProcedure.input(z.object({ id: z.number(), isActive: z.boolean() })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    await db.update(amenities).set({ isActive: input.isActive }).where(eq(amenities.id, input.id));
+    return { success: true };
+  }),
+  deleteAmenity: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    await db.delete(propertyAmenities).where(eq(propertyAmenities.amenityId, input.id));
+    await db.delete(amenities).where(eq(amenities.id, input.id));
+    await logActivity(ctx.user.id, ctx.user.name || null, "delete_amenity", "settings", "حذف ميزة");
+    return { success: true };
+  }),
+
+  // ============ PROPERTY AMENITIES =============
+  setPropertyAmenities: adminProcedure.input(z.object({
+    propertyId: z.number(),
+    amenityIds: z.array(z.number()),
+  })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    // Delete existing and re-insert
+    await db.delete(propertyAmenities).where(eq(propertyAmenities.propertyId, input.propertyId));
+    if (input.amenityIds.length > 0) {
+      await db.insert(propertyAmenities).values(
+        input.amenityIds.map(amenityId => ({ propertyId: input.propertyId, amenityId }))
+      );
+    }
+    await logActivity(ctx.user.id, ctx.user.name || null, "update_property_amenities", "property", `تحديث مزايا عقار #${input.propertyId}`, "property", input.propertyId);
+    return { success: true };
+  }),
+  getPropertyAmenityIds: adminProcedure.input(z.object({
+    propertyId: z.number(),
+  })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const result = await db.select({ amenityId: propertyAmenities.amenityId }).from(propertyAmenities).where(eq(propertyAmenities.propertyId, input.propertyId));
+    return result.map(r => r.amenityId);
   }),
 });

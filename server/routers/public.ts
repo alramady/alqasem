@@ -3,8 +3,8 @@ import { getDb } from "../db";
 import { sanitizeText } from "../sanitize";
 import { sendEmail } from "../email";
 import { notifyOwner } from "../_core/notification";
-import { inquiries, properties, projects, notifications, users, auditLogs, settings, homepageSections, pages, newsletterSubscribers, propertyViews, cities, districts } from "../../drizzle/schema";
-import { eq, desc, asc, and, isNull, like, or, gte, lte, sql, count } from "drizzle-orm";
+import { inquiries, properties, projects, notifications, users, auditLogs, settings, homepageSections, pages, newsletterSubscribers, propertyViews, cities, districts, amenities, propertyAmenities } from "../../drizzle/schema";
+import { eq, desc, asc, and, isNull, like, or, gte, lte, sql, count, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
@@ -113,6 +113,13 @@ export const publicRouter = router({
     maxArea: z.number().min(0).optional(),
     minRooms: z.number().int().min(0).optional(),
     maxRooms: z.number().int().min(0).optional(),
+    minBathrooms: z.number().int().min(0).optional(),
+    maxBathrooms: z.number().int().min(0).optional(),
+    floor: z.number().int().optional(),
+    direction: z.enum(["north", "south", "east", "west", "north_east", "north_west", "south_east", "south_west"]).optional(),
+    furnishing: z.enum(["furnished", "semi_furnished", "unfurnished"]).optional(),
+    maxBuildingAge: z.number().int().min(0).optional(),
+    amenityIds: z.array(z.number().int()).optional(),
     sort: z.enum(["newest", "oldest", "price_asc", "price_desc", "area_asc", "area_desc"]).optional(),
     page: z.number().int().min(1).optional(),
     limit: z.number().int().min(1).max(50).optional(),
@@ -143,6 +150,12 @@ export const publicRouter = router({
     if (input?.maxArea) conditions.push(lte(properties.area, String(input.maxArea)));
     if (input?.minRooms) conditions.push(gte(properties.rooms, input.minRooms));
     if (input?.maxRooms) conditions.push(lte(properties.rooms, input.maxRooms));
+    if (input?.minBathrooms) conditions.push(gte(properties.bathrooms, input.minBathrooms));
+    if (input?.maxBathrooms) conditions.push(lte(properties.bathrooms, input.maxBathrooms));
+    if (input?.floor) conditions.push(eq(properties.floor, input.floor));
+    if (input?.direction) conditions.push(eq(properties.direction, input.direction));
+    if (input?.furnishing) conditions.push(eq(properties.furnishing, input.furnishing));
+    if (input?.maxBuildingAge) conditions.push(lte(properties.buildingAge, input.maxBuildingAge));
 
     if (input?.query && input.query.trim()) {
       const q = `%${input.query.trim()}%`;
@@ -160,6 +173,28 @@ export const publicRouter = router({
           like(properties.addressEn, q)
         )
       );
+    }
+
+    // Amenity filtering: find properties that have ALL requested amenities
+    if (input?.amenityIds && input.amenityIds.length > 0) {
+      const amenityResults = await db
+        .select({ propertyId: propertyAmenities.propertyId })
+        .from(propertyAmenities)
+        .where(inArray(propertyAmenities.amenityId, input.amenityIds));
+      
+      // Group by propertyId and count - only keep those with ALL amenities
+      const propCounts: Record<number, number> = {};
+      for (const r of amenityResults) {
+        propCounts[r.propertyId] = (propCounts[r.propertyId] || 0) + 1;
+      }
+      const matchingIds = Object.entries(propCounts)
+        .filter(([, cnt]) => cnt >= input.amenityIds!.length)
+        .map(([id]) => Number(id));
+      
+      if (matchingIds.length === 0) {
+        return { items: [], total: 0, page, limit, totalPages: 0 };
+      }
+      conditions.push(inArray(properties.id, matchingIds));
     }
 
     const whereClause = and(...conditions);
@@ -294,6 +329,29 @@ export const publicRouter = router({
     return result;
   }),
 
+  getAmenities: publicProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    return db.select().from(amenities).where(eq(amenities.isActive, true)).orderBy(asc(amenities.sortOrder));
+  }),
+
+  getPropertyAmenities: publicProcedure.input(z.object({
+    propertyId: z.number().int().positive(),
+  })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const result = await db.select({
+      id: amenities.id,
+      nameAr: amenities.nameAr,
+      nameEn: amenities.nameEn,
+      icon: amenities.icon,
+      category: amenities.category,
+    }).from(propertyAmenities)
+      .innerJoin(amenities, eq(propertyAmenities.amenityId, amenities.id))
+      .where(eq(propertyAmenities.propertyId, input.propertyId));
+    return result;
+  }),
+
   getProperty: publicProcedure.input(z.object({
     id: z.number().int().positive(),
   })).query(async ({ input }) => {
@@ -305,7 +363,18 @@ export const publicRouter = router({
       .limit(1);
     if (!property) throw new TRPCError({ code: "NOT_FOUND", message: "العقار غير موجود" });
 
-    return property;
+    // Fetch amenities for this property
+    const propAmenities = await db.select({
+      id: amenities.id,
+      nameAr: amenities.nameAr,
+      nameEn: amenities.nameEn,
+      icon: amenities.icon,
+      category: amenities.category,
+    }).from(propertyAmenities)
+      .innerJoin(amenities, eq(propertyAmenities.amenityId, amenities.id))
+      .where(eq(propertyAmenities.propertyId, input.id));
+
+    return { ...property, amenities: propAmenities };
   }),
 
   listActiveProperties: publicProcedure.input(z.object({

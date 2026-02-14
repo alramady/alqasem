@@ -76,6 +76,10 @@ export const properties = mysqlTable("properties", {
   videoUrl: varchar("videoUrl", { length: 1000 }),
   latitude: decimal("latitude", { precision: 10, scale: 7 }),
   longitude: decimal("longitude", { precision: 10, scale: 7 }),
+  floor: int("floor"),
+  direction: mysqlEnum("direction", ["north", "south", "east", "west", "north_east", "north_west", "south_east", "south_west"]),
+  furnishing: mysqlEnum("furnishing", ["furnished", "semi_furnished", "unfurnished"]),
+  buildingAge: int("buildingAge"),
   viewCount: int("viewCount").default(0),
   createdBy: int("createdBy"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -405,3 +409,30 @@ export const districts = mysqlTable("districts", {
 });
 export type District = typeof districts.$inferSelect;
 export type InsertDistrict = typeof districts.$inferInsert;
+
+/**
+ * Amenities master list.
+ */
+export const amenities = mysqlTable("amenities", {
+  id: int("id").autoincrement().primaryKey(),
+  nameAr: varchar("nameAr", { length: 200 }).notNull(),
+  nameEn: varchar("nameEn", { length: 200 }),
+  icon: varchar("icon", { length: 100 }),
+  category: mysqlEnum("amenityCategory", ["basic", "comfort", "security", "outdoor", "entertainment", "other"]).default("basic").notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type Amenity = typeof amenities.$inferSelect;
+export type InsertAmenity = typeof amenities.$inferInsert;
+
+/**
+ * Property-Amenity junction table.
+ */
+export const propertyAmenities = mysqlTable("property_amenities", {
+  id: int("id").autoincrement().primaryKey(),
+  propertyId: int("propertyId").notNull(),
+  amenityId: int("amenityId").notNull(),
+});
+export type PropertyAmenity = typeof propertyAmenities.$inferSelect;
+export type InsertPropertyAmenity = typeof propertyAmenities.$inferInsert;
