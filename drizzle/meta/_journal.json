@@ -43,6 +43,13 @@
       "when": 1771026276553,
       "tag": "0005_long_sunspot",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1771028945906,
+      "tag": "0006_old_lizard",
+      "breakpoints": true
     }
   ]
 }

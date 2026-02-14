@@ -267,3 +267,25 @@
 - [x] Fix Date object in getReportData trend queries
 - [x] Fix Date object in audit log date filters
 - [x] Fix Date object in session login history query
+
+## Seed Saudi Cities & Districts
+- [x] Create seed script with 20 major Saudi cities
+- [x] Add 141 districts/neighborhoods across all cities
+- [x] Run seed script to populate database
+
+## Interactive Google Maps on Properties Page
+- [x] Add latitude/longitude fields to properties table
+- [x] Add lat/lng fields to admin property create/edit forms
+- [x] Add lat/lng to createProperty and updateProperty endpoints
+- [x] Add map view toggle button on properties listing page (grid/list/map)
+- [x] Build PropertyMapView component with Google Maps markers
+- [x] Show property info windows on marker click with price, type, image
+- [x] Sync map with search filters
+
+## Automatic Email Notifications on New Inquiries
+- [x] Send email to admin when new inquiry is submitted (styled HTML email)
+- [x] Send email to admin when new property submission arrives
+- [x] Send email to admin when new property request arrives
+- [x] Include inquiry details in email body (Arabic)
+- [x] Push notification to project owner via notifyOwner
+- [x] All 245 tests passing

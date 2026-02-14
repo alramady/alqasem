@@ -1,6 +1,8 @@
 import { publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { sanitizeText } from "../sanitize";
+import { sendEmail } from "../email";
+import { notifyOwner } from "../_core/notification";
 import { inquiries, properties, projects, notifications, users, auditLogs, settings, homepageSections, pages, newsletterSubscribers, propertyViews, cities, districts } from "../../drizzle/schema";
 import { eq, desc, asc, and, isNull, like, or, gte, lte, sql, count } from "drizzle-orm";
 import { z } from "zod";
@@ -350,13 +352,71 @@ export const publicRouter = router({
 
     const insertId = Number(result[0].insertId);
 
-    // Notify all admins
+    // Notify all admins (in-app)
     await notifyAdmins(
       "📩 رسالة جديدة من الموقع",
       `${input.name} أرسل رسالة جديدة: ${input.message.substring(0, 100)}${input.message.length > 100 ? "..." : ""}`,
       "inquiry",
       "/admin/inquiries"
     );
+
+    // Notify project owner (push notification)
+    try {
+      await notifyOwner({
+        title: `📩 استفسار جديد من ${input.name}`,
+        content: `الهاتف: ${input.phone}\nالرسالة: ${input.message.substring(0, 200)}`,
+      });
+    } catch (e) {
+      console.warn("[Notification] Owner notification failed:", e);
+    }
+
+    // Send email notification to admin emails
+    try {
+      const adminUsers = await db.select({ email: users.email, name: users.name }).from(users).where(eq(users.role, "admin"));
+      const adminEmails = adminUsers.filter(u => u.email).map(u => u.email!);
+      if (adminEmails.length > 0) {
+        const emailHtml = `
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head><meta charset="utf-8"><style>
+  body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding: 0; background: #f5f0e8; }
+  .container { max-width: 600px; margin: 0 auto; padding: 30px 20px; }
+  .card { background: white; border-radius: 16px; padding: 30px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+  h2 { color: #0f1b33; margin: 0 0 20px; font-size: 20px; }
+  .field { margin-bottom: 12px; }
+  .label { color: #6b7280; font-size: 13px; margin-bottom: 2px; }
+  .value { color: #0f1b33; font-size: 15px; font-weight: 500; }
+  .message-box { background: #f3f4f6; border-radius: 8px; padding: 12px 16px; margin-top: 16px; color: #374151; line-height: 1.7; }
+  .btn { display: inline-block; background: #c8a45e; color: #0f1b33 !important; text-decoration: none; padding: 12px 24px; border-radius: 10px; font-weight: bold; margin-top: 20px; }
+  .footer { text-align: center; margin-top: 24px; color: #9ca3af; font-size: 12px; }
+</style></head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h2>📩 استفسار جديد من الموقع</h2>
+      <div class="field"><div class="label">الاسم</div><div class="value">${sanitizeText(input.name)}</div></div>
+      <div class="field"><div class="label">الهاتف</div><div class="value" dir="ltr">${sanitizeText(input.phone)}</div></div>
+      ${input.email ? `<div class="field"><div class="label">البريد</div><div class="value" dir="ltr">${sanitizeText(input.email)}</div></div>` : ""}
+      ${input.subject ? `<div class="field"><div class="label">الموضوع</div><div class="value">${sanitizeText(input.subject)}</div></div>` : ""}
+      <div class="message-box">${sanitizeText(input.message)}</div>
+      <div style="text-align:center;"><a href="/admin/inquiries" class="btn">عرض في لوحة التحكم</a></div>
+    </div>
+    <div class="footer">القاسم العقارية &copy; ${new Date().getFullYear()}</div>
+  </div>
+</body>
+</html>`;
+        for (const email of adminEmails) {
+          await sendEmail({
+            to: email,
+            subject: `📩 استفسار جديد من ${input.name} - القاسم العقارية`,
+            html: emailHtml,
+            text: `استفسار جديد\nالاسم: ${input.name}\nالهاتف: ${input.phone}\nالرسالة: ${input.message}`,
+          });
+        }
+      }
+    } catch (e) {
+      console.warn("[Email] Failed to send inquiry notification:", e);
+    }
 
     // Log audit
     await logPublicAudit("create", "inquiry", insertId, {
@@ -438,13 +498,34 @@ export const publicRouter = router({
       status: "new",
     });
 
-    // Notify all admins
+    // Notify all admins (in-app)
     await notifyAdmins(
       "🏠 طلب إضافة عقار جديد",
       `${input.name} يريد إضافة ${input.type === "villa" ? "فيلا" : input.type === "apartment" ? "شقة" : input.type === "land" ? "أرض" : "عقار تجاري"} في ${input.city}${input.price ? ` بسعر ${input.price} ر.س` : ""}`,
       "property",
       "/admin/properties"
     );
+
+    // Notify owner + email admins
+    try {
+      await notifyOwner({
+        title: `🏠 طلب إضافة عقار من ${input.name}`,
+        content: `النوع: ${input.type} | المدينة: ${input.city} | الهاتف: ${input.phone}`,
+      });
+    } catch (e) { console.warn("[Notification] Owner notification failed:", e); }
+
+    try {
+      const adminUsers = await db.select({ email: users.email }).from(users).where(eq(users.role, "admin"));
+      const adminEmails = adminUsers.filter(u => u.email).map(u => u.email!);
+      for (const email of adminEmails) {
+        await sendEmail({
+          to: email,
+          subject: `🏠 طلب إضافة عقار جديد - ${input.name}`,
+          html: `<div dir="rtl" style="font-family:sans-serif;padding:20px;"><h2>طلب إضافة عقار جديد</h2><p><b>الاسم:</b> ${s.name}</p><p><b>الهاتف:</b> ${s.phone}</p><p><b>النوع:</b> ${input.type}</p><p><b>الغرض:</b> ${input.purpose}</p><p><b>المدينة:</b> ${s.city}</p>${input.price ? `<p><b>السعر:</b> ${input.price} ر.س</p>` : ""}${input.area ? `<p><b>المساحة:</b> ${input.area} م²</p>` : ""}</div>`,
+          text: `طلب إضافة عقار - ${s.name} - ${s.phone} - ${input.type} - ${s.city}`,
+        });
+      }
+    } catch (e) { console.warn("[Email] Failed to send property notification:", e); }
 
     // Log audit
     await logPublicAudit("create", "property", propertyId, {
@@ -509,13 +590,34 @@ export const publicRouter = router({
 
     const insertId = Number(result[0].insertId);
 
-    // Notify all admins
+    // Notify all admins (in-app)
     await notifyAdmins(
       "🔍 طلب بحث عن عقار",
       `${input.name} يبحث عن ${typeLabel} ${purposeLabel}${input.city ? ` في ${input.city}` : ""}`,
       "inquiry",
       "/admin/inquiries"
     );
+
+    // Notify owner + email admins
+    try {
+      await notifyOwner({
+        title: `🔍 طلب بحث عن عقار من ${input.name}`,
+        content: `${typeLabel} ${purposeLabel}${input.city ? ` في ${input.city}` : ""} | الهاتف: ${input.phone}`,
+      });
+    } catch (e) { console.warn("[Notification] Owner notification failed:", e); }
+
+    try {
+      const adminUsers = await db.select({ email: users.email }).from(users).where(eq(users.role, "admin"));
+      const adminEmails = adminUsers.filter(u => u.email).map(u => u.email!);
+      for (const email of adminEmails) {
+        await sendEmail({
+          to: email,
+          subject: `🔍 طلب بحث عن عقار - ${input.name}`,
+          html: `<div dir="rtl" style="font-family:sans-serif;padding:20px;"><h2>طلب بحث عن عقار</h2><p><b>الاسم:</b> ${s.name}</p><p><b>الهاتف:</b> ${s.phone}</p><p><b>النوع:</b> ${typeLabel}</p><p><b>الغرض:</b> ${purposeLabel}</p>${s.city ? `<p><b>المدينة:</b> ${s.city}</p>` : ""}${s.district ? `<p><b>الحي:</b> ${s.district}</p>` : ""}${input.minPrice || input.maxPrice ? `<p><b>الميزانية:</b> ${input.minPrice || "0"} - ${input.maxPrice || "غير محدد"} ر.س</p>` : ""}</div>`,
+          text: `طلب بحث عن عقار - ${s.name} - ${s.phone} - ${typeLabel} ${purposeLabel}`,
+        });
+      }
+    } catch (e) { console.warn("[Email] Failed to send property request notification:", e); }
 
     // Log audit
     await logPublicAudit("create", "inquiry", insertId, {

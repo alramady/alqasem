@@ -22,6 +22,7 @@ const statusLabels: Record<string, string> = { active: "نشط", sold: "مباع
 const emptyForm = {
   title: "", titleEn: "", description: "", descriptionEn: "", type: "villa", listingType: "sale", status: "active",
   price: "", area: "", rooms: "", bathrooms: "", city: "الرياض", cityEn: "", district: "", districtEn: "", address: "", addressEn: "", videoUrl: "",
+  latitude: "", longitude: "",
 };
 
 export default function AdminProperties() {
@@ -74,6 +75,7 @@ export default function AdminProperties() {
       district: prop.district || "", districtEn: prop.districtEn || "",
       address: prop.address || "", addressEn: prop.addressEn || "",
       videoUrl: prop.videoUrl || "",
+      latitude: prop.latitude?.toString() || "", longitude: prop.longitude?.toString() || "",
     });
     setActiveEditTab("details");
   };
@@ -88,6 +90,8 @@ export default function AdminProperties() {
       rooms: parseInt(editForm.rooms) || 0, bathrooms: parseInt(editForm.bathrooms) || 0,
       city: editForm.city, cityEn: editForm.cityEn, district: editForm.district, districtEn: editForm.districtEn,
       address: editForm.address, addressEn: editForm.addressEn, videoUrl: editForm.videoUrl,
+      latitude: editForm.latitude ? parseFloat(editForm.latitude) : undefined,
+      longitude: editForm.longitude ? parseFloat(editForm.longitude) : undefined,
     });
   };
 
@@ -199,10 +203,20 @@ export default function AdminProperties() {
                     <Label className="text-slate-600">Address (English)</Label>
                     <Input value={form.addressEn} onChange={(e) => setForm({...form, addressEn: e.target.value})} placeholder="Prince Mohammed bin Salman St." dir="ltr" className="mt-1 text-left" />
                   </div>
+                  <div>
+                    <Label className="text-slate-600">خط العرض (Latitude)</Label>
+                    <Input type="number" step="any" value={form.latitude} onChange={(e) => setForm({...form, latitude: e.target.value})} placeholder="24.7136" dir="ltr" className="mt-1 text-left" />
+                  </div>
+                  <div>
+                    <Label className="text-slate-600">خط الطول (Longitude)</Label>
+                    <Input type="number" step="any" value={form.longitude} onChange={(e) => setForm({...form, longitude: e.target.value})} placeholder="46.6753" dir="ltr" className="mt-1 text-left" />
+                  </div>
                   <div className="md:col-span-2">
                     <Button className="w-full bg-indigo-500 text-white hover:bg-indigo-600" onClick={() => createProp.mutate({
                       ...form, price: parseFloat(form.price) || 0, area: parseFloat(form.area) || 0,
                       rooms: parseInt(form.rooms) || 0, bathrooms: parseInt(form.bathrooms) || 0,
+                      latitude: form.latitude ? parseFloat(form.latitude) : undefined,
+                      longitude: form.longitude ? parseFloat(form.longitude) : undefined,
                     })} disabled={createProp.isPending}>
                       {createProp.isPending ? "جاري الإضافة..." : "إضافة العقار"}
                     </Button>
@@ -430,6 +444,14 @@ export default function AdminProperties() {
                 <div className="md:col-span-2">
                   <Label className="text-slate-600">رابط الفيديو (YouTube أو غيره)</Label>
                   <Input value={editForm.videoUrl} onChange={(e) => setEditForm({...editForm, videoUrl: e.target.value})} dir="ltr" placeholder="https://youtube.com/..." className="mt-1" />
+                </div>
+                <div>
+                  <Label className="text-slate-600">خط العرض (Latitude)</Label>
+                  <Input type="number" step="any" value={editForm.latitude} onChange={(e) => setEditForm({...editForm, latitude: e.target.value})} placeholder="24.7136" dir="ltr" className="mt-1 text-left" />
+                </div>
+                <div>
+                  <Label className="text-slate-600">خط الطول (Longitude)</Label>
+                  <Input type="number" step="any" value={editForm.longitude} onChange={(e) => setEditForm({...editForm, longitude: e.target.value})} placeholder="46.6753" dir="ltr" className="mt-1 text-left" />
                 </div>
                 <div className="md:col-span-2">
                   <Button className="w-full bg-indigo-500 text-white hover:bg-indigo-600" onClick={saveEdit} disabled={updateProp.isPending}>

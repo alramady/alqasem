@@ -74,6 +74,8 @@ export const properties = mysqlTable("properties", {
   features: json("features"),
   images: json("images"),
   videoUrl: varchar("videoUrl", { length: 1000 }),
+  latitude: decimal("latitude", { precision: 10, scale: 7 }),
+  longitude: decimal("longitude", { precision: 10, scale: 7 }),
   viewCount: int("viewCount").default(0),
   createdBy: int("createdBy"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

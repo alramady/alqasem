@@ -572,6 +572,7 @@ export const adminRouter = router({
     city: z.string().optional(), cityEn: z.string().optional(), district: z.string().optional(), districtEn: z.string().optional(),
     address: z.string().optional(), addressEn: z.string().optional(),
     videoUrl: z.string().optional(), images: z.array(z.string()).optional(), features: z.array(z.string()).optional(),
+    latitude: z.number().optional(), longitude: z.number().optional(),
   })).mutation(async ({ input, ctx }) => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
@@ -588,6 +589,8 @@ export const adminRouter = router({
       district: s.district || null, districtEn: s.districtEn || null,
       address: s.address || null, addressEn: s.addressEn || null,
       videoUrl: s.videoUrl || null,
+      latitude: input.latitude ? String(input.latitude) : null,
+      longitude: input.longitude ? String(input.longitude) : null,
       images: input.images || null, features: input.features || null,
       createdBy: ctx.user.id,
     });
@@ -605,6 +608,7 @@ export const adminRouter = router({
     city: z.string().optional(), cityEn: z.string().optional(), district: z.string().optional(), districtEn: z.string().optional(),
     address: z.string().optional(), addressEn: z.string().optional(),
     videoUrl: z.string().optional(), images: z.array(z.string()).optional(), features: z.array(z.string()).optional(),
+    latitude: z.number().optional(), longitude: z.number().optional(),
   })).mutation(async ({ input, ctx }) => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });

@@ -6,8 +6,10 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import {
   Search, MapPin, BedDouble, Bath, Maximize, Heart, Scale,
   SlidersHorizontal, Grid3X3, List, ChevronDown, X,
-  ChevronLeft, ChevronRight, Loader2, ArrowUpDown
+  ChevronLeft, ChevronRight, Loader2, ArrowUpDown, Map as MapIcon
 } from "lucide-react";
+import { lazy, Suspense } from "react";
+const PropertyMapView = lazy(() => import("@/components/PropertyMapView"));
 import { Link, useSearch } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
@@ -53,7 +55,7 @@ export default function Properties() {
   const [minRooms, setMinRooms] = useState<string>("");
   const [sort, setSort] = useState<SortOption>("newest");
   const [page, setPage] = useState(1);
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "list" | "map">("grid");
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [favorites, setFavorites] = useState<number[]>(() => {
     try { return JSON.parse(localStorage.getItem("alqasim_favorites") || "[]"); } catch { return []; }
@@ -253,6 +255,7 @@ export default function Properties() {
               <div className="hidden sm:flex items-center gap-1 bg-gray-50 rounded-lg p-1">
                 <button onClick={() => setViewMode("grid")} className={`p-1.5 rounded ${viewMode === "grid" ? "bg-[#0f1b33] text-white" : "text-gray-400"}`}><Grid3X3 className="w-4 h-4" /></button>
                 <button onClick={() => setViewMode("list")} className={`p-1.5 rounded ${viewMode === "list" ? "bg-[#0f1b33] text-white" : "text-gray-400"}`}><List className="w-4 h-4" /></button>
+                <button onClick={() => setViewMode("map")} className={`p-1.5 rounded ${viewMode === "map" ? "bg-[#0f1b33] text-white" : "text-gray-400"}`}><MapIcon className="w-4 h-4" /></button>
               </div>
             </div>
           </div>
@@ -339,6 +342,10 @@ export default function Properties() {
                 </button>
               )}
             </div>
+          ) : viewMode === "map" ? (
+            <Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="w-10 h-10 text-[#c8a45e] animate-spin" /></div>}>
+              <PropertyMapView properties={data.items as any} className="mb-8" />
+            </Suspense>
           ) : (
             <>
               <div className={viewMode === "grid" ? "grid md:grid-cols-2 lg:grid-cols-3 gap-6" : "flex flex-col gap-4"}>
