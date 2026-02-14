@@ -92,16 +92,16 @@ function Router() {
         <Suspense fallback={<PageFallback />}><PropertiesPage /></Suspense>
       </Route>
       <Route path="/properties/:id">
-        {(params) => <Suspense fallback={<PageFallback />}><PropertyDetailPage id={params.id} /></Suspense>}
+        {(params) => <Suspense fallback={<PageFallback />}><ErrorBoundary fallbackMode="inline"><PropertyDetailPage id={params.id} /></ErrorBoundary></Suspense>}
       </Route>
       <Route path="/projects">
         <Suspense fallback={<PageFallback />}><ProjectsPage /></Suspense>
       </Route>
       <Route path="/projects/:id">
-        {(params) => <Suspense fallback={<PageFallback />}><ProjectDetailPage id={params.id} /></Suspense>}
+        {(params) => <Suspense fallback={<PageFallback />}><ErrorBoundary fallbackMode="inline"><ProjectDetailPage id={params.id} /></ErrorBoundary></Suspense>}
       </Route>
       <Route path="/contact">
-        <Suspense fallback={<PageFallback />}><ContactPage /></Suspense>
+        <Suspense fallback={<PageFallback />}><ErrorBoundary fallbackMode="inline"><ContactPage /></ErrorBoundary></Suspense>
       </Route>
       <Route path="/add-property">
         <Suspense fallback={<PageFallback />}><AddPropertyPage /></Suspense>
@@ -218,8 +218,11 @@ function App() {
           <ThemeProvider defaultTheme="light">
             <TooltipProvider>
               <CustomerAuthProvider>
+                <a href="#main-content" className="skip-to-content">Skip to content</a>
                 <Toaster position="top-center" richColors />
-                <Router />
+                <div id="main-content">
+                  <Router />
+                </div>
               </CustomerAuthProvider>
             </TooltipProvider>
           </ThemeProvider>

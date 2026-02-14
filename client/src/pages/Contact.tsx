@@ -76,12 +76,13 @@ export default function Contact() {
   const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([]);
   const infoWindowsRef = useRef<google.maps.InfoWindow[]>([]);
 
+  const [requestNumber, setRequestNumber] = useState("");
   const submitMutation = trpc.public.submitInquiry.useMutation({
     onSuccess: (data) => {
       toast.success(data.message);
+      setRequestNumber(data.requestNumber || "");
       setSubmitted(true);
       setFormData({ name: "", phone: "", email: "", subject: "", message: "" });
-      setTimeout(() => setSubmitted(false), 5000);
     },
     onError: (error) => {
       toast.error(error.message || (isAr ? "حدث خطأ أثناء الإرسال. حاول مرة أخرى." : "An error occurred. Please try again."));
@@ -270,7 +271,18 @@ export default function Contact() {
                 <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-green-50 border border-green-200 rounded-2xl p-10 text-center">
                   <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
                   <h3 className="text-xl font-bold text-green-800 mb-2">{t("contact.success")}</h3>
-                  <p className="text-green-600">{t("contact.successDesc")}</p>
+                  <p className="text-green-600 mb-3">{t("contact.successDesc")}</p>
+                  {requestNumber && (
+                    <div className="inline-block bg-white border border-green-300 rounded-lg px-4 py-2 mb-4">
+                      <span className="text-sm text-gray-500">{isAr ? "رقم الطلب:" : "Request #:"}</span>
+                      <span className="font-bold text-[#0f1b33] ms-2" dir="ltr">{requestNumber}</span>
+                    </div>
+                  )}
+                  <div className="mt-4">
+                    <button onClick={() => { setSubmitted(false); setRequestNumber(""); }} className="px-6 py-2.5 bg-[#c8a45e] text-[#0f1b33] rounded-lg font-medium hover:bg-[#b8944e] transition-colors">
+                      {isAr ? "إرسال رسالة أخرى" : "Send Another Message"}
+                    </button>
+                  </div>
                 </motion.div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -283,7 +295,8 @@ export default function Contact() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">{t("contact.phone")} *</label>
-                      <input type="tel" required value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="w-full px-4 py-3 bg-[#f8f5f0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30" placeholder="+966" dir="ltr" disabled={submitMutation.isPending} />
+                      <input type="tel" required value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="w-full px-4 py-3 bg-[#f8f5f0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30" placeholder="05XXXXXXXX" dir="ltr" disabled={submitMutation.isPending} />
+                      <p className="text-xs text-gray-400 mt-1" dir="ltr">{isAr ? "مثال: 0512345678 أو +966512345678" : "e.g. 0512345678 or +966512345678"}</p>
                     </div>
                   </div>
                   <div>

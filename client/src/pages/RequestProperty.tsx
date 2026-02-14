@@ -34,8 +34,9 @@ export default function RequestProperty() {
     name: "", phone: "", email: "", notes: "",
   });
 
+  const [requestNumber, setRequestNumber] = useState("");
   const submitMutation = trpc.public.submitInquiry.useMutation({
-    onSuccess: (data) => { toast.success(data.message); setSubmitted(true); },
+    onSuccess: (data) => { toast.success(data.message); setRequestNumber(data.requestNumber || ""); setSubmitted(true); },
     onError: (error) => { toast.error(error.message || (isAr ? "حدث خطأ أثناء الإرسال." : "An error occurred.")); },
   });
 
@@ -75,7 +76,13 @@ export default function RequestProperty() {
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-2xl p-12 text-center shadow-sm">
               <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6"><CheckCircle className="w-10 h-10 text-green-500" /></div>
               <h2 className="text-2xl font-bold text-[#0f1b33] mb-3">{isAr ? "تم استلام طلبك بنجاح!" : "Your request has been received!"}</h2>
-              <p className="text-gray-500 mb-6">{isAr ? "سيتواصل معك مستشارنا العقاري خلال 24 ساعة لمساعدتك في إيجاد العقار المناسب." : "Our real estate consultant will contact you within 24 hours to help find the right property."}</p>
+              <p className="text-gray-500 mb-4">{isAr ? "سيتواصل معك مستشارنا العقاري خلال 24 ساعة لمساعدتك في إيجاد العقار المناسب." : "Our real estate consultant will contact you within 24 hours to help find the right property."}</p>
+              {requestNumber && (
+                <div className="inline-block bg-[#E31E24]/10 border border-[#E31E24]/30 rounded-lg px-5 py-2.5 mb-6">
+                  <span className="text-sm text-gray-500">{isAr ? "رقم الطلب:" : "Request #:"}</span>
+                  <span className="font-bold text-[#0f1b33] ms-2 text-lg" dir="ltr">{requestNumber}</span>
+                </div>
+              )}
               <div className="bg-[#f8f5f0] rounded-xl p-4 mb-6 text-start">
                 <h4 className="font-bold text-[#0f1b33] text-sm mb-2">{isAr ? "ملخص الطلب:" : "Request Summary:"}</h4>
                 <div className="grid grid-cols-2 gap-2 text-sm">
@@ -87,7 +94,7 @@ export default function RequestProperty() {
               </div>
               <div className="flex gap-3 justify-center">
                 <a href="/" className="px-6 py-2.5 bg-[#0f1b33] text-white rounded-lg font-medium hover:bg-[#1a2a4a] transition-colors">{t("common.backToHome")}</a>
-                <button onClick={() => { setSubmitted(false); setStep(0); setForm({ type: "", purpose: "buy", city: "", district: "", minArea: "", maxArea: "", rooms: "", minBudget: "", maxBudget: "", features: [], name: "", phone: "", email: "", notes: "" }); }} className="px-6 py-2.5 bg-[#E31E24] text-white rounded-lg font-medium hover:bg-[#c91a1f] transition-colors">{isAr ? "طلب عقار آخر" : "Request Another"}</button>
+                <button onClick={() => { setSubmitted(false); setRequestNumber(""); setStep(0); setForm({ type: "", purpose: "buy", city: "", district: "", minArea: "", maxArea: "", rooms: "", minBudget: "", maxBudget: "", features: [], name: "", phone: "", email: "", notes: "" }); }} className="px-6 py-2.5 bg-[#E31E24] text-white rounded-lg font-medium hover:bg-[#c91a1f] transition-colors">{isAr ? "طلب عقار آخر" : "Request Another"}</button>
               </div>
             </motion.div>
           </div>
@@ -205,7 +212,7 @@ export default function RequestProperty() {
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
                   <h3 className="text-xl font-bold text-[#0f1b33]">{steps[3]}</h3>
                   <div><label className="block text-sm font-medium text-gray-700 mb-1.5">{isAr ? "الاسم الكامل *" : "Full Name *"}</label><input type="text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="w-full px-4 py-3 bg-[#f8f5f0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30" placeholder={isAr ? "أدخل اسمك" : "Enter your name"} disabled={submitMutation.isPending} /></div>
-                  <div><label className="block text-sm font-medium text-gray-700 mb-1.5">{isAr ? "رقم الجوال *" : "Phone *"}</label><input type="tel" required value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className="w-full px-4 py-3 bg-[#f8f5f0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30" placeholder="+966" dir="ltr" disabled={submitMutation.isPending} /></div>
+                  <div><label className="block text-sm font-medium text-gray-700 mb-1.5">{isAr ? "رقم الجوال *" : "Phone *"}</label><input type="tel" required value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className="w-full px-4 py-3 bg-[#f8f5f0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30" placeholder="05XXXXXXXX" dir="ltr" disabled={submitMutation.isPending} /><p className="text-xs text-gray-400 mt-1" dir="ltr">{isAr ? "مثال: 0512345678 أو +966512345678" : "e.g. 0512345678 or +966512345678"}</p></div>
                   <div><label className="block text-sm font-medium text-gray-700 mb-1.5">{isAr ? "البريد الإلكتروني (اختياري)" : "Email (optional)"}</label><input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className="w-full px-4 py-3 bg-[#f8f5f0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30" placeholder="example@email.com" dir="ltr" disabled={submitMutation.isPending} /></div>
                   <p className="text-xs text-gray-400 flex items-center gap-1"><CheckCircle className="w-3 h-3 text-green-500" />{isAr ? "سيتواصل معك مستشارنا العقاري خلال 24 ساعة" : "Our consultant will contact you within 24 hours"}</p>
                 </motion.div>

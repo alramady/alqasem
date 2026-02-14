@@ -64,8 +64,8 @@ describe("Customer Authentication", () => {
         const result = await caller(ctx).customer.sendOTP({ phone: "0500000001", purpose: "register" });
         expect(result.success).toBe(true);
       } catch (err: any) {
-        // CONFLICT means phone already registered - valid behavior
-        expect(err.code).toBe("CONFLICT");
+        // CONFLICT means phone already registered, TOO_MANY_REQUESTS means rate limited - both valid
+        expect(["CONFLICT", "TOO_MANY_REQUESTS"]).toContain(err.code);
       }
     });
 

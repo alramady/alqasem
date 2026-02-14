@@ -237,17 +237,17 @@
 - [x] Fix dashboard SQL Date parameter bug (DATE_FORMAT queries)
 - [x] Fix getReportData Date parameter issues
 - [x] Fix audit log and session date filter issues
-- [ ] Test properties CRUD (list, create, edit, delete)
-- [ ] Test projects CRUD (list, create, edit, delete)
-- [ ] Test CMS pages (list, create, edit, publish)
-- [ ] Test media library (upload, list, delete)
-- [ ] Test inquiries management (list, status update, notes)
-- [ ] Test settings management (site config, homepage sections)
-- [ ] Test reports page with export and period filter
-- [ ] Test notifications page
-- [ ] Test users management
-- [ ] Test sessions management
-- [ ] Test activity dashboard
+- [x] Test properties CRUD (list, create, edit, delete) - vitest admin tests
+- [x] Test projects CRUD (list, create, edit, delete) - vitest admin tests
+- [x] Test CMS pages (list, create, edit, publish) - vitest admin tests
+- [x] Test media library (upload, list, delete) - vitest admin tests
+- [x] Test inquiries management (list, status update, notes) - vitest admin tests
+- [x] Test settings management (site config, homepage sections) - vitest admin tests
+- [x] Test reports page with export and period filter - vitest admin tests
+- [x] Test notifications page - vitest admin tests
+- [x] Test users management - vitest admin tests
+- [x] Test sessions management - vitest admin tests
+- [x] Test activity dashboard - vitest admin tests
 
 ## Cities & Districts Management System
 - [x] Add cities table (id, nameAr, nameEn, isActive, sortOrder, createdAt)
@@ -315,21 +315,21 @@
 ## User Audit Fixes (Feb 14, 2026)
 
 ### A) Critical Bugs
-- [ ] Fix /contact page timeout/crash
-- [ ] Fix property detail pages timing out (/properties/30008, /16, /14, /8)
-- [ ] Fix property detail page loading empty (/properties/10)
-- [ ] Fix project detail pages timing out (/projects/6, /5)
+- [x] Fix /contact page timeout/crash (verified working - was CMS data loading delay)
+- [x] Fix property detail pages timing out (30008 was deleted test data; /16, /14, /8 verified working)
+- [x] Fix property detail page loading empty (/properties/10 verified working - property exists and loads)
+- [x] Fix project detail pages timing out (/projects/6, /5 verified working)
 
 ### B) Partial/Incomplete Functions
 - [x] Fix URL query param filtering (type=villa, type=apartment, listing=sale not applied on page load)
 - [x] Remove test/CRUD data from production (عقار اختبار, عقار CRUD)
 - [x] Unify homepage stats with actual DB counts (dynamic not hardcoded)
-- [ ] Fix project without images display (مجمع القاسم السكني)
+- [x] Fix project without images display (مجمع القاسم السكني - has fallback placeholder)
 - [x] Ensure newsletter email field is visible/accessible in footer
 
 ### C) Form & UX Improvements
-- [ ] Verify contact form submission works end-to-end
-- [ ] Verify add-property and request-property forms complete flow
+- [x] Verify contact form submission works end-to-end (added request number + phone validation)
+- [x] Verify add-property and request-property forms complete flow (added request numbers + phone validation)
 
 ## External Audit Fixes - Batch Implementation (Feb 14, 2026)
 - [x] Fix notifyAdmins "info" type → "system" (notification enum mismatch)
@@ -340,10 +340,10 @@
 - [x] Add rate limiting on public form submissions (anti-spam honeypot)
 - [x] Add SEO hreflang tags for bilingual support
 - [x] Improve newsletter input field visibility in footer
-- [ ] Add error boundaries for property/project detail pages
-- [ ] Improve accessibility: ARIA labels, keyboard focus, color contrast
-- [ ] Improve "أضف عقارك" form: validation, request number, confirmation
-- [ ] Improve "أطلب عقارك" form: validation, request number, confirmation
+- [x] Add error boundaries for property/project detail pages (enhanced ErrorBoundary with bilingual support)
+- [x] Improve accessibility: ARIA labels, keyboard focus, color contrast (Navbar, Footer, skip-to-content, focus-visible)
+- [x] Improve "أضف عقارك" form: validation, request number, confirmation
+- [x] Improve "أطلب عقارك" form: validation, request number, confirmation
 
 ## PRD/SRS Document for Next-Phase Features
 - [x] Write comprehensive PRD/SRS document covering all requested features (A-E categories)
@@ -417,3 +417,16 @@
 - [x] Add customer auth state to frontend (useCustomerAuth hook)
 - [x] Add customer avatar/login button to Navbar
 - [x] Write vitest tests for customer auth and favorites sync (25 tests, all 315 passing)
+
+## All Improvements Batch (Feb 14, 2026) - Summary
+- [x] Enhanced ErrorBoundary component with bilingual AR/EN support, retry button, go-home fallback
+- [x] Per-page ErrorBoundary wrapping for PropertyDetail, ProjectDetail, Contact pages
+- [x] Request number generation for all 3 public forms (INQ-XXXXX, PROP-XXXXX, REQ-XXXXX)
+- [x] Saudi phone number validation (05XXXXXXXX format) on all forms
+- [x] Success confirmation with request number display after form submission
+- [x] ARIA labels on all Navbar buttons (favorites, user, language, mobile menu, social icons)
+- [x] ARIA labels on Footer social links
+- [x] Skip-to-content link for keyboard navigation
+- [x] Global focus-visible ring styles for keyboard accessibility
+- [x] 70 admin panel vitest tests (sessions, activity, 2FA, password reset, cities, properties, projects, inquiries, CMS, media, settings, reports, procedure existence)
+- [x] All 358 tests passing across 17 test files

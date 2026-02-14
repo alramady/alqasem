@@ -526,3 +526,33 @@ html[dir="rtl"] .wysiwyg-editor-content .tiptap blockquote {
   text-decoration: line-through;
   color: #94a3b8;
 }
+
+/* ===== Accessibility: Focus Visible ===== */
+*:focus-visible {
+  outline: 2px solid #c8a45e;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Remove default outline for mouse users */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Skip to content link */
+.skip-to-content {
+  position: absolute;
+  top: -100%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  padding: 12px 24px;
+  background: #0f1b33;
+  color: #c8a45e;
+  font-weight: 700;
+  border-radius: 0 0 8px 8px;
+  transition: top 0.2s ease;
+}
+.skip-to-content:focus {
+  top: 0;
+}

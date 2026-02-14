@@ -1,0 +1,16 @@
+{
+  "query": "SELECT id, slug, title, pageStatus FROM pages WHERE slug = 'contact' LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.4e413a58b2a3 --database FCSdcQDHNngsNZkY5BfGCD --execute SELECT id, slug, title, pageStatus FROM pages WHERE slug = 'contact' LIMIT 5;",
+  "rows": [
+    {
+      "id": "5",
+      "slug": "contact",
+      "title": "تواصل معنا",
+      "pageStatus": "published"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tslug\ttitle\tpageStatus\n5\tcontact\tتواصل معنا\tpublished\n",
+  "stderr": "",
+  "execution_time_ms": 1556
+}

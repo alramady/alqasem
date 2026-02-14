@@ -1,0 +1,16 @@
+{
+  "query": "SELECT id, title, propertyStatus, deletedAt FROM properties WHERE id = 10 LIMIT 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.4e413a58b2a3 --database FCSdcQDHNngsNZkY5BfGCD --execute SELECT id, title, propertyStatus, deletedAt FROM properties WHERE id = 10 LIMIT 1;",
+  "rows": [
+    {
+      "id": "10",
+      "title": "أرض تجارية على طريق الملك فهد",
+      "propertyStatus": "active",
+      "deletedAt": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitle\tpropertyStatus\tdeletedAt\n10\tأرض تجارية على طريق الملك فهد\tactive\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 1529
+}

@@ -480,7 +480,7 @@ export const publicRouter = router({
   // ============ CONTACT FORM SUBMISSION ============
   submitInquiry: publicProcedure.input(z.object({
     name: z.string().min(2, "الاسم مطلوب (حرفين على الأقل)"),
-    phone: z.string().min(9, "رقم الجوال مطلوب"),
+    phone: z.string().min(9, "رقم الجوال مطلوب").refine(v => /^(\+966|05|5)\d{8}$/.test(v.replace(/\s/g, "")), { message: "رقم الجوال يجب أن يبدأ بـ 05 أو +966" }),
     email: z.string().email("البريد الإلكتروني غير صحيح").optional().or(z.literal("")),
     subject: z.string().optional(),
     message: z.string().min(5, "الرسالة مطلوبة (5 أحرف على الأقل)"),
@@ -489,7 +489,7 @@ export const publicRouter = router({
   })).mutation(async ({ input }) => {
     // Honeypot check - bots fill hidden fields
     if (input._hp) {
-      return { success: true, id: 0 }; // silently reject
+      return { success: true, id: 0, requestNumber: "" }; // silently reject
     }
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "خطأ في الاتصال بقاعدة البيانات" });
@@ -585,7 +585,8 @@ export const publicRouter = router({
       source: input.source || "contact_form",
     });
 
-    return { success: true, id: insertId, message: "تم إرسال رسالتك بنجاح! سنتواصل معك قريباً." };
+    const requestNumber = `INQ-${String(insertId).padStart(6, "0")}`;
+    return { success: true, id: insertId, requestNumber, message: `تم إرسال رسالتك بنجاح! رقم الطلب: ${requestNumber}` };
   }),
 
   // ============ ADD PROPERTY SUBMISSION ============
@@ -600,11 +601,11 @@ export const publicRouter = router({
     price: z.string().optional(),
     description: z.string().optional(),
     name: z.string().min(2, "الاسم مطلوب"),
-    phone: z.string().min(9, "رقم الجوال مطلوب"),
+    phone: z.string().min(9, "رقم الجوال مطلوب").refine(v => /^(\+966|05|5)\d{8}$/.test(v.replace(/\s/g, "")), { message: "رقم الجوال يجب أن يبدأ بـ 05 أو +966" }),
     email: z.string().email("البريد الإلكتروني غير صحيح").optional().or(z.literal("")),
     _hp: z.string().optional(),
   })).mutation(async ({ input }) => {
-    if (input._hp) return { success: true, id: 0 };
+    if (input._hp) return { success: true, id: 0, requestNumber: "" };
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "خطأ في الاتصال بقاعدة البيانات" });
 
@@ -698,7 +699,8 @@ export const publicRouter = router({
       phone: input.phone,
     });
 
-    return { success: true, id: propertyId, message: "تم استلام طلبك بنجاح! سيقوم فريقنا بمراجعة العقار والتواصل معك." };
+    const requestNumber = `PROP-${String(propertyId).padStart(6, "0")}`;
+    return { success: true, id: propertyId, requestNumber, message: `تم استلام طلبك بنجاح! رقم الطلب: ${requestNumber}` };
   }),
 
   // ============ PROPERTY REQUEST SUBMISSION ============
@@ -713,11 +715,11 @@ export const publicRouter = router({
     minArea: z.string().optional(),
     details: z.string().optional(),
     name: z.string().min(2, "الاسم مطلوب"),
-    phone: z.string().min(9, "رقم الجوال مطلوب"),
+    phone: z.string().min(9, "رقم الجوال مطلوب").refine(v => /^(\+966|05|5)\d{8}$/.test(v.replace(/\s/g, "")), { message: "رقم الجوال يجب أن يبدأ بـ 05 أو +966" }),
     email: z.string().email("البريد الإلكتروني غير صحيح").optional().or(z.literal("")),
     _hp: z.string().optional(),
   })).mutation(async ({ input }) => {
-    if (input._hp) return { success: true, id: 0, message: "Done" };
+    if (input._hp) return { success: true, id: 0, requestNumber: "", message: "Done" };
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "خطأ في الاتصال بقاعدة البيانات" });
 
@@ -792,7 +794,8 @@ export const publicRouter = router({
       submittedBy: input.name,
     });
 
-    return { success: true, id: insertId, message: "تم استلام طلبك بنجاح! سنبحث لك عن أفضل الخيارات المتاحة." };
+    const requestNumber = `REQ-${String(insertId).padStart(6, "0")}`;
+    return { success: true, id: insertId, requestNumber, message: `تم استلام طلبك بنجاح! رقم الطلب: ${requestNumber}` };
   }),
 
   // ============ NEWSLETTER SUBSCRIPTION ============
