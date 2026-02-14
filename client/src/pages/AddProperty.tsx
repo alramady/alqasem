@@ -107,6 +107,8 @@ export default function AddProperty() {
           </div>
 
           <form onSubmit={handleSubmit}>
+            {/* Honeypot anti-spam */}
+            <input type="text" name="_hp" tabIndex={-1} autoComplete="off" style={{ position: 'absolute', left: '-9999px', opacity: 0, height: 0 }} />
             <div className="bg-white rounded-2xl p-8 shadow-sm min-h-[300px]">
               {step === 0 && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">

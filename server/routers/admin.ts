@@ -34,12 +34,14 @@ async function logAudit(userId: number | null, userName: string | null, action: 
 }
 
 // Helper to create notification
+const VALID_NOTIFICATION_TYPES = ["inquiry", "system", "user_action", "property", "project", "message"] as const;
 async function createNotification(userId: number, title: string, message: string, type: string, link?: string) {
   const db = await getDb();
   if (!db) return;
+  const safeType = (VALID_NOTIFICATION_TYPES as readonly string[]).includes(type) ? type : "system";
   try {
     await db.insert(notifications).values({
-      userId, title, message, type: type as any, link,
+      userId, title, message, type: safeType as any, link,
     });
   } catch (e) {
     console.error("[Notification] Failed to create:", e);
@@ -318,7 +320,7 @@ export const adminRouter = router({
     await db.update(users).set({ passwordHash: hashedPassword }).where(eq(users.id, ctx.user.id));
 
     await logAudit(ctx.user.id, ctx.user.name || ctx.user.openId, "update", "user", ctx.user.id, { action: "password_changed" }, null, null);
-    await createNotification(ctx.user.id, "تم تغيير كلمة المرور", "تم تغيير كلمة المرور الخاصة بك بنجاح", "success");
+    await createNotification(ctx.user.id, "تم تغيير كلمة المرور", "تم تغيير كلمة المرور الخاصة بك بنجاح", "system");
 
     return { success: true, message: "تم تغيير كلمة المرور بنجاح" };
   }),
@@ -1249,7 +1251,8 @@ export const adminRouter = router({
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
     if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "فقط المدير يمكنه إرسال التنبيهات" });
-    const notifType = input.type || "info";
+    const validTypes = ["inquiry", "system", "user_action", "property", "project", "message"];
+    const notifType = (input.type && validTypes.includes(input.type)) ? input.type : "system";
     if (input.targetUserId) {
       await createNotification(input.targetUserId, input.title, input.message, notifType);
     } else {

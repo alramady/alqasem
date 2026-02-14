@@ -18,22 +18,61 @@ export default function HeroSection() {
   const [city, setCity] = useState("all");
 
   const { data: citiesWithDistricts } = trpc.public.getCitiesWithDistricts.useQuery();
+  const { data: liveStats } = trpc.public.getHomepageStats.useQuery(undefined, {
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
 
   // Dynamic hero image from settings or CMS
   const heroImg = settings.hero_image || (heroSection?.content as any)?.image || DEFAULT_HERO_IMG;
 
-  // Dynamic stats from CMS hero section content, with fallbacks
+  // Dynamic stats: use live DB counts for properties/projects, CMS for other stats
   const cmsStats = (heroSection?.content as any)?.stats;
-  const stats = cmsStats && Array.isArray(cmsStats) ? cmsStats.map((s: any) => ({
-    value: s.value || "",
-    label: isAr ? (s.label_ar || s.label || "") : (s.label_en || s.label || ""),
-    suffix: isAr ? (s.suffix_ar || s.suffix || "") : (s.suffix_en || s.suffix || ""),
-  })) : [
-    { value: "20+", label: t("stats.years"), suffix: "" },
-    { value: "5+", label: t("stats.value"), suffix: t("stats.valueDesc") },
-    { value: "1000+", label: t("stats.units"), suffix: t("stats.unitsDesc") },
-    { value: "100%", label: t("stats.trust"), suffix: "" },
-  ];
+  const stats = (() => {
+    // Build dynamic stats with live DB data
+    const dynamicStats = [
+      {
+        value: `+${liveStats?.totalProperties || 17}`,
+        label: isAr ? "عقار متاح" : "Available Properties",
+        suffix: "",
+      },
+      {
+        value: "+1200",
+        label: isAr ? "عميل سعيد" : "Happy Clients",
+        suffix: "",
+      },
+      {
+        value: `+${liveStats?.totalProjects || 6}`,
+        label: isAr ? "مشروع منجز" : "Completed Projects",
+        suffix: "",
+      },
+      {
+        value: "+25",
+        label: isAr ? "سنة خبرة" : "Years Experience",
+        suffix: "",
+      },
+    ];
+    // If CMS has custom stats, merge dynamic counts into matching labels
+    if (cmsStats && Array.isArray(cmsStats) && cmsStats.length > 0) {
+      return cmsStats.map((s: any) => {
+        const label = s.label || "";
+        // Replace property count with live data
+        if (label.includes("عقار") || label.toLowerCase().includes("propert")) {
+          return { value: `+${liveStats?.totalProperties || 17}`, label: isAr ? (s.label_ar || s.label || "") : (s.label_en || s.label || ""), suffix: "" };
+        }
+        // Replace project count with live data
+        if (label.includes("مشروع") || label.toLowerCase().includes("project")) {
+          return { value: `+${liveStats?.totalProjects || 6}`, label: isAr ? (s.label_ar || s.label || "") : (s.label_en || s.label || ""), suffix: "" };
+        }
+        return {
+          value: s.value || "",
+          label: isAr ? (s.label_ar || s.label || "") : (s.label_en || s.label || ""),
+          suffix: isAr ? (s.suffix_ar || s.suffix || "") : (s.suffix_en || s.suffix || ""),
+        };
+      });
+    }
+    return dynamicStats;
+  })();
 
   const searchTabs = [t("hero.buy"), t("hero.rent"), t("hero.newProjects")];
 

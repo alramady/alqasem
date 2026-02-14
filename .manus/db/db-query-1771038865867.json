@@ -1,0 +1,9 @@
+{
+  "query": "DELETE FROM properties WHERE id IN (30007, 30008, 30013, 30014);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.4e413a58b2a3 --database FCSdcQDHNngsNZkY5BfGCD --execute DELETE FROM properties WHERE id IN (30007, 30008, 30013, 30014);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1566
+}

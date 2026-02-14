@@ -41,14 +41,17 @@ export default function Properties() {
   const { t, isAr } = useLanguage();
 
   const searchParams = useSearch();
-  const urlType = new URLSearchParams(searchParams).get("type") as PropertyType | null;
-  const urlListing = new URLSearchParams(searchParams).get("listing") as ListingType | null;
+  const urlParams = useMemo(() => new URLSearchParams(searchParams), [searchParams]);
+  const urlType = urlParams.get("type") as PropertyType | null;
+  const urlListing = urlParams.get("listing") as ListingType | null;
+  const urlCity = urlParams.get("city");
+  const urlQuery = urlParams.get("q");
 
-  const [query, setQuery] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [query, setQuery] = useState(urlQuery || "");
+  const [debouncedQuery, setDebouncedQuery] = useState(urlQuery || "");
   const [selectedType, setSelectedType] = useState<PropertyType | undefined>(urlType || undefined);
   const [selectedListing, setSelectedListing] = useState<ListingType | undefined>(urlListing || undefined);
-  const [selectedCity, setSelectedCity] = useState<string | undefined>(undefined);
+  const [selectedCity, setSelectedCity] = useState<string | undefined>(urlCity || undefined);
   const [selectedDistrict, setSelectedDistrict] = useState<string | undefined>(undefined);
   const [minPrice, setMinPrice] = useState<string>("");
   const [maxPrice, setMaxPrice] = useState<string>("");
@@ -63,6 +66,14 @@ export default function Properties() {
   const [compareIds, setCompareIds] = useState<number[]>(() => {
     try { return JSON.parse(localStorage.getItem("alqasim_compare") || "[]"); } catch { return []; }
   });
+
+  // Sync URL params with filter state when navigating from external links
+  useEffect(() => {
+    if (urlType) setSelectedType(urlType);
+    if (urlListing) setSelectedListing(urlListing);
+    if (urlCity) setSelectedCity(urlCity);
+    if (urlQuery) { setQuery(urlQuery); setDebouncedQuery(urlQuery); }
+  }, [searchParams]);
 
   const handleSearchChange = useCallback((value: string) => {
     setQuery(value);

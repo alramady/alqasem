@@ -65,7 +65,7 @@ function NewsletterForm() {
   });
   return (
     <form onSubmit={(e) => { e.preventDefault(); if (email.trim()) subscribe.mutate({ email: email.trim() }); }} className="flex gap-2 w-full md:w-auto">
-      <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("newsletter.placeholder")} required className="flex-1 md:w-64 px-4 py-3 bg-white/10 border border-white/10 rounded-lg text-white text-sm placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/50" dir="ltr" />
+      <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("newsletter.placeholder")} required aria-label="Email" className="flex-1 md:w-64 px-4 py-3 bg-white/15 border border-white/20 rounded-lg text-white text-sm placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/50 focus:border-[#c8a45e]/50" dir="ltr" />
       <button type="submit" disabled={subscribe.isPending} className="px-5 py-3 bg-[#c8a45e] hover:bg-[#b8944e] text-[#0f1b33] font-semibold rounded-lg transition-colors disabled:opacity-60 flex items-center gap-2">
         {subscribe.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
         {t("newsletter.subscribe")}
@@ -207,11 +207,16 @@ export default function Footer() {
         <div className="h-px bg-white/10 mb-8" />
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-white/30 text-sm">
-            {isAr
-              ? "© جميع الحقوق محفوظة – شركة القاسم العقارية 2026."
-              : "© All Rights Reserved – Al-Qasim Real Estate 2026."}
-          </p>
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+            <p className="text-white/30 text-sm">
+              {isAr
+                ? "© جميع الحقوق محفوظة – شركة القاسم العقارية 2026."
+                : "© All Rights Reserved – Al-Qasim Real Estate 2026."}
+            </p>
+            <Link href="/privacy-policy" className="text-white/40 hover:text-[#c8a45e] text-sm transition-colors">
+              {isAr ? "سياسة الخصوصية" : "Privacy Policy"}
+            </Link>
+          </div>
           <button onClick={scrollToTop} className="w-10 h-10 bg-[#c8a45e]/20 hover:bg-[#c8a45e] text-[#c8a45e] hover:text-[#0f1b33] rounded-lg flex items-center justify-center transition-all">
             <ArrowUp className="w-5 h-5" />
           </button>

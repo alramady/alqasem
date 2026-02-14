@@ -9,9 +9,11 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
 // Helper to notify all admins
+const VALID_NOTIFICATION_TYPES = ["inquiry", "system", "user_action", "property", "project", "message"] as const;
 async function notifyAdmins(title: string, message: string, type: string, link?: string) {
   const db = await getDb();
   if (!db) return;
+  const safeType = (VALID_NOTIFICATION_TYPES as readonly string[]).includes(type) ? type : "system";
   try {
     const admins = await db.select({ id: users.id }).from(users).where(eq(users.role, "admin"));
     for (const admin of admins) {
@@ -19,7 +21,7 @@ async function notifyAdmins(title: string, message: string, type: string, link?:
         userId: admin.id,
         title,
         message,
-        type: type as any,
+        type: safeType as any,
         link,
       });
     }
@@ -332,7 +334,12 @@ export const publicRouter = router({
     subject: z.string().optional(),
     message: z.string().min(5, "الرسالة مطلوبة (5 أحرف على الأقل)"),
     source: z.string().optional(),
+    _hp: z.string().optional(), // honeypot anti-spam
   })).mutation(async ({ input }) => {
+    // Honeypot check - bots fill hidden fields
+    if (input._hp) {
+      return { success: true, id: 0 }; // silently reject
+    }
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "خطأ في الاتصال بقاعدة البيانات" });
 
@@ -444,7 +451,9 @@ export const publicRouter = router({
     name: z.string().min(2, "الاسم مطلوب"),
     phone: z.string().min(9, "رقم الجوال مطلوب"),
     email: z.string().email("البريد الإلكتروني غير صحيح").optional().or(z.literal("")),
+    _hp: z.string().optional(),
   })).mutation(async ({ input }) => {
+    if (input._hp) return { success: true, id: 0 };
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "خطأ في الاتصال بقاعدة البيانات" });
 
@@ -555,7 +564,9 @@ export const publicRouter = router({
     name: z.string().min(2, "الاسم مطلوب"),
     phone: z.string().min(9, "رقم الجوال مطلوب"),
     email: z.string().email("البريد الإلكتروني غير صحيح").optional().or(z.literal("")),
+    _hp: z.string().optional(),
   })).mutation(async ({ input }) => {
+    if (input._hp) return { success: true, id: 0, message: "Done" };
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "خطأ في الاتصال بقاعدة البيانات" });
 
@@ -637,7 +648,9 @@ export const publicRouter = router({
   subscribeNewsletter: publicProcedure.input(z.object({
     email: z.string().email("البريد الإلكتروني غير صحيح"),
     name: z.string().optional(),
+    _hp: z.string().optional(),
   })).mutation(async ({ input }) => {
+    if (input._hp) return { success: true, message: "Done" };
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "خطأ في الاتصال بقاعدة البيانات" });
     const email = sanitizeText(input.email).toLowerCase();
@@ -651,7 +664,7 @@ export const publicRouter = router({
       return { success: true, message: "أنت مشترك بالفعل في النشرة البريدية." };
     }
     await db.insert(newsletterSubscribers).values({ email, name: input.name ? sanitizeText(input.name) : null });
-    await notifyAdmins("📬 اشتراك جديد في النشرة البريدية", `${email} اشترك في النشرة البريدية`, "info", "/admin/settings");
+    await notifyAdmins("📬 اشتراك جديد في النشرة البريدية", `${email} اشترك في النشرة البريدية`, "system", "/admin/settings");
     return { success: true, message: "تم الاشتراك بنجاح! شكراً لك." };
   }),
 
@@ -731,5 +744,19 @@ export const publicRouter = router({
     const [result] = await db.select({ count: count() }).from(propertyViews)
       .where(eq(propertyViews.propertyId, input.propertyId));
     return { count: result?.count || 0 };
+  }),
+
+  // ============ DYNAMIC HOMEPAGE STATS ============
+  getHomepageStats: publicProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { totalProperties: 0, totalProjects: 0 };
+    const [[propCount], [projCount]] = await Promise.all([
+      db.select({ count: count() }).from(properties).where(and(isNull(properties.deletedAt), eq(properties.status, "active"))),
+      db.select({ count: count() }).from(projects),
+    ]);
+    return {
+      totalProperties: propCount?.count || 0,
+      totalProjects: projCount?.count || 0,
+    };
   }),
 });

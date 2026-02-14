@@ -311,3 +311,47 @@
 - [x] Add animation on heart toggle (scale + color transition)
 - [x] Write vitest tests for favorites functionality (27 tests)
 - [x] Verify all existing tests still pass (272 total tests passing)
+
+## User Audit Fixes (Feb 14, 2026)
+
+### A) Critical Bugs
+- [ ] Fix /contact page timeout/crash
+- [ ] Fix property detail pages timing out (/properties/30008, /16, /14, /8)
+- [ ] Fix property detail page loading empty (/properties/10)
+- [ ] Fix project detail pages timing out (/projects/6, /5)
+
+### B) Partial/Incomplete Functions
+- [x] Fix URL query param filtering (type=villa, type=apartment, listing=sale not applied on page load)
+- [x] Remove test/CRUD data from production (عقار اختبار, عقار CRUD)
+- [x] Unify homepage stats with actual DB counts (dynamic not hardcoded)
+- [ ] Fix project without images display (مجمع القاسم السكني)
+- [x] Ensure newsletter email field is visible/accessible in footer
+
+### C) Form & UX Improvements
+- [ ] Verify contact form submission works end-to-end
+- [ ] Verify add-property and request-property forms complete flow
+
+## External Audit Fixes - Batch Implementation (Feb 14, 2026)
+- [x] Fix notifyAdmins "info" type → "system" (notification enum mismatch)
+- [x] Delete test/CRUD properties from production DB (30007, 30008, 30013, 30014)
+- [x] Make homepage stats dynamic from DB (getHomepageStats endpoint + HeroSection update)
+- [x] Fix URL query param filtering on /properties page (type, listing params from URL)
+- [x] Add privacy policy page (Arabic/English bilingual)
+- [x] Add rate limiting on public form submissions (anti-spam honeypot)
+- [x] Add SEO hreflang tags for bilingual support
+- [x] Improve newsletter input field visibility in footer
+- [ ] Add error boundaries for property/project detail pages
+- [ ] Improve accessibility: ARIA labels, keyboard focus, color contrast
+- [ ] Improve "أضف عقارك" form: validation, request number, confirmation
+- [ ] Improve "أطلب عقارك" form: validation, request number, confirmation
+
+## PRD/SRS Document for Next-Phase Features
+- [ ] Write comprehensive PRD/SRS document covering all requested features (A-E categories)
+- [ ] Include prioritized service list with Impact/Effort/Dependencies
+- [ ] Include user stories, functional requirements, NFRs, acceptance criteria per service
+- [ ] Include high-level data model (entities + relationships)
+- [ ] Include API spec + events/notifications
+- [ ] Include UX wireframes (text-based)
+- [ ] Include 3-phase launch plan (MVP, Phase 2, Phase 3)
+- [ ] Include KPIs per phase
+- [ ] Include compliance/risk considerations
