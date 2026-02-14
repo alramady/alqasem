@@ -395,14 +395,8 @@ export const adminRouter = router({
     // Optimized: single query instead of 6 separate queries (N+1 fix)
     const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
     const sixMonthsAgoStr = sixMonthsAgo.toISOString().slice(0, 19).replace('T', ' ');
-    const monthlyData = await db.select({
-      yearMonth: sql<string>`DATE_FORMAT(${inquiries.createdAt}, '%Y-%m')`,
-      monthNum: sql<number>`MONTH(${inquiries.createdAt})`,
-      cnt: count(),
-    }).from(inquiries)
-      .where(sql`${inquiries.createdAt} >= ${sixMonthsAgoStr}`)
-      .groupBy(sql`DATE_FORMAT(${inquiries.createdAt}, '%Y-%m')`, sql`MONTH(${inquiries.createdAt})`)
-      .orderBy(sql`DATE_FORMAT(${inquiries.createdAt}, '%Y-%m')`);
+    const monthlyDataRaw = await db.execute(sql`SELECT DATE_FORMAT(${inquiries.createdAt}, '%Y-%m') as ym, count(*) as cnt FROM ${inquiries} WHERE ${inquiries.createdAt} >= ${sixMonthsAgoStr} GROUP BY ym ORDER BY ym`);
+    const monthlyData = (monthlyDataRaw[0] as unknown as any[]).map((r: any) => ({ yearMonth: r.ym as string, cnt: Number(r.cnt) }));
     
     const monthlyMap = new Map(monthlyData.map(r => [r.yearMonth, r.cnt]));
     const inquiriesByMonth = [];
