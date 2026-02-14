@@ -1,0 +1,77 @@
+{
+  "query": "DESCRIBE amenities; SELECT COUNT(*) as cnt FROM amenities;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.4e413a58b2a3 --database FCSdcQDHNngsNZkY5BfGCD --execute DESCRIBE amenities; SELECT COUNT(*) as cnt FROM amenities;",
+  "rows": [
+    {
+      "Field": "id",
+      "Type": "int(11)",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": "NULL",
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "nameAr",
+      "Type": "varchar(200)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "nameEn",
+      "Type": "varchar(200)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "icon",
+      "Type": "varchar(100)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "amenityCategory",
+      "Type": "enum('basic','comfort','security','outdoor','entertainment','other')",
+      "Null": "NO",
+      "Key": "",
+      "Default": "basic",
+      "Extra": ""
+    },
+    {
+      "Field": "isActive",
+      "Type": "tinyint(1)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "1",
+      "Extra": ""
+    },
+    {
+      "Field": "sortOrder",
+      "Type": "int(11)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    },
+    {
+      "Field": "createdAt",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": ""
+    }
+  ],
+  "messages": [
+    "cnt",
+    "39"
+  ],
+  "stdout": "Field\tType\tNull\tKey\tDefault\tExtra\nid\tint(11)\tNO\tPRI\tNULL\tauto_increment\nnameAr\tvarchar(200)\tNO\t\tNULL\t\nnameEn\tvarchar(200)\tYES\t\tNULL\t\nicon\tvarchar(100)\tYES\t\tNULL\t\namenityCategory\tenum('basic','comfort','security','outdoor','entertainment','other')\tNO\t\tbasic\t\nisActive\ttinyint(1)\tNO\t\t1\t\nsortOrder\tint(11)\tNO\t\t0\t\ncreatedAt\ttimestamp\tNO\t\tCURRENT_TIMESTAMP\t\ncnt\n39\n",
+  "stderr": "",
+  "execution_time_ms": 1731
+}

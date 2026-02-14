@@ -1,0 +1,400 @@
+{
+  "query": "SELECT * FROM amenities ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.4e413a58b2a3 --database FCSdcQDHNngsNZkY5BfGCD --execute SELECT * FROM amenities ORDER BY id;",
+  "rows": [
+    {
+      "id": "1",
+      "nameAr": "مواقف سيارات",
+      "nameEn": "Parking",
+      "icon": "car",
+      "amenityCategory": "basic",
+      "isActive": "1",
+      "sortOrder": "1",
+      "createdAt": "2026-02-14 03:45:11"
+    },
+    {
+      "id": "2",
+      "nameAr": "مصعد",
+      "nameEn": "Elevator",
+      "icon": "arrow-up",
+      "amenityCategory": "basic",
+      "isActive": "1",
+      "sortOrder": "2",
+      "createdAt": "2026-02-14 03:45:11"
+    },
+    {
+      "id": "3",
+      "nameAr": "تكييف مركزي",
+      "nameEn": "Central AC",
+      "icon": "snowflake",
+      "amenityCategory": "basic",
+      "isActive": "1",
+      "sortOrder": "3",
+      "createdAt": "2026-02-14 03:45:11"
+    },
+    {
+      "id": "4",
+      "nameAr": "مطبخ مجهز",
+      "nameEn": "Equipped Kitchen",
+      "icon": "utensils",
+      "amenityCategory": "basic",
+      "isActive": "1",
+      "sortOrder": "4",
+      "createdAt": "2026-02-14 03:45:11"
+    },
+    {
+      "id": "5",
+      "nameAr": "غرفة خادمة",
+      "nameEn": "Maid Room",
+      "icon": "door-open",
+      "amenityCategory": "basic",
+      "isActive": "1",
+      "sortOrder": "5",
+      "createdAt": "2026-02-14 03:45:12"
+    },
+    {
+      "id": "6",
+      "nameAr": "غرفة سائق",
+      "nameEn": "Driver Room",
+      "icon": "door-open",
+      "amenityCategory": "basic",
+      "isActive": "1",
+      "sortOrder": "6",
+      "createdAt": "2026-02-14 03:45:12"
+    },
+    {
+      "id": "7",
+      "nameAr": "غرفة غسيل",
+      "nameEn": "Laundry Room",
+      "icon": "shirt",
+      "amenityCategory": "basic",
+      "isActive": "1",
+      "sortOrder": "7",
+      "createdAt": "2026-02-14 03:45:12"
+    },
+    {
+      "id": "8",
+      "nameAr": "مخزن",
+      "nameEn": "Storage Room",
+      "icon": "warehouse",
+      "amenityCategory": "basic",
+      "isActive": "1",
+      "sortOrder": "8",
+      "createdAt": "2026-02-14 03:45:12"
+    },
+    {
+      "id": "9",
+      "nameAr": "قبو",
+      "nameEn": "Basement",
+      "icon": "layers",
+      "amenityCategory": "basic",
+      "isActive": "1",
+      "sortOrder": "9",
+      "createdAt": "2026-02-14 03:45:13"
+    },
+    {
+      "id": "10",
+      "nameAr": "مجلس رجال",
+      "nameEn": "Men's Majlis",
+      "icon": "sofa",
+      "amenityCategory": "comfort",
+      "isActive": "1",
+      "sortOrder": "10",
+      "createdAt": "2026-02-14 03:45:13"
+    },
+    {
+      "id": "11",
+      "nameAr": "مجلس نساء",
+      "nameEn": "Women's Majlis",
+      "icon": "sofa",
+      "amenityCategory": "comfort",
+      "isActive": "1",
+      "sortOrder": "11",
+      "createdAt": "2026-02-14 03:45:13"
+    },
+    {
+      "id": "12",
+      "nameAr": "مؤثثة بالكامل",
+      "nameEn": "Fully Furnished",
+      "icon": "lamp",
+      "amenityCategory": "comfort",
+      "isActive": "1",
+      "sortOrder": "12",
+      "createdAt": "2026-02-14 03:45:13"
+    },
+    {
+      "id": "13",
+      "nameAr": "نظام ذكي",
+      "nameEn": "Smart Home",
+      "icon": "cpu",
+      "amenityCategory": "comfort",
+      "isActive": "1",
+      "sortOrder": "13",
+      "createdAt": "2026-02-14 03:45:13"
+    },
+    {
+      "id": "14",
+      "nameAr": "شرفة/بلكونة",
+      "nameEn": "Balcony",
+      "icon": "sun",
+      "amenityCategory": "comfort",
+      "isActive": "1",
+      "sortOrder": "14",
+      "createdAt": "2026-02-14 03:45:14"
+    },
+    {
+      "id": "15",
+      "nameAr": "إطلالة بحرية",
+      "nameEn": "Sea View",
+      "icon": "waves",
+      "amenityCategory": "comfort",
+      "isActive": "1",
+      "sortOrder": "15",
+      "createdAt": "2026-02-14 03:45:14"
+    },
+    {
+      "id": "16",
+      "nameAr": "إطلالة بانورامية",
+      "nameEn": "Panoramic View",
+      "icon": "mountain",
+      "amenityCategory": "comfort",
+      "isActive": "1",
+      "sortOrder": "16",
+      "createdAt": "2026-02-14 03:45:14"
+    },
+    {
+      "id": "17",
+      "nameAr": "أمن 24/7",
+      "nameEn": "24/7 Security",
+      "icon": "shield",
+      "amenityCategory": "security",
+      "isActive": "1",
+      "sortOrder": "17",
+      "createdAt": "2026-02-14 03:45:14"
+    },
+    {
+      "id": "18",
+      "nameAr": "كاميرات مراقبة",
+      "nameEn": "CCTV",
+      "icon": "camera",
+      "amenityCategory": "security",
+      "isActive": "1",
+      "sortOrder": "18",
+      "createdAt": "2026-02-14 03:45:14"
+    },
+    {
+      "id": "19",
+      "nameAr": "نظام إنذار",
+      "nameEn": "Alarm System",
+      "icon": "bell",
+      "amenityCategory": "security",
+      "isActive": "1",
+      "sortOrder": "19",
+      "createdAt": "2026-02-14 03:45:15"
+    },
+    {
+      "id": "20",
+      "nameAr": "بوابة إلكترونية",
+      "nameEn": "Electronic Gate",
+      "icon": "lock",
+      "amenityCategory": "security",
+      "isActive": "1",
+      "sortOrder": "20",
+      "createdAt": "2026-02-14 03:45:15"
+    },
+    {
+      "id": "21",
+      "nameAr": "إنتركم",
+      "nameEn": "Intercom",
+      "icon": "phone",
+      "amenityCategory": "security",
+      "isActive": "1",
+      "sortOrder": "21",
+      "createdAt": "2026-02-14 03:45:15"
+    },
+    {
+      "id": "22",
+      "nameAr": "مسبح خاص",
+      "nameEn": "Private Pool",
+      "icon": "droplets",
+      "amenityCategory": "outdoor",
+      "isActive": "1",
+      "sortOrder": "22",
+      "createdAt": "2026-02-14 03:45:15"
+    },
+    {
+      "id": "23",
+      "nameAr": "مسبح مشترك",
+      "nameEn": "Shared Pool",
+      "icon": "droplets",
+      "amenityCategory": "outdoor",
+      "isActive": "1",
+      "sortOrder": "23",
+      "createdAt": "2026-02-14 03:45:16"
+    },
+    {
+      "id": "24",
+      "nameAr": "حديقة خاصة",
+      "nameEn": "Private Garden",
+      "icon": "tree-pine",
+      "amenityCategory": "outdoor",
+      "isActive": "1",
+      "sortOrder": "24",
+      "createdAt": "2026-02-14 03:45:16"
+    },
+    {
+      "id": "25",
+      "nameAr": "حديقة مشتركة",
+      "nameEn": "Shared Garden",
+      "icon": "tree-pine",
+      "amenityCategory": "outdoor",
+      "isActive": "1",
+      "sortOrder": "25",
+      "createdAt": "2026-02-14 03:45:16"
+    },
+    {
+      "id": "26",
+      "nameAr": "ملعب أطفال",
+      "nameEn": "Playground",
+      "icon": "baby",
+      "amenityCategory": "outdoor",
+      "isActive": "1",
+      "sortOrder": "26",
+      "createdAt": "2026-02-14 03:45:16"
+    },
+    {
+      "id": "27",
+      "nameAr": "مسار مشي",
+      "nameEn": "Walking Track",
+      "icon": "footprints",
+      "amenityCategory": "outdoor",
+      "isActive": "1",
+      "sortOrder": "27",
+      "createdAt": "2026-02-14 03:45:16"
+    },
+    {
+      "id": "28",
+      "nameAr": "شواء/باربكيو",
+      "nameEn": "BBQ Area",
+      "icon": "flame",
+      "amenityCategory": "outdoor",
+      "isActive": "1",
+      "sortOrder": "28",
+      "createdAt": "2026-02-14 03:45:17"
+    },
+    {
+      "id": "29",
+      "nameAr": "نادي صحي/جيم",
+      "nameEn": "Gym/Fitness",
+      "icon": "dumbbell",
+      "amenityCategory": "entertainment",
+      "isActive": "1",
+      "sortOrder": "29",
+      "createdAt": "2026-02-14 03:45:17"
+    },
+    {
+      "id": "30",
+      "nameAr": "ساونا/سبا",
+      "nameEn": "Sauna/Spa",
+      "icon": "thermometer",
+      "amenityCategory": "entertainment",
+      "isActive": "1",
+      "sortOrder": "30",
+      "createdAt": "2026-02-14 03:45:17"
+    },
+    {
+      "id": "31",
+      "nameAr": "غرفة سينما",
+      "nameEn": "Cinema Room",
+      "icon": "film",
+      "amenityCategory": "entertainment",
+      "isActive": "1",
+      "sortOrder": "31",
+      "createdAt": "2026-02-14 03:45:17"
+    },
+    {
+      "id": "32",
+      "nameAr": "صالة ألعاب",
+      "nameEn": "Game Room",
+      "icon": "gamepad-2",
+      "amenityCategory": "entertainment",
+      "isActive": "1",
+      "sortOrder": "32",
+      "createdAt": "2026-02-14 03:45:18"
+    },
+    {
+      "id": "33",
+      "nameAr": "غرفة اجتماعات",
+      "nameEn": "Meeting Room",
+      "icon": "presentation",
+      "amenityCategory": "entertainment",
+      "isActive": "1",
+      "sortOrder": "33",
+      "createdAt": "2026-02-14 03:45:18"
+    },
+    {
+      "id": "34",
+      "nameAr": "قريب من المسجد",
+      "nameEn": "Near Mosque",
+      "icon": "building",
+      "amenityCategory": "other",
+      "isActive": "1",
+      "sortOrder": "34",
+      "createdAt": "2026-02-14 03:45:18"
+    },
+    {
+      "id": "35",
+      "nameAr": "قريب من المدارس",
+      "nameEn": "Near Schools",
+      "icon": "graduation-cap",
+      "amenityCategory": "other",
+      "isActive": "1",
+      "sortOrder": "35",
+      "createdAt": "2026-02-14 03:45:18"
+    },
+    {
+      "id": "36",
+      "nameAr": "قريب من المستشفى",
+      "nameEn": "Near Hospital",
+      "icon": "heart-pulse",
+      "amenityCategory": "other",
+      "isActive": "1",
+      "sortOrder": "36",
+      "createdAt": "2026-02-14 03:45:18"
+    },
+    {
+      "id": "37",
+      "nameAr": "قريب من المترو",
+      "nameEn": "Near Metro",
+      "icon": "train-front",
+      "amenityCategory": "other",
+      "isActive": "1",
+      "sortOrder": "37",
+      "createdAt": "2026-02-14 03:45:19"
+    },
+    {
+      "id": "38",
+      "nameAr": "شارع رئيسي",
+      "nameEn": "Main Road",
+      "icon": "route",
+      "amenityCategory": "other",
+      "isActive": "1",
+      "sortOrder": "38",
+      "createdAt": "2026-02-14 03:45:19"
+    },
+    {
+      "id": "39",
+      "nameAr": "واجهة تجارية",
+      "nameEn": "Commercial Front",
+      "icon": "store",
+      "amenityCategory": "other",
+      "isActive": "1",
+      "sortOrder": "39",
+      "createdAt": "2026-02-14 03:45:19"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnameAr\tnameEn\ticon\tamenityCategory\tisActive\tsortOrder\tcreatedAt\n1\tمواقف سيارات\tParking\tcar\tbasic\t1\t1\t2026-02-14 03:45:11\n2\tمصعد\tElevator\tarrow-up\tbasic\t1\t2\t2026-02-14 03:45:11\n3\tتكييف مركزي\tCentral AC\tsnowflake\tbasic\t1\t3\t2026-02-14 03:45:11\n4\tمطبخ مجهز\tEquipped Kitchen\tutensils\tbasic\t1\t4\t2026-02-14 03:45:11\n5\tغرفة خادمة\tMaid Room\tdoor-open\tbasic\t1\t5\t2026-02-14 03:45:12\n6\tغرفة سائق\tDriver Room\tdoor-open\tbasic\t1\t6\t2026-02-14 03:45:12\n7\tغرفة غسيل\tLaundry Room\tshirt\tbasic\t1\t7\t2026-02-14 03:45:12\n8\tمخزن\tStorage Room\twarehouse\tbasic\t1\t8\t2026-02-14 03:45:12\n9\tقبو\tBasement\tlayers\tbasic\t1\t9\t2026-02-14 03:45:13\n10\tمجلس رجال\tMen's Majlis\tsofa\tcomfort\t1\t10\t2026-02-14 03:45:13\n11\tمجلس نساء\tWomen's Majlis\tsofa\tcomfort\t1\t11\t2026-02-14 03:45:13\n12\tمؤثثة بالكامل\tFully Furnished\tlamp\tcomfort\t1\t12\t2026-02-14 03:45:13\n13\tنظام ذكي\tSmart Home\tcpu\tcomfort\t1\t13\t2026-02-14 03:45:13\n14\tشرفة/بلكونة\tBalcony\tsun\tcomfort\t1\t14\t2026-02-14 03:45:14\n15\tإطلالة بحرية\tSea View\twaves\tcomfort\t1\t15\t2026-02-14 03:45:14\n16\tإطلالة بانورامية\tPanoramic View\tmountain\tcomfort\t1\t16\t2026-02-14 03:45:14\n17\tأمن 24/7\t24/7 Security\tshield\tsecurity\t1\t17\t2026-02-14 03:45:14\n18\tكاميرات مراقبة\tCCTV\tcamera\tsecurity\t1\t18\t2026-02-14 03:45:14\n19\tنظام إنذار\tAlarm System\tbell\tsecurity\t1\t19\t2026-02-14 03:45:15\n20\tبوابة إلكترونية\tElectronic Gate\tlock\tsecurity\t1\t20\t2026-02-14 03:45:15\n21\tإنتركم\tIntercom\tphone\tsecurity\t1\t21\t2026-02-14 03:45:15\n22\tمسبح خاص\tPrivate Pool\tdroplets\toutdoor\t1\t22\t2026-02-14 03:45:15\n23\tمسبح مشترك\tShared Pool\tdroplets\toutdoor\t1\t23\t2026-02-14 03:45:16\n24\tحديقة خاصة\tPrivate Garden\ttree-pine\toutdoor\t1\t24\t2026-02-14 03:45:16\n25\tحديقة مشتركة\tShared Garden\ttree-pine\toutdoor\t1\t25\t2026-02-14 03:45:16\n26\tملعب أطفال\tPlayground\tbaby\toutdoor\t1\t26\t2026-02-14 03:45:16\n27\tمسار مشي\tWalking Track\tfootprints\toutdoor\t1\t27\t2026-02-14 03:45:16\n28\tشواء/باربكيو\tBBQ Area\tflame\toutdoor\t1\t28\t2026-02-14 03:45:17\n29\tنادي صحي/جيم\tGym/Fitness\tdumbbell\tentertainment\t1\t29\t2026-02-14 03:45:17\n30\tساونا/سبا\tSauna/Spa\tthermometer\tentertainment\t1\t30\t2026-02-14 03:45:17\n31\tغرفة سينما\tCinema Room\tfilm\tentertainment\t1\t31\t2026-02-14 03:45:17\n32\tصالة ألعاب\tGame Room\tgamepad-2\tentertainment\t1\t32\t2026-02-14 03:45:18\n33\tغرفة اجتماعات\tMeeting Room\tpresentation\tentertainment\t1\t33\t2026-02-14 03:45:18\n34\tقريب من المسجد\tNear Mosque\tbuilding\tother\t1\t34\t2026-02-14 03:45:18\n35\tقريب من المدارس\tNear Schools\tgraduation-cap\tother\t1\t35\t2026-02-14 03:45:18\n36\tقريب من المستشفى\tNear Hospital\theart-pulse\tother\t1\t36\t2026-02-14 03:45:18\n37\tقريب من المترو\tNear Metro\ttrain-front\tother\t1\t37\t2026-02-14 03:45:19\n38\tشارع رئيسي\tMain Road\troute\tother\t1\t38\t2026-02-14 03:45:19\n39\tواجهة تجارية\tCommercial Front\tstore\tother\t1\t39\t2026-02-14 03:45:19\n",
+  "stderr": "",
+  "execution_time_ms": 1516
+}

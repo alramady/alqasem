@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { Menu, X, Phone, Mail, ChevronDown, Globe, Heart } from "lucide-react";
+import { Menu, X, Phone, Mail, ChevronDown, Globe, Heart, User, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useLocation } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
 import { useFavorites } from "@/hooks/useFavorites";
+import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
 
 const DEFAULT_LOGO = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663331132774/BEtRgbusNNpRjAtj.png";
 
@@ -12,6 +13,7 @@ export default function Navbar() {
   const { t, lang, toggleLang, isAr } = useLanguage();
   const { settings } = useSiteConfig();
   const { count: favCount } = useFavorites();
+  const { customer, isLoggedIn } = useCustomerAuth();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
@@ -208,6 +210,25 @@ export default function Navbar() {
                 </span>
               )}
             </Link>
+            {isLoggedIn ? (
+              <Link
+                href="/account"
+                className="relative text-white/70 hover:text-[#c8a45e] transition-colors p-2 group"
+                title={t("account.myAccount")}
+              >
+                <div className="w-8 h-8 bg-[#c8a45e] rounded-full flex items-center justify-center text-[#0f1b33] text-xs font-bold group-hover:scale-110 transition-transform">
+                  {customer?.name ? customer.name.charAt(0).toUpperCase() : <User className="w-4 h-4" />}
+                </div>
+              </Link>
+            ) : (
+              <Link
+                href="/login"
+                className="relative text-white/70 hover:text-[#c8a45e] transition-colors p-2 group"
+                title={t("account.login")}
+              >
+                <User className="w-5 h-5 transition-all duration-300 group-hover:scale-110" />
+              </Link>
+            )}
             <Link
               href="/add-property"
               className="hidden md:flex items-center gap-2 border border-[#c8a45e]/40 text-[#c8a45e] hover:bg-[#c8a45e] hover:text-[#0f1b33] font-semibold px-4 py-2 rounded-sm transition-all text-sm"
@@ -281,6 +302,23 @@ export default function Navbar() {
                 </motion.div>
               ))}
               <div className="flex flex-col gap-3 mt-6">
+                {isLoggedIn ? (
+                  <Link
+                    href="/account"
+                    className="flex items-center justify-center gap-2 bg-[#c8a45e] text-[#0f1b33] font-semibold px-6 py-4 rounded-sm text-lg"
+                  >
+                    <User className="w-5 h-5" />
+                    {t("account.myAccount")}
+                  </Link>
+                ) : (
+                  <Link
+                    href="/login"
+                    className="flex items-center justify-center gap-2 bg-[#c8a45e] text-[#0f1b33] font-semibold px-6 py-4 rounded-sm text-lg"
+                  >
+                    <User className="w-5 h-5" />
+                    {t("account.login")}
+                  </Link>
+                )}
                 <Link
                   href="/add-property"
                   className="flex items-center justify-center gap-2 border border-[#c8a45e]/40 text-[#c8a45e] font-semibold px-6 py-4 rounded-sm text-lg"

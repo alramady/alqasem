@@ -6,6 +6,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { SiteConfigProvider } from "./contexts/SiteConfigContext";
+import { CustomerAuthProvider } from "./contexts/CustomerAuthContext";
 import Home from "./pages/Home";
 import { lazy, Suspense } from "react";
 
@@ -23,6 +24,9 @@ const CMSPage = lazy(() => import("./pages/CMSPage"));
 const FavoritesPage = lazy(() => import("./pages/Favorites"));
 const ComparePage = lazy(() => import("./pages/Compare"));
 const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicy"));
+const CustomerLoginPage = lazy(() => import("./pages/CustomerLogin"));
+const CustomerRegisterPage = lazy(() => import("./pages/CustomerRegister"));
+const CustomerAccountPage = lazy(() => import("./pages/CustomerAccount"));
 
 // Lazy load admin pages
 const AdminLogin = lazy(() => import("./pages/admin/Login"));
@@ -116,6 +120,17 @@ function Router() {
         <Suspense fallback={<PageFallback />}><PrivacyPolicyPage /></Suspense>
       </Route>
 
+      {/* Customer account routes */}
+      <Route path="/login">
+        <Suspense fallback={<PageFallback />}><CustomerLoginPage /></Suspense>
+      </Route>
+      <Route path="/register">
+        <Suspense fallback={<PageFallback />}><CustomerRegisterPage /></Suspense>
+      </Route>
+      <Route path="/account">
+        <Suspense fallback={<PageFallback />}><CustomerAccountPage /></Suspense>
+      </Route>
+
       {/* Dynamic CMS pages - catch-all for /page/:slug */}
       <Route path="/page/:slug">
         {(params) => <Suspense fallback={<PageFallback />}><CMSPage slug={params.slug} /></Suspense>}
@@ -202,8 +217,10 @@ function App() {
         <SiteConfigProvider>
           <ThemeProvider defaultTheme="light">
             <TooltipProvider>
-              <Toaster position="top-center" richColors />
-              <Router />
+              <CustomerAuthProvider>
+                <Toaster position="top-center" richColors />
+                <Router />
+              </CustomerAuthProvider>
             </TooltipProvider>
           </ThemeProvider>
         </SiteConfigProvider>

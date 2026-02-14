@@ -1862,7 +1862,7 @@ export const adminRouter = router({
     const db = await getDb();
     if (!db) return [];
     const conditions: any[] = [];
-    if (!input?.includeInactive) conditions.push(eq(cities.isActive, true));
+    if (!input?.includeInactive) conditions.push(eq(cities.isActive, 1 as any));
     return db.select().from(cities).where(conditions.length ? and(...conditions) : undefined).orderBy(asc(cities.sortOrder), asc(cities.nameAr));
   }),
 
@@ -1923,7 +1923,7 @@ export const adminRouter = router({
     if (!db) return [];
     const conditions: any[] = [];
     if (input?.cityId) conditions.push(eq(districts.cityId, input.cityId));
-    if (!input?.includeInactive) conditions.push(eq(districts.isActive, true));
+    if (!input?.includeInactive) conditions.push(eq(districts.isActive, 1 as any));
     return db.select().from(districts).where(conditions.length ? and(...conditions) : undefined).orderBy(asc(districts.sortOrder), asc(districts.nameAr));
   }),
 

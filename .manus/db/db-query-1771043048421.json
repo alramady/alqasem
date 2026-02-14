@@ -1,0 +1,35 @@
+{
+  "query": "SELECT id, nameAr, isActive FROM amenities LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.4e413a58b2a3 --database FCSdcQDHNngsNZkY5BfGCD --execute SELECT id, nameAr, isActive FROM amenities LIMIT 5;",
+  "rows": [
+    {
+      "id": "1",
+      "nameAr": "مواقف سيارات",
+      "isActive": "1"
+    },
+    {
+      "id": "2",
+      "nameAr": "مصعد",
+      "isActive": "1"
+    },
+    {
+      "id": "3",
+      "nameAr": "تكييف مركزي",
+      "isActive": "1"
+    },
+    {
+      "id": "4",
+      "nameAr": "مطبخ مجهز",
+      "isActive": "1"
+    },
+    {
+      "id": "5",
+      "nameAr": "غرفة خادمة",
+      "isActive": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnameAr\tisActive\n1\tمواقف سيارات\t1\n2\tمصعد\t1\n3\tتكييف مركزي\t1\n4\tمطبخ مجهز\t1\n5\tغرفة خادمة\t1\n",
+  "stderr": "",
+  "execution_time_ms": 1525
+}

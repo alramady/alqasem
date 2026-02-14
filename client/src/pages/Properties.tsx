@@ -132,6 +132,27 @@ export default function Properties() {
   const { data, isLoading, isFetching } = trpc.public.searchProperties.useQuery(searchInput);
   const { data: citiesWithDistricts } = trpc.public.getCitiesWithDistricts.useQuery();
 
+  // Live result count preview (count-only query, no data fetched)
+  const countInput = useMemo(() => ({
+    query: debouncedQuery || undefined,
+    type: selectedType,
+    listingType: selectedListing,
+    city: selectedCity,
+    district: selectedDistrict,
+    minPrice: minPrice ? Number(minPrice) : undefined,
+    maxPrice: maxPrice ? Number(maxPrice) : undefined,
+    minArea: minArea ? Number(minArea) : undefined,
+    maxArea: maxArea ? Number(maxArea) : undefined,
+    minRooms: minRooms ? Number(minRooms) : undefined,
+    minBathrooms: minBathrooms ? Number(minBathrooms) : undefined,
+    direction: selectedDirection,
+    furnishing: selectedFurnishing,
+    maxBuildingAge: maxBuildingAge ? Number(maxBuildingAge) : undefined,
+    amenityIds: selectedAmenityIds.length > 0 ? selectedAmenityIds : undefined,
+  }), [debouncedQuery, selectedType, selectedListing, selectedCity, selectedDistrict, minPrice, maxPrice, minArea, maxArea, minRooms, minBathrooms, selectedDirection, selectedFurnishing, maxBuildingAge, selectedAmenityIds]);
+  const { data: countData, isFetching: isCountFetching } = trpc.public.searchPropertiesCount.useQuery(countInput);
+  const liveCount = countData?.count ?? data?.total ?? 0;
+
   // Get districts for the selected city
   const availableDistricts = useMemo(() => {
     if (!selectedCity || !citiesWithDistricts) return [];
@@ -275,6 +296,9 @@ export default function Properties() {
                 <button className="bg-[#E31E24] hover:bg-[#c91a1f] text-white px-6 py-3.5 rounded-xl font-semibold transition-colors flex items-center gap-2 shrink-0">
                   <Search className="w-4 h-4" />
                   <span className="hidden sm:inline">{isAr ? "بحث" : "Search"}</span>
+                  {!isCountFetching && liveCount > 0 && (
+                    <span className="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full font-bold">{liveCount}</span>
+                  )}
                 </button>
               </div>
             </div>
@@ -341,8 +365,14 @@ export default function Properties() {
                 <ArrowUpDown className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" style={{ insetInlineEnd: '0.5rem' }} />
               </div>
 
-              <span className="text-sm text-gray-500 whitespace-nowrap">
-                {isFetching ? <Loader2 className="w-4 h-4 animate-spin inline" /> : data?.total || 0} {t("filter.results")}
+              <span className={`text-sm font-medium whitespace-nowrap px-3 py-1.5 rounded-lg transition-all ${
+                hasActiveFilters ? 'bg-[#c8a45e]/10 text-[#c8a45e]' : 'text-gray-500'
+              }`}>
+                {isCountFetching ? <Loader2 className="w-4 h-4 animate-spin inline" /> : (
+                  <>
+                    <span className="font-bold">{liveCount}</span>{' '}{isAr ? 'نتيجة' : (liveCount === 1 ? 'result' : 'results')}
+                  </>
+                )}
               </span>
 
               <div className="hidden sm:flex items-center gap-1 bg-gray-50 rounded-lg p-1">

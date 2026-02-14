@@ -1,0 +1,47 @@
+{
+  "query": "SELECT COLUMN_NAME, COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'amenities'; SELECT * FROM amenities WHERE isActive = 1 LIMIT 3;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.4e413a58b2a3 --database FCSdcQDHNngsNZkY5BfGCD --execute SELECT COLUMN_NAME, COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'amenities'; SELECT * FROM amenities WHERE isActive = 1 LIMIT 3;",
+  "rows": [
+    {
+      "COLUMN_NAME": "id",
+      "COLUMN_TYPE": "int(11)"
+    },
+    {
+      "COLUMN_NAME": "nameAr",
+      "COLUMN_TYPE": "varchar(200)"
+    },
+    {
+      "COLUMN_NAME": "nameEn",
+      "COLUMN_TYPE": "varchar(200)"
+    },
+    {
+      "COLUMN_NAME": "icon",
+      "COLUMN_TYPE": "varchar(100)"
+    },
+    {
+      "COLUMN_NAME": "amenityCategory",
+      "COLUMN_TYPE": "enum('basic','comfort','security','outdoor','entertainment','other')"
+    },
+    {
+      "COLUMN_NAME": "isActive",
+      "COLUMN_TYPE": "tinyint(1)"
+    },
+    {
+      "COLUMN_NAME": "sortOrder",
+      "COLUMN_TYPE": "int(11)"
+    },
+    {
+      "COLUMN_NAME": "createdAt",
+      "COLUMN_TYPE": "timestamp"
+    }
+  ],
+  "messages": [
+    "id\tnameAr\tnameEn\ticon\tamenityCategory\tisActive\tsortOrder\tcreatedAt",
+    "1\tمواقف سيارات\tParking\tcar\tbasic\t1\t1\t2026-02-14 03:45:11",
+    "2\tمصعد\tElevator\tarrow-up\tbasic\t1\t2\t2026-02-14 03:45:11",
+    "3\tتكييف مركزي\tCentral AC\tsnowflake\tbasic\t1\t3\t2026-02-14 03:45:11"
+  ],
+  "stdout": "COLUMN_NAME\tCOLUMN_TYPE\nid\tint(11)\nnameAr\tvarchar(200)\nnameEn\tvarchar(200)\nicon\tvarchar(100)\namenityCategory\tenum('basic','comfort','security','outdoor','entertainment','other')\nisActive\ttinyint(1)\nsortOrder\tint(11)\ncreatedAt\ttimestamp\nid\tnameAr\tnameEn\ticon\tamenityCategory\tisActive\tsortOrder\tcreatedAt\n1\tمواقف سيارات\tParking\tcar\tbasic\t1\t1\t2026-02-14 03:45:11\n2\tمصعد\tElevator\tarrow-up\tbasic\t1\t2\t2026-02-14 03:45:11\n3\tتكييف مركزي\tCentral AC\tsnowflake\tbasic\t1\t3\t2026-02-14 03:45:11\n",
+  "stderr": "",
+  "execution_time_ms": 1726
+}

@@ -1,11 +1,12 @@
-import { useState, useEffect, useCallback, useSyncExternalStore } from "react";
+import { useState, useEffect, useCallback, useSyncExternalStore, useRef } from "react";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { trpc } from "@/lib/trpc";
 
 const STORAGE_KEY = "alqasim_favorites";
 const STORAGE_ORDER_KEY = "alqasim_favorites_order"; // tracks order of addition
 
-// External store for cross-component sync
+// External store for cross-component sync (localStorage-based for guests)
 let listeners: Array<() => void> = [];
 let cachedIds: number[] = [];
 let cachedOrder: Record<number, number> = {}; // id -> timestamp
@@ -58,7 +59,59 @@ function getSnapshot() {
 
 export function useFavorites() {
   const { t, isAr } = useLanguage();
-  const favIds = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  const localFavIds = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+
+  // Try to get customer auth state - will be null if not logged in
+  let customerData: any = null;
+  let isCustomerLoggedIn = false;
+  try {
+    // We import useCustomerAuth dynamically to avoid circular deps
+    // Instead, we use trpc.customer.me directly
+    const meQuery = trpc.customer.me.useQuery(undefined, { retry: false, staleTime: 1000 * 60 * 5 });
+    customerData = meQuery.data;
+    isCustomerLoggedIn = !!customerData;
+  } catch {
+    // Not in CustomerAuthProvider context, treat as guest
+  }
+
+  // DB-based favorites for logged-in customers
+  const dbFavsQuery = trpc.customer.getFavorites.useQuery(undefined, {
+    enabled: isCustomerLoggedIn,
+    staleTime: 1000 * 30,
+  });
+
+  const syncMutation = trpc.customer.syncFavorites.useMutation();
+  const toggleMutation = trpc.customer.toggleFavorite.useMutation();
+  const clearMutation = trpc.customer.clearFavorites.useMutation();
+  const utils = trpc.useUtils();
+
+  // Sync localStorage favorites to DB on login
+  const hasSynced = useRef(false);
+  useEffect(() => {
+    if (isCustomerLoggedIn && !hasSynced.current && cachedIds.length > 0) {
+      hasSynced.current = true;
+      syncMutation.mutate(
+        { propertyIds: cachedIds },
+        {
+          onSuccess: (serverIds) => {
+            // Update localStorage with merged server data
+            const newOrder = { ...cachedOrder };
+            for (const id of serverIds) {
+              if (!newOrder[id]) newOrder[id] = Date.now();
+            }
+            writeToStorage(serverIds, newOrder);
+            utils.customer.getFavorites.invalidate();
+          },
+        }
+      );
+    }
+    if (!isCustomerLoggedIn) {
+      hasSynced.current = false;
+    }
+  }, [isCustomerLoggedIn]);
+
+  // Use DB favorites when logged in, localStorage when guest
+  const favIds = isCustomerLoggedIn && dbFavsQuery.data ? dbFavsQuery.data : localFavIds;
 
   const isFavorite = useCallback(
     (id: number) => favIds.includes(id),
@@ -71,22 +124,55 @@ export function useFavorites() {
         e.preventDefault();
         e.stopPropagation();
       }
-      const isCurrentlyFav = cachedIds.includes(id);
-      let newIds: number[];
-      let newOrder = { ...cachedOrder };
 
-      if (isCurrentlyFav) {
-        newIds = cachedIds.filter((f) => f !== id);
-        delete newOrder[id];
-        toast.success(t("favorites.removed"));
+      const isCurrentlyFav = favIds.includes(id);
+
+      if (isCustomerLoggedIn) {
+        // Optimistic update for localStorage
+        let newIds: number[];
+        let newOrder = { ...cachedOrder };
+        if (isCurrentlyFav) {
+          newIds = cachedIds.filter((f) => f !== id);
+          delete newOrder[id];
+          toast.success(t("favorites.removed"));
+        } else {
+          newIds = [...cachedIds, id];
+          newOrder[id] = Date.now();
+          toast.success(t("favorites.added"));
+        }
+        writeToStorage(newIds, newOrder);
+
+        // Also update DB
+        toggleMutation.mutate(
+          { propertyId: id },
+          {
+            onSuccess: () => {
+              utils.customer.getFavorites.invalidate();
+            },
+            onError: () => {
+              // Rollback
+              writeToStorage(cachedIds, cachedOrder);
+              utils.customer.getFavorites.invalidate();
+            },
+          }
+        );
       } else {
-        newIds = [...cachedIds, id];
-        newOrder[id] = Date.now();
-        toast.success(t("favorites.added"));
+        // Guest: localStorage only
+        let newIds: number[];
+        let newOrder = { ...cachedOrder };
+        if (isCurrentlyFav) {
+          newIds = cachedIds.filter((f) => f !== id);
+          delete newOrder[id];
+          toast.success(t("favorites.removed"));
+        } else {
+          newIds = [...cachedIds, id];
+          newOrder[id] = Date.now();
+          toast.success(t("favorites.added"));
+        }
+        writeToStorage(newIds, newOrder);
       }
-      writeToStorage(newIds, newOrder);
     },
-    [t]
+    [favIds, isCustomerLoggedIn, t]
   );
 
   const removeFavorite = useCallback(
@@ -96,14 +182,27 @@ export function useFavorites() {
       delete newOrder[id];
       writeToStorage(newIds, newOrder);
       toast.success(t("favorites.removed"));
+
+      if (isCustomerLoggedIn) {
+        toggleMutation.mutate(
+          { propertyId: id },
+          { onSuccess: () => utils.customer.getFavorites.invalidate() }
+        );
+      }
     },
-    [t]
+    [t, isCustomerLoggedIn]
   );
 
   const clearAll = useCallback(() => {
     writeToStorage([], {});
     toast.success(isAr ? "تم مسح جميع المفضلة" : "All favorites cleared");
-  }, [isAr]);
+
+    if (isCustomerLoggedIn) {
+      clearMutation.mutate(undefined, {
+        onSuccess: () => utils.customer.getFavorites.invalidate(),
+      });
+    }
+  }, [isAr, isCustomerLoggedIn]);
 
   const getAddedTime = useCallback(
     (id: number) => cachedOrder[id] || 0,
@@ -114,9 +213,9 @@ export function useFavorites() {
   const count = favIds.length;
 
   const shareUrl = useCallback(() => {
-    if (cachedIds.length === 0) return "";
+    if (favIds.length === 0) return "";
     const base = window.location.origin;
-    return `${base}/favorites?ids=${cachedIds.join(",")}`;
+    return `${base}/favorites?ids=${favIds.join(",")}`;
   }, [favIds]);
 
   return {

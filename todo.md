@@ -367,7 +367,7 @@
 - [x] Seed common Saudi amenities (pool, elevator, parking, garden, AC, maid room, driver room, majlis, etc.)
 - [x] Push database migrations
 - [x] Extend searchProperties backend with: bathrooms filter, area range (min/max), amenities filter, buildingAge, floor, direction, furnishing
-- [ ] Add result count preview before applying filters
+- [x] Add result count preview before applying filters
 - [x] Build collapsible "Advanced Filters" panel on Properties page
 - [x] Add bathrooms filter (1-5+)
 - [x] Add exact area range filter (min m² - max m²)
@@ -388,3 +388,32 @@
 - [x] Verify inquiry notification emails send correctly (confirmed in server logs)
 - [x] Verify newsletter subscription notification sends correctly
 - [x] All 290 tests passing
+
+## Populate Amenities for Existing Properties
+- [x] Create seed script mapping each property to relevant amenities
+- [x] Assign amenities based on property type (villa, apartment, land, commercial)
+- [x] Run seed script and verify data in DB (237 associations across 17 properties)
+
+## Live Result Count Preview
+- [x] Add searchPropertiesCount backend endpoint (returns count only, no data)
+- [x] Show live count badge next to search button ("17 نتيجة")
+- [x] Update count on every filter change (debounced)
+- [x] Bilingual labels (AR/EN)
+
+## Public User Accounts (Service 1)
+- [x] Add customers table (id, phone, email, name, passwordHash, isVerified, avatar, createdAt)
+- [x] Add otp_codes table (id, phone, code, expiresAt, used, createdAt)
+- [x] Add customer_favorites table (customerId, propertyId, addedAt)
+- [x] Push database migrations
+- [x] Create OTP send endpoint (generate 6-digit code, store in DB, send via SMS/email)
+- [x] Create OTP verify endpoint (validate code, create session, return JWT)
+- [x] Create customer login endpoint (phone + password)
+- [x] Create customer profile endpoints (getProfile, updateProfile)
+- [x] Build public registration page (phone input → OTP → set password → done)
+- [x] Build public login page (phone + password, with OTP fallback)
+- [x] Build customer profile page (name, email, phone, favorites, inquiries)
+- [x] Sync localStorage favorites to DB on login
+- [x] Load DB favorites on login and merge with localStorage
+- [x] Add customer auth state to frontend (useCustomerAuth hook)
+- [x] Add customer avatar/login button to Navbar
+- [x] Write vitest tests for customer auth and favorites sync (25 tests, all 315 passing)

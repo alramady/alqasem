@@ -226,6 +226,88 @@ export const publicRouter = router({
     };
   }),
 
+  // Count-only endpoint for live result count preview (no data fetched)
+  searchPropertiesCount: publicProcedure.input(z.object({
+    query: z.string().optional(),
+    type: z.enum(["villa", "apartment", "land", "commercial", "office", "building"]).optional(),
+    listingType: z.enum(["sale", "rent"]).optional(),
+    city: z.string().optional(),
+    district: z.string().optional(),
+    minPrice: z.number().min(0).optional(),
+    maxPrice: z.number().min(0).optional(),
+    minArea: z.number().min(0).optional(),
+    maxArea: z.number().min(0).optional(),
+    minRooms: z.number().int().min(0).optional(),
+    maxRooms: z.number().int().min(0).optional(),
+    minBathrooms: z.number().int().min(0).optional(),
+    maxBathrooms: z.number().int().min(0).optional(),
+    floor: z.number().int().optional(),
+    direction: z.enum(["north", "south", "east", "west", "north_east", "north_west", "south_east", "south_west"]).optional(),
+    furnishing: z.enum(["furnished", "semi_furnished", "unfurnished"]).optional(),
+    maxBuildingAge: z.number().int().min(0).optional(),
+    amenityIds: z.array(z.number().int()).optional(),
+  }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { count: 0 };
+
+    const conditions: any[] = [isNull(properties.deletedAt), eq(properties.status, "active")];
+
+    if (input?.type) conditions.push(eq(properties.type, input.type));
+    if (input?.listingType) conditions.push(eq(properties.listingType, input.listingType));
+    if (input?.city) conditions.push(eq(properties.city, input.city));
+    if (input?.district) conditions.push(eq(properties.district, input.district));
+    if (input?.minPrice) conditions.push(gte(properties.price, String(input.minPrice)));
+    if (input?.maxPrice) conditions.push(lte(properties.price, String(input.maxPrice)));
+    if (input?.minArea) conditions.push(gte(properties.area, String(input.minArea)));
+    if (input?.maxArea) conditions.push(lte(properties.area, String(input.maxArea)));
+    if (input?.minRooms) conditions.push(gte(properties.rooms, input.minRooms));
+    if (input?.maxRooms) conditions.push(lte(properties.rooms, input.maxRooms));
+    if (input?.minBathrooms) conditions.push(gte(properties.bathrooms, input.minBathrooms));
+    if (input?.maxBathrooms) conditions.push(lte(properties.bathrooms, input.maxBathrooms));
+    if (input?.floor) conditions.push(eq(properties.floor, input.floor));
+    if (input?.direction) conditions.push(eq(properties.direction, input.direction));
+    if (input?.furnishing) conditions.push(eq(properties.furnishing, input.furnishing));
+    if (input?.maxBuildingAge) conditions.push(lte(properties.buildingAge, input.maxBuildingAge));
+
+    if (input?.query && input.query.trim()) {
+      const q = `%${input.query.trim()}%`;
+      conditions.push(
+        or(
+          like(properties.title, q),
+          like(properties.titleEn, q),
+          like(properties.description, q),
+          like(properties.descriptionEn, q),
+          like(properties.city, q),
+          like(properties.cityEn, q),
+          like(properties.district, q),
+          like(properties.districtEn, q),
+          like(properties.address, q),
+          like(properties.addressEn, q)
+        )
+      );
+    }
+
+    if (input?.amenityIds && input.amenityIds.length > 0) {
+      const amenityResults = await db
+        .select({ propertyId: propertyAmenities.propertyId })
+        .from(propertyAmenities)
+        .where(inArray(propertyAmenities.amenityId, input.amenityIds));
+      const propCounts: Record<number, number> = {};
+      for (const r of amenityResults) {
+        propCounts[r.propertyId] = (propCounts[r.propertyId] || 0) + 1;
+      }
+      const matchingIds = Object.entries(propCounts)
+        .filter(([, cnt]) => cnt >= input.amenityIds!.length)
+        .map(([id]) => Number(id));
+      if (matchingIds.length === 0) return { count: 0 };
+      conditions.push(inArray(properties.id, matchingIds));
+    }
+
+    const whereClause = and(...conditions);
+    const totalResult = await db.select({ total: count() }).from(properties).where(whereClause);
+    return { count: totalResult[0]?.total || 0 };
+  }),
+
   searchProjects: publicProcedure.input(z.object({
     query: z.string().optional(),
     status: z.enum(["active", "completed", "upcoming"]).optional(),
@@ -290,7 +372,7 @@ export const publicRouter = router({
   getPropertyCities: publicProcedure.query(async () => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "خطأ في الاتصال بقاعدة البيانات" });
-    const activeCities = await db.select().from(cities).where(eq(cities.isActive, true)).orderBy(asc(cities.sortOrder), asc(cities.nameAr));
+    const activeCities = await db.select().from(cities).where(eq(cities.isActive, 1 as any)).orderBy(asc(cities.sortOrder), asc(cities.nameAr));
     return activeCities.map(c => c.nameAr);
   }),
 
@@ -298,8 +380,8 @@ export const publicRouter = router({
   getCitiesWithDistricts: publicProcedure.query(async () => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "خطأ في الاتصال بقاعدة البيانات" });
-    const activeCities = await db.select().from(cities).where(eq(cities.isActive, true)).orderBy(asc(cities.sortOrder), asc(cities.nameAr));
-    const activeDistricts = await db.select().from(districts).where(eq(districts.isActive, true)).orderBy(asc(districts.sortOrder), asc(districts.nameAr));
+    const activeCities = await db.select().from(cities).where(eq(cities.isActive, 1 as any)).orderBy(asc(cities.sortOrder), asc(cities.nameAr));
+    const activeDistricts = await db.select().from(districts).where(eq(districts.isActive, 1 as any)).orderBy(asc(districts.sortOrder), asc(districts.nameAr));
     return activeCities.map(city => ({
       id: city.id,
       nameAr: city.nameAr,
@@ -332,7 +414,7 @@ export const publicRouter = router({
   getAmenities: publicProcedure.query(async () => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-    return db.select().from(amenities).where(eq(amenities.isActive, true)).orderBy(asc(amenities.sortOrder));
+    return db.select().from(amenities).where(eq(amenities.isActive, 1 as any)).orderBy(asc(amenities.sortOrder));
   }),
 
   getPropertyAmenities: publicProcedure.input(z.object({

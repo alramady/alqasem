@@ -436,3 +436,66 @@ export const propertyAmenities = mysqlTable("property_amenities", {
 });
 export type PropertyAmenity = typeof propertyAmenities.$inferSelect;
 export type InsertPropertyAmenity = typeof propertyAmenities.$inferInsert;
+
+/**
+ * Public customers (website visitors who register).
+ */
+export const customers = mysqlTable("customers", {
+  id: int("id").autoincrement().primaryKey(),
+  phone: varchar("phone", { length: 20 }).notNull().unique(),
+  email: varchar("email", { length: 320 }),
+  name: varchar("customerName", { length: 255 }),
+  passwordHash: varchar("customerPasswordHash", { length: 255 }),
+  isVerified: boolean("isVerified").default(false).notNull(),
+  avatar: varchar("customerAvatar", { length: 1000 }),
+  preferredLanguage: mysqlEnum("preferredLanguage", ["ar", "en"]).default("ar").notNull(),
+  status: mysqlEnum("customerStatus", ["active", "inactive", "banned"]).default("active").notNull(),
+  lastLoginAt: timestamp("lastLoginAt"),
+  createdAt: timestamp("customerCreatedAt").defaultNow().notNull(),
+  updatedAt: timestamp("customerUpdatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type Customer = typeof customers.$inferSelect;
+export type InsertCustomer = typeof customers.$inferInsert;
+
+/**
+ * OTP codes for phone verification.
+ */
+export const otpCodes = mysqlTable("otp_codes", {
+  id: int("id").autoincrement().primaryKey(),
+  phone: varchar("otpPhone", { length: 20 }).notNull(),
+  code: varchar("otpCode", { length: 10 }).notNull(),
+  purpose: mysqlEnum("otpPurpose", ["register", "login", "reset_password"]).default("register").notNull(),
+  isUsed: boolean("isUsed").default(false).notNull(),
+  expiresAt: timestamp("otpExpiresAt").notNull(),
+  createdAt: timestamp("otpCreatedAt").defaultNow().notNull(),
+});
+export type OtpCode = typeof otpCodes.$inferSelect;
+export type InsertOtpCode = typeof otpCodes.$inferInsert;
+
+/**
+ * Customer favorites (synced to DB for logged-in customers).
+ */
+export const customerFavorites = mysqlTable("customer_favorites", {
+  id: int("id").autoincrement().primaryKey(),
+  customerId: int("customerId").notNull(),
+  propertyId: int("favoritePropertyId").notNull(),
+  addedAt: timestamp("addedAt").defaultNow().notNull(),
+});
+export type CustomerFavorite = typeof customerFavorites.$inferSelect;
+export type InsertCustomerFavorite = typeof customerFavorites.$inferInsert;
+
+/**
+ * Customer sessions for JWT-based auth.
+ */
+export const customerSessions = mysqlTable("customer_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  customerId: int("sessionCustomerId").notNull(),
+  tokenHash: varchar("customerTokenHash", { length: 255 }).notNull(),
+  deviceInfo: varchar("customerDeviceInfo", { length: 500 }),
+  ipAddress: varchar("customerIpAddress", { length: 45 }),
+  expiresAt: timestamp("customerSessionExpiresAt").notNull(),
+  isRevoked: boolean("customerSessionRevoked").default(false).notNull(),
+  createdAt: timestamp("customerSessionCreatedAt").defaultNow().notNull(),
+});
+export type CustomerSession = typeof customerSessions.$inferSelect;
+export type InsertCustomerSession = typeof customerSessions.$inferInsert;
