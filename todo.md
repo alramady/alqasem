@@ -346,12 +346,12 @@
 - [ ] Improve "أطلب عقارك" form: validation, request number, confirmation
 
 ## PRD/SRS Document for Next-Phase Features
-- [ ] Write comprehensive PRD/SRS document covering all requested features (A-E categories)
-- [ ] Include prioritized service list with Impact/Effort/Dependencies
-- [ ] Include user stories, functional requirements, NFRs, acceptance criteria per service
-- [ ] Include high-level data model (entities + relationships)
-- [ ] Include API spec + events/notifications
-- [ ] Include UX wireframes (text-based)
-- [ ] Include 3-phase launch plan (MVP, Phase 2, Phase 3)
-- [ ] Include KPIs per phase
-- [ ] Include compliance/risk considerations
+- [x] Write comprehensive PRD/SRS document covering all requested features (A-E categories)
+- [x] Include prioritized service list with Impact/Effort/Dependencies
+- [x] Include user stories, functional requirements, NFRs, acceptance criteria per service
+- [x] Include high-level data model (entities + relationships)
+- [x] Include API spec + events/notifications
+- [x] Include UX wireframes (text-based)
+- [x] Include 3-phase launch plan (MVP, Phase 2, Phase 3)
+- [x] Include KPIs per phase
+- [x] Include compliance/risk considerations
