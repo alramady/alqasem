@@ -10,6 +10,7 @@ import { MapPin, BedDouble, Bath, Maximize, Car, Phone, MessageCircle, Heart, Sh
 import { Link } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
+import { useFavorites } from "@/hooks/useFavorites";
 
 function formatPrice(p: string | null) {
   if (!p) return "0";
@@ -33,17 +34,10 @@ export default function PropertyDetail({ id }: { id: string }) {
   const [inquirySubmitted, setInquirySubmitted] = useState(false);
   const mapRef = useRef<google.maps.Map | null>(null);
 
-  // Persistent favorites via localStorage
-  const [favIds, setFavIds] = useState<number[]>(() => {
-    try { return JSON.parse(localStorage.getItem("alqasim_favorites") || "[]"); } catch { return []; }
-  });
-  const isFav = favIds.includes(propertyId);
-  const toggleFav = () => {
-    const updated = isFav ? favIds.filter(f => f !== propertyId) : [...favIds, propertyId];
-    setFavIds(updated);
-    localStorage.setItem("alqasim_favorites", JSON.stringify(updated));
-    toast.success(isFav ? t("favorites.removed") : t("favorites.added"));
-  };
+  // Persistent favorites via centralized hook
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const isFav = isFavorite(propertyId);
+  const toggleFav = () => toggleFavorite(propertyId);
 
   // Track view
   const trackView = trpc.public.trackPropertyView.useMutation();
@@ -203,7 +197,7 @@ export default function PropertyDetail({ id }: { id: string }) {
                 </div>
                 <div className="absolute top-4 left-4 flex gap-2 z-10 print:hidden">
                   <button onClick={toggleFav} className="w-10 h-10 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors">
-                    <Heart className={`w-5 h-5 ${isFav ? "fill-[#E31E24] text-[#E31E24]" : "text-gray-500"}`} />
+                    <Heart className={`w-5 h-5 transition-all duration-300 ${isFav ? "fill-[#E31E24] text-[#E31E24] scale-110" : "text-gray-500 hover:scale-110"}`} />
                   </button>
                   <button onClick={() => setShowShare(true)} className="w-10 h-10 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors">
                     <Share2 className="w-5 h-5 text-gray-500" />

@@ -299,3 +299,15 @@
 - [x] Update RequestProperty page city/district with dynamic linked dropdowns
 - [x] Add district filtering to searchProperties backend endpoint
 - [x] All 245 tests passing
+
+## Enhanced Wishlist / Favorites Feature
+- [x] Create centralized useFavorites hook (single source of truth for all components)
+- [x] Add favorites badge count in Navbar heart icon
+- [x] Ensure heart toggle works consistently on: Properties page, PropertyDetail page, PropertiesSection (homepage), Favorites page
+- [x] Add "Clear All" button on Favorites page
+- [x] Add sort/filter options on Favorites page (by date added, price, type)
+- [x] Add share wishlist functionality (copy link with property IDs)
+- [x] Improve empty state with better CTA
+- [x] Add animation on heart toggle (scale + color transition)
+- [x] Write vitest tests for favorites functionality (27 tests)
+- [x] Verify all existing tests still pass (272 total tests passing)

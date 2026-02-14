@@ -13,6 +13,7 @@ const PropertyMapView = lazy(() => import("@/components/PropertyMapView"));
 import { Link, useSearch } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
+import { useFavorites } from "@/hooks/useFavorites";
 
 type PropertyType = "villa" | "apartment" | "land" | "commercial" | "office" | "building";
 type ListingType = "sale" | "rent";
@@ -58,9 +59,7 @@ export default function Properties() {
   const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState<"grid" | "list" | "map">("grid");
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [favorites, setFavorites] = useState<number[]>(() => {
-    try { return JSON.parse(localStorage.getItem("alqasim_favorites") || "[]"); } catch { return []; }
-  });
+  const { favIds: favorites, toggleFavorite, isFavorite } = useFavorites();
   const [compareIds, setCompareIds] = useState<number[]>(() => {
     try { return JSON.parse(localStorage.getItem("alqasim_compare") || "[]"); } catch { return []; }
   });
@@ -109,13 +108,7 @@ export default function Properties() {
   };
 
   const toggleFav = (id: number, e: React.MouseEvent) => {
-    e.preventDefault(); e.stopPropagation();
-    setFavorites(prev => {
-      const updated = prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id];
-      localStorage.setItem("alqasim_favorites", JSON.stringify(updated));
-      toast.success(prev.includes(id) ? (isAr ? "تمت الإزالة من المفضلة" : "Removed from favorites") : (isAr ? "تمت الإضافة للمفضلة" : "Added to favorites"));
-      return updated;
-    });
+    toggleFavorite(id, e);
   };
 
   const toggleCompare = (id: number, e: React.MouseEvent) => {
@@ -392,7 +385,7 @@ export default function Properties() {
                             <div className="absolute top-3 flex flex-col gap-1.5" style={{ insetInlineEnd: '0.75rem' }}>
                               <button onClick={(e) => toggleFav(property.id, e)}
                                 className="w-8 h-8 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors">
-                                <Heart className={`w-4 h-4 ${favorites.includes(property.id) ? "fill-[#E31E24] text-[#E31E24]" : "text-gray-500"}`} />
+                                <Heart className={`w-4 h-4 transition-all duration-300 ${isFavorite(property.id) ? "fill-[#E31E24] text-[#E31E24] scale-110" : "text-gray-500 hover:scale-110"}`} />
                               </button>
                               <button onClick={(e) => toggleCompare(property.id, e)}
                                 className={`w-8 h-8 backdrop-blur-sm rounded-full flex items-center justify-center transition-colors ${compareIds.includes(property.id) ? "bg-[#c8a45e] text-[#0f1b33]" : "bg-white/80 hover:bg-white text-gray-500"}`}>

@@ -4,12 +4,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Link, useLocation } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
+import { useFavorites } from "@/hooks/useFavorites";
 
 const DEFAULT_LOGO = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663331132774/BEtRgbusNNpRjAtj.png";
 
 export default function Navbar() {
   const { t, lang, toggleLang, isAr } = useLanguage();
   const { settings } = useSiteConfig();
+  const { count: favCount } = useFavorites();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
@@ -196,10 +198,15 @@ export default function Navbar() {
             </button>
             <Link
               href="/favorites"
-              className="relative text-white/70 hover:text-[#E31E24] transition-colors p-2"
+              className="relative text-white/70 hover:text-[#E31E24] transition-colors p-2 group"
               title={isAr ? "المفضلة" : "Favorites"}
             >
-              <Heart className="w-5 h-5" />
+              <Heart className={`w-5 h-5 transition-all duration-300 group-hover:scale-110 ${favCount > 0 ? "fill-[#E31E24] text-[#E31E24]" : ""}`} />
+              {favCount > 0 && (
+                <span className="absolute -top-0.5 -end-0.5 min-w-[18px] h-[18px] bg-[#E31E24] text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 animate-in zoom-in-50 duration-200">
+                  {favCount > 99 ? "99+" : favCount}
+                </span>
+              )}
             </Link>
             <Link
               href="/add-property"

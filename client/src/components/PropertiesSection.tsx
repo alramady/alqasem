@@ -4,6 +4,7 @@ import { MapPin, Maximize2, BedDouble, Bath, Heart, ArrowLeft, ArrowRight, Loade
 import { Link } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { trpc } from "@/lib/trpc";
+import { useFavorites } from "@/hooks/useFavorites";
 
 // Fallback static data in case DB is empty
 const FALLBACK_PROPERTIES = [
@@ -55,14 +56,14 @@ export default function PropertiesSection() {
   }, [properties]);
 
   const [activeFilter, setActiveFilter] = useState("all");
-  const [favorites, setFavorites] = useState<number[]>([]);
+  const { isFavorite, toggleFavorite } = useFavorites();
 
   const filtered = activeFilter === "all"
     ? properties.slice(0, 6)
     : properties.filter((p: any) => p.type === activeFilter).slice(0, 6);
 
-  const toggleFav = (id: number) => {
-    setFavorites(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]);
+  const toggleFav = (id: number, e?: React.MouseEvent) => {
+    toggleFavorite(id, e);
   };
 
   return (
@@ -113,7 +114,7 @@ export default function PropertiesSection() {
                           </span>
                         </div>
                         <button onClick={(e) => { e.preventDefault(); toggleFav(property.id); }} className="absolute top-3 w-8 h-8 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors" style={{ insetInlineEnd: '0.75rem' }}>
-                          <Heart className={`w-4 h-4 ${favorites.includes(property.id) ? "fill-[#E31E24] text-[#E31E24]" : "text-gray-500"}`} />
+                          <Heart className={`w-4 h-4 transition-all duration-300 ${isFavorite(property.id) ? "fill-[#E31E24] text-[#E31E24] scale-110" : "text-gray-500 hover:scale-110"}`} />
                         </button>
                       </div>
                       <div className="p-5">
