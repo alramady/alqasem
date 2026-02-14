@@ -1,0 +1,37 @@
+{
+  "query": "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'properties' AND COLUMN_NAME LIKE '%build%' OR COLUMN_NAME LIKE '%age%' OR COLUMN_NAME LIKE '%Build%'",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.4e413a58b2a3 --database FCSdcQDHNngsNZkY5BfGCD --execute SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'properties' AND COLUMN_NAME LIKE '%build%' OR COLUMN_NAME LIKE '%age%' OR COLUMN_NAME LIKE '%Build%'",
+  "rows": [
+    {
+      "COLUMN_NAME": "targetPage"
+    },
+    {
+      "COLUMN_NAME": "message"
+    },
+    {
+      "COLUMN_NAME": "message"
+    },
+    {
+      "COLUMN_NAME": "pageType"
+    },
+    {
+      "COLUMN_NAME": "pageStatus"
+    },
+    {
+      "COLUMN_NAME": "ogImage"
+    },
+    {
+      "COLUMN_NAME": "images"
+    },
+    {
+      "COLUMN_NAME": "images"
+    },
+    {
+      "COLUMN_NAME": "buildingAge"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_NAME\ntargetPage\nmessage\nmessage\npageType\npageStatus\nogImage\nimages\nimages\nbuildingAge\n",
+  "stderr": "",
+  "execution_time_ms": 1632
+}

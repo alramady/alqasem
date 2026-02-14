@@ -1,0 +1,244 @@
+{
+  "query": "SELECT id, nameAr, nameEn, amenityCategory FROM amenities ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.4e413a58b2a3 --database FCSdcQDHNngsNZkY5BfGCD --execute SELECT id, nameAr, nameEn, amenityCategory FROM amenities ORDER BY id;",
+  "rows": [
+    {
+      "id": "1",
+      "nameAr": "مواقف سيارات",
+      "nameEn": "Parking",
+      "amenityCategory": "basic"
+    },
+    {
+      "id": "2",
+      "nameAr": "مصعد",
+      "nameEn": "Elevator",
+      "amenityCategory": "basic"
+    },
+    {
+      "id": "3",
+      "nameAr": "تكييف مركزي",
+      "nameEn": "Central AC",
+      "amenityCategory": "basic"
+    },
+    {
+      "id": "4",
+      "nameAr": "مطبخ مجهز",
+      "nameEn": "Equipped Kitchen",
+      "amenityCategory": "basic"
+    },
+    {
+      "id": "5",
+      "nameAr": "غرفة خادمة",
+      "nameEn": "Maid Room",
+      "amenityCategory": "basic"
+    },
+    {
+      "id": "6",
+      "nameAr": "غرفة سائق",
+      "nameEn": "Driver Room",
+      "amenityCategory": "basic"
+    },
+    {
+      "id": "7",
+      "nameAr": "غرفة غسيل",
+      "nameEn": "Laundry Room",
+      "amenityCategory": "basic"
+    },
+    {
+      "id": "8",
+      "nameAr": "مخزن",
+      "nameEn": "Storage Room",
+      "amenityCategory": "basic"
+    },
+    {
+      "id": "9",
+      "nameAr": "قبو",
+      "nameEn": "Basement",
+      "amenityCategory": "basic"
+    },
+    {
+      "id": "10",
+      "nameAr": "مجلس رجال",
+      "nameEn": "Men's Majlis",
+      "amenityCategory": "comfort"
+    },
+    {
+      "id": "11",
+      "nameAr": "مجلس نساء",
+      "nameEn": "Women's Majlis",
+      "amenityCategory": "comfort"
+    },
+    {
+      "id": "12",
+      "nameAr": "مؤثثة بالكامل",
+      "nameEn": "Fully Furnished",
+      "amenityCategory": "comfort"
+    },
+    {
+      "id": "13",
+      "nameAr": "نظام ذكي",
+      "nameEn": "Smart Home",
+      "amenityCategory": "comfort"
+    },
+    {
+      "id": "14",
+      "nameAr": "شرفة/بلكونة",
+      "nameEn": "Balcony",
+      "amenityCategory": "comfort"
+    },
+    {
+      "id": "15",
+      "nameAr": "إطلالة بحرية",
+      "nameEn": "Sea View",
+      "amenityCategory": "comfort"
+    },
+    {
+      "id": "16",
+      "nameAr": "إطلالة بانورامية",
+      "nameEn": "Panoramic View",
+      "amenityCategory": "comfort"
+    },
+    {
+      "id": "17",
+      "nameAr": "أمن 24/7",
+      "nameEn": "24/7 Security",
+      "amenityCategory": "security"
+    },
+    {
+      "id": "18",
+      "nameAr": "كاميرات مراقبة",
+      "nameEn": "CCTV",
+      "amenityCategory": "security"
+    },
+    {
+      "id": "19",
+      "nameAr": "نظام إنذار",
+      "nameEn": "Alarm System",
+      "amenityCategory": "security"
+    },
+    {
+      "id": "20",
+      "nameAr": "بوابة إلكترونية",
+      "nameEn": "Electronic Gate",
+      "amenityCategory": "security"
+    },
+    {
+      "id": "21",
+      "nameAr": "إنتركم",
+      "nameEn": "Intercom",
+      "amenityCategory": "security"
+    },
+    {
+      "id": "22",
+      "nameAr": "مسبح خاص",
+      "nameEn": "Private Pool",
+      "amenityCategory": "outdoor"
+    },
+    {
+      "id": "23",
+      "nameAr": "مسبح مشترك",
+      "nameEn": "Shared Pool",
+      "amenityCategory": "outdoor"
+    },
+    {
+      "id": "24",
+      "nameAr": "حديقة خاصة",
+      "nameEn": "Private Garden",
+      "amenityCategory": "outdoor"
+    },
+    {
+      "id": "25",
+      "nameAr": "حديقة مشتركة",
+      "nameEn": "Shared Garden",
+      "amenityCategory": "outdoor"
+    },
+    {
+      "id": "26",
+      "nameAr": "ملعب أطفال",
+      "nameEn": "Playground",
+      "amenityCategory": "outdoor"
+    },
+    {
+      "id": "27",
+      "nameAr": "مسار مشي",
+      "nameEn": "Walking Track",
+      "amenityCategory": "outdoor"
+    },
+    {
+      "id": "28",
+      "nameAr": "شواء/باربكيو",
+      "nameEn": "BBQ Area",
+      "amenityCategory": "outdoor"
+    },
+    {
+      "id": "29",
+      "nameAr": "نادي صحي/جيم",
+      "nameEn": "Gym/Fitness",
+      "amenityCategory": "entertainment"
+    },
+    {
+      "id": "30",
+      "nameAr": "ساونا/سبا",
+      "nameEn": "Sauna/Spa",
+      "amenityCategory": "entertainment"
+    },
+    {
+      "id": "31",
+      "nameAr": "غرفة سينما",
+      "nameEn": "Cinema Room",
+      "amenityCategory": "entertainment"
+    },
+    {
+      "id": "32",
+      "nameAr": "صالة ألعاب",
+      "nameEn": "Game Room",
+      "amenityCategory": "entertainment"
+    },
+    {
+      "id": "33",
+      "nameAr": "غرفة اجتماعات",
+      "nameEn": "Meeting Room",
+      "amenityCategory": "entertainment"
+    },
+    {
+      "id": "34",
+      "nameAr": "قريب من المسجد",
+      "nameEn": "Near Mosque",
+      "amenityCategory": "other"
+    },
+    {
+      "id": "35",
+      "nameAr": "قريب من المدارس",
+      "nameEn": "Near Schools",
+      "amenityCategory": "other"
+    },
+    {
+      "id": "36",
+      "nameAr": "قريب من المستشفى",
+      "nameEn": "Near Hospital",
+      "amenityCategory": "other"
+    },
+    {
+      "id": "37",
+      "nameAr": "قريب من المترو",
+      "nameEn": "Near Metro",
+      "amenityCategory": "other"
+    },
+    {
+      "id": "38",
+      "nameAr": "شارع رئيسي",
+      "nameEn": "Main Road",
+      "amenityCategory": "other"
+    },
+    {
+      "id": "39",
+      "nameAr": "واجهة تجارية",
+      "nameEn": "Commercial Front",
+      "amenityCategory": "other"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnameAr\tnameEn\tamenityCategory\n1\tمواقف سيارات\tParking\tbasic\n2\tمصعد\tElevator\tbasic\n3\tتكييف مركزي\tCentral AC\tbasic\n4\tمطبخ مجهز\tEquipped Kitchen\tbasic\n5\tغرفة خادمة\tMaid Room\tbasic\n6\tغرفة سائق\tDriver Room\tbasic\n7\tغرفة غسيل\tLaundry Room\tbasic\n8\tمخزن\tStorage Room\tbasic\n9\tقبو\tBasement\tbasic\n10\tمجلس رجال\tMen's Majlis\tcomfort\n11\tمجلس نساء\tWomen's Majlis\tcomfort\n12\tمؤثثة بالكامل\tFully Furnished\tcomfort\n13\tنظام ذكي\tSmart Home\tcomfort\n14\tشرفة/بلكونة\tBalcony\tcomfort\n15\tإطلالة بحرية\tSea View\tcomfort\n16\tإطلالة بانورامية\tPanoramic View\tcomfort\n17\tأمن 24/7\t24/7 Security\tsecurity\n18\tكاميرات مراقبة\tCCTV\tsecurity\n19\tنظام إنذار\tAlarm System\tsecurity\n20\tبوابة إلكترونية\tElectronic Gate\tsecurity\n21\tإنتركم\tIntercom\tsecurity\n22\tمسبح خاص\tPrivate Pool\toutdoor\n23\tمسبح مشترك\tShared Pool\toutdoor\n24\tحديقة خاصة\tPrivate Garden\toutdoor\n25\tحديقة مشتركة\tShared Garden\toutdoor\n26\tملعب أطفال\tPlayground\toutdoor\n27\tمسار مشي\tWalking Track\toutdoor\n28\tشواء/باربكيو\tBBQ Area\toutdoor\n29\tنادي صحي/جيم\tGym/Fitness\tentertainment\n30\tساونا/سبا\tSauna/Spa\tentertainment\n31\tغرفة سينما\tCinema Room\tentertainment\n32\tصالة ألعاب\tGame Room\tentertainment\n33\tغرفة اجتماعات\tMeeting Room\tentertainment\n34\tقريب من المسجد\tNear Mosque\tother\n35\tقريب من المدارس\tNear Schools\tother\n36\tقريب من المستشفى\tNear Hospital\tother\n37\tقريب من المترو\tNear Metro\tother\n38\tشارع رئيسي\tMain Road\tother\n39\tواجهة تجارية\tCommercial Front\tother\n",
+  "stderr": "",
+  "execution_time_ms": 1510
+}

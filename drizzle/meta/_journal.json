@@ -1,0 +1,69 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1770946712075,
+      "tag": "0000_brainy_living_tribunal",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1770946956433,
+      "tag": "0001_redundant_black_crow",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1771009765912,
+      "tag": "0002_funny_iron_patriot",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1771011950738,
+      "tag": "0003_deep_red_wolf",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1771018880036,
+      "tag": "0004_harsh_epoch",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1771026276553,
+      "tag": "0005_long_sunspot",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1771028945906,
+      "tag": "0006_old_lizard",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1771040666313,
+      "tag": "0007_natural_power_pack",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1771043457684,
+      "tag": "0008_purple_carmella_unuscione",
+      "breakpoints": true
+    }
+  ]
+}

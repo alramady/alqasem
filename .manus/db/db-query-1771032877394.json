@@ -1,0 +1,14 @@
+{
+  "query": "SELECT DATE_FORMAT(createdAt, '%Y-%m') as ym, count(*) as cnt FROM inquiries WHERE createdAt >= '2025-09-01 04:00:00' GROUP BY ym ORDER BY ym",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.4e413a58b2a3 --database FCSdcQDHNngsNZkY5BfGCD --execute SELECT DATE_FORMAT(createdAt, '%Y-%m') as ym, count(*) as cnt FROM inquiries WHERE createdAt >= '2025-09-01 04:00:00' GROUP BY ym ORDER BY ym",
+  "rows": [
+    {
+      "ym": "2026-02",
+      "cnt": "99"
+    }
+  ],
+  "messages": [],
+  "stdout": "ym\tcnt\n2026-02\t99\n",
+  "stderr": "",
+  "execution_time_ms": 1532
+}

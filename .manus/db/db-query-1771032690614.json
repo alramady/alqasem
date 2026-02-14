@@ -1,0 +1,70 @@
+{
+  "query": "SELECT 'properties' as tbl, COUNT(*) as cnt FROM properties UNION ALL SELECT 'projects', COUNT(*) FROM projects UNION ALL SELECT 'pages', COUNT(*) FROM pages UNION ALL SELECT 'inquiries', COUNT(*) FROM inquiries UNION ALL SELECT 'users', COUNT(*) FROM users UNION ALL SELECT 'settings', COUNT(*) FROM settings UNION ALL SELECT 'homepage_sections', COUNT(*) FROM homepage_sections UNION ALL SELECT 'media', COUNT(*) FROM media UNION ALL SELECT 'cities', COUNT(*) FROM cities UNION ALL SELECT 'districts', COUNT(*) FROM districts UNION ALL SELECT 'activity_logs', COUNT(*) FROM activity_logs UNION ALL SELECT 'user_sessions', COUNT(*) FROM user_sessions UNION ALL SELECT 'notifications', COUNT(*) FROM notifications UNION ALL SELECT 'newsletter_subscribers', COUNT(*) FROM newsletter_subscribers UNION ALL SELECT 'property_views', COUNT(*) FROM property_views;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.4e413a58b2a3 --database FCSdcQDHNngsNZkY5BfGCD --execute SELECT 'properties' as tbl, COUNT(*) as cnt FROM properties UNION ALL SELECT 'projects', COUNT(*) FROM projects UNION ALL SELECT 'pages', COUNT(*) FROM pages UNION ALL SELECT 'inquiries', COUNT(*) FROM inquiries UNION ALL SELECT 'users', COUNT(*) FROM users UNION ALL SELECT 'settings', COUNT(*) FROM settings UNION ALL SELECT 'homepage_sections', COUNT(*) FROM homepage_sections UNION ALL SELECT 'media', COUNT(*) FROM media UNION ALL SELECT 'cities', COUNT(*) FROM cities UNION ALL SELECT 'districts', COUNT(*) FROM districts UNION ALL SELECT 'activity_logs', COUNT(*) FROM activity_logs UNION ALL SELECT 'user_sessions', COUNT(*) FROM user_sessions UNION ALL SELECT 'notifications', COUNT(*) FROM notifications UNION ALL SELECT 'newsletter_subscribers', COUNT(*) FROM newsletter_subscribers UNION ALL SELECT 'property_views', COUNT(*) FROM property_views;",
+  "rows": [
+    {
+      "tbl": "inquiries",
+      "cnt": "99"
+    },
+    {
+      "tbl": "pages",
+      "cnt": "8"
+    },
+    {
+      "tbl": "users",
+      "cnt": "2"
+    },
+    {
+      "tbl": "homepage_sections",
+      "cnt": "8"
+    },
+    {
+      "tbl": "settings",
+      "cnt": "17"
+    },
+    {
+      "tbl": "properties",
+      "cnt": "43"
+    },
+    {
+      "tbl": "projects",
+      "cnt": "6"
+    },
+    {
+      "tbl": "media",
+      "cnt": "28"
+    },
+    {
+      "tbl": "districts",
+      "cnt": "141"
+    },
+    {
+      "tbl": "activity_logs",
+      "cnt": "0"
+    },
+    {
+      "tbl": "user_sessions",
+      "cnt": "0"
+    },
+    {
+      "tbl": "cities",
+      "cnt": "20"
+    },
+    {
+      "tbl": "newsletter_subscribers",
+      "cnt": "0"
+    },
+    {
+      "tbl": "property_views",
+      "cnt": "0"
+    },
+    {
+      "tbl": "notifications",
+      "cnt": "175"
+    }
+  ],
+  "messages": [],
+  "stdout": "tbl\tcnt\ninquiries\t99\npages\t8\nusers\t2\nhomepage_sections\t8\nsettings\t17\nproperties\t43\nprojects\t6\nmedia\t28\ndistricts\t141\nactivity_logs\t0\nuser_sessions\t0\ncities\t20\nnewsletter_subscribers\t0\nproperty_views\t0\nnotifications\t175\n",
+  "stderr": "",
+  "execution_time_ms": 1633
+}

@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE homepage_sections SET content = JSON_SET(content, '$.heading', 'ابحث عن عقارك مع القاسم') WHERE sectionKey = 'hero';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.4e413a58b2a3 --database FCSdcQDHNngsNZkY5BfGCD --execute UPDATE homepage_sections SET content = JSON_SET(content, '$.heading', 'ابحث عن عقارك مع القاسم') WHERE sectionKey = 'hero';",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1718
+}

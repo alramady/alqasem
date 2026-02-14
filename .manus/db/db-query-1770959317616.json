@@ -1,0 +1,15 @@
+{
+  "query": "SELECT id, sectionKey, JSON_EXTRACT(content, '$.heading') as heading FROM homepage_sections WHERE sectionKey = 'hero';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.4e413a58b2a3 --database FCSdcQDHNngsNZkY5BfGCD --execute SELECT id, sectionKey, JSON_EXTRACT(content, '$.heading') as heading FROM homepage_sections WHERE sectionKey = 'hero';",
+  "rows": [
+    {
+      "id": "1",
+      "sectionKey": "hero",
+      "heading": "\"ابحث عن عقارك مع القاسم\""
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tsectionKey\theading\n1\thero\t\"ابحث عن عقارك مع القاسم\"\n",
+  "stderr": "",
+  "execution_time_ms": 1676
+}
