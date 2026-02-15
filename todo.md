@@ -635,3 +635,24 @@
 
 ### D) Tests
 - [x] Write 11 vitest tests for virtual tour feature (all passing)
+
+## UI Fixes & Enhancements (Feb 16, 2026 - Batch 2)
+
+### A) Services Section - Arabic Text & Backend Editability
+- [x] Fix "Comprehensive Real Estate Services" heading — now shows Arabic text when in Arabic mode
+- [x] Ensure services section title/subtitle are backend-editable from CMS
+- [x] Verify bilingual switching works correctly for services section
+
+### B) Partners/Clients Section - Real Logos
+- [x] Obtain real logos for all 7 partners (SABB, Zahran, Agile Clinics, Benefit Travel, Burgerizzr, Al Faisaliah Group, Al Rajhi)
+- [x] Upload logos to S3 and update partner records in database
+- [x] Ensure logos display correctly in the carousel/grid
+
+### C) Projects Section - Uniform Card Size
+- [x] Fix project cards to have same size/frame (uniform height 180px and flex layout)
+- [x] Ensure consistent spacing and alignment across all project cards (4-col grid, line-clamp)
+
+### D) Developer Documentation
+- [x] Create comprehensive DEVELOPER_DOCS.md (16 sections, 500+ lines)
+- [x] Document all endpoints (50+ procedures), database schema (30+ tables), admin features
+- [x] Include setup instructions, environment variables, deployment guide, common tasks

@@ -80,9 +80,19 @@ export default function ServicesSection() {
         color: SERVICE_COLORS[i],
       }));
 
-  // Section title/subtitle - use DB for Arabic, translation keys for English
-  const sectionTitle = isAr ? (servicesSection?.title || t("services.title")) : t("services.title");
-  const sectionSubtitle = isAr ? (servicesSection?.subtitle || t("services.subtitle")) : t("services.subtitle");
+  // Section badge/title/subtitle — fully bilingual from DB with i18n fallback
+  // DB content can store: badgeAr, badgeEn, titleAr, titleEn, subtitleAr, subtitleEn
+  const sectionBadge = isAr
+    ? (content?.badgeAr || servicesSection?.title || t("services.badge"))
+    : (content?.badgeEn || t("services.badge"));
+
+  const sectionTitle = isAr
+    ? (content?.titleAr || t("services.title"))
+    : (content?.titleEn || t("services.title"));
+
+  const sectionSubtitle = isAr
+    ? (content?.subtitleAr || servicesSection?.subtitle || t("services.subtitle"))
+    : (content?.subtitleEn || t("services.subtitle"));
 
   return (
     <section id="services" className="py-20 bg-white">
@@ -90,7 +100,7 @@ export default function ServicesSection() {
         <div className="text-center mb-14">
           <motion.span initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
             className="text-[#E31E24] font-semibold text-sm mb-2 block tracking-wider">
-            {t("services.badge")}
+            {sectionBadge}
           </motion.span>
           <motion.h2 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
             className="text-3xl lg:text-4xl font-bold text-[#0f1b33] mb-4">
@@ -105,15 +115,15 @@ export default function ServicesSection() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {mainServices.map((service: any, i: number) => (
             <motion.div key={i} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.15 }}
-              className="group relative bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-2xl hover:shadow-gray-200/50 transition-all duration-500">
+              className="group relative bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-2xl hover:shadow-gray-200/50 transition-all duration-500 flex flex-col h-full">
               <div className={`h-1.5 bg-gradient-to-l ${service.color}`} />
-              <div className="p-8">
+              <div className="p-8 flex flex-col flex-1">
                 <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${service.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
                   <service.icon className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="text-xl font-bold text-[#0f1b33] mb-3">{service.title}</h3>
                 <p className="text-gray-500 text-sm leading-relaxed mb-6">{service.description}</p>
-                <div className="grid grid-cols-2 gap-2 mb-6">
+                <div className="grid grid-cols-2 gap-2 mb-6 mt-auto">
                   {(service.features || []).map((f: string) => (
                     <div key={f} className="flex items-center gap-2 text-sm text-gray-600">
                       <div className="w-1.5 h-1.5 rounded-full bg-[#c8a45e] shrink-0" />

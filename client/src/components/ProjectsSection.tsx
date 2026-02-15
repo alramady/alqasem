@@ -163,17 +163,20 @@ export default function ProjectsSection() {
                 <h3 className="text-xl font-bold text-white text-center mb-8">
                   {isAr ? "مشاريع سابقة ومُدارة" : "Previous & Managed Projects"}
                 </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {visiblePast.map((project: any, i: number) => (
                     <motion.div key={project.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}>
                       <Link href={`/projects/${project.id}`}>
-                        <div className="group p-5 bg-white/5 border border-white/10 rounded-xl hover:border-[#c8a45e]/30 transition-all cursor-pointer">
-                          <Building className="w-6 h-6 text-[#c8a45e] mb-3" />
-                          <h4 className="text-sm font-bold text-white mb-1">{isAr ? project.title : (project.titleEn || project.title)}</h4>
-                          {(project.subtitle || project.subtitleEn) && <p className="text-xs text-[#c8a45e]/70 mb-2">{isAr ? project.subtitle : (project.subtitleEn || project.subtitle)}</p>}
+                        <div className="group p-5 bg-white/5 border border-white/10 rounded-xl hover:border-[#c8a45e]/30 transition-all cursor-pointer h-[180px] flex flex-col justify-between">
+                          <div>
+                            <Building className="w-6 h-6 text-[#c8a45e] mb-3" />
+                            <h4 className="text-sm font-bold text-white mb-1 line-clamp-2">{isAr ? project.title : (project.titleEn || project.title)}</h4>
+                            {(project.subtitle || project.subtitleEn) && <p className="text-xs text-[#c8a45e]/70 mb-2 line-clamp-2">{isAr ? project.subtitle : (project.subtitleEn || project.subtitle)}</p>}
+                          </div>
                           {project.location && (
-                            <div className="flex items-center gap-1 text-xs text-white/40">
-                              <MapPin className="w-3 h-3 shrink-0" />{isAr ? project.location : (project.locationEn || project.location)}
+                            <div className="flex items-center gap-1 text-xs text-white/40 mt-auto">
+                              <MapPin className="w-3 h-3 shrink-0" />
+                              <span className="line-clamp-1">{isAr ? project.location : (project.locationEn || project.location)}</span>
                             </div>
                           )}
                         </div>

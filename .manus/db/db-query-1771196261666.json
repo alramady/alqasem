@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE homepage_sections SET content = JSON_SET(content, '$.badgeAr', 'خدماتنا', '$.badgeEn', 'Our Services', '$.titleAr', 'خدمات عقارية متكاملة', '$.titleEn', 'Comprehensive Real Estate Services', '$.subtitleAr', 'نقدم مجموعة شاملة من الخدمات العقارية المتميزة', '$.subtitleEn', 'We offer a complete range of distinguished real estate services') WHERE sectionKey = 'services';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.4e413a58b2a3 --database FCSdcQDHNngsNZkY5BfGCD --execute UPDATE homepage_sections SET content = JSON_SET(content, '$.badgeAr', 'خدماتنا', '$.badgeEn', 'Our Services', '$.titleAr', 'خدمات عقارية متكاملة', '$.titleEn', 'Comprehensive Real Estate Services', '$.subtitleAr', 'نقدم مجموعة شاملة من الخدمات العقارية المتميزة', '$.subtitleEn', 'We offer a complete range of distinguished real estate services') WHERE sectionKey = 'services';",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1543
+}
