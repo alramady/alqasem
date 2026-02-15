@@ -179,11 +179,11 @@ export default function AgencyProfile() {
               >
                 <Link href={`/agent/${agent.slug}`}>
                   <div className="bg-white rounded-xl border border-slate-100 hover:shadow-md hover:border-[#c8a45e]/30 transition-all p-5 cursor-pointer text-center group">
-                    <div className="w-20 h-20 rounded-full bg-slate-100 border-2 border-slate-200 overflow-hidden mx-auto mb-3 group-hover:border-[#c8a45e]/50 transition-colors">
+                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#0f1b33] to-[#1a3a5c] border-2 border-slate-200 overflow-hidden mx-auto mb-3 group-hover:border-[#c8a45e]/50 transition-colors">
                       {agent.photo ? (
                         <img src={agent.photo} alt={agent.nameAr} className="w-full h-full object-cover" />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-slate-300">
+                        <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-white/80">
                           {agent.nameAr?.charAt(0)}
                         </div>
                       )}

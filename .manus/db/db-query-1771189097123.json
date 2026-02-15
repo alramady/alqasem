@@ -1,0 +1,9 @@
+{
+  "query": "SELECT settingKey, settingValue FROM settings WHERE settingKey LIKE '%fal%' OR settingKey LIKE '%license%' OR settingKey LIKE '%FAL%' OR settingKey LIKE '%iqar%' ORDER BY settingKey;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.4e413a58b2a3 --database FCSdcQDHNngsNZkY5BfGCD --execute SELECT settingKey, settingValue FROM settings WHERE settingKey LIKE '%fal%' OR settingKey LIKE '%license%' OR settingKey LIKE '%FAL%' OR settingKey LIKE '%iqar%' ORDER BY settingKey;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1562
+}

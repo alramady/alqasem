@@ -456,3 +456,36 @@
 - [x] Agency/agent selection in admin property create/edit forms
 - [x] Remove seedDemo debug endpoint (production cleanup)
 - [x] Write vitest tests for agency/agent endpoints (16 tests, all passing)
+
+## Saudi Compliance, SEO & Enhancements (Feb 16, 2026)
+
+### A) Saudi Privacy Policy Compliance
+- [x] Update privacy policy page with full Saudi PDPL (نظام حماية البيانات الشخصية) compliance
+- [x] Include all 8 Article 12 clauses (purpose, content, method, storage, processing, destruction, rights, exercise of rights)
+- [x] Add cookie consent banner (bilingual AR/EN with accept/essential-only/privacy link)
+- [x] Add data collection disclosure on all forms
+
+### B) Editable FAL Number from CMS
+- [x] Add FAL license number and CR number fields to site settings (CMS-editable)
+- [x] Display FAL number in footer (license badge) and IqarLicense page from CMS settings
+- [x] Make FAL/CR number editable from admin Settings > Company tab
+
+### C) SEO Improvements
+- [x] Add dynamic meta tags (title, description, og:image) per page via SEO component + react-helmet-async
+- [x] Add structured data (JSON-LD) for RealEstateAgent with address, social, hours
+- [x] Generate dynamic sitemap.xml (42 URLs including all properties, projects, agencies, CMS pages)
+- [x] Add robots.txt (allow /, disallow /admin/ and /api/)
+- [x] Add canonical URLs via SEO component
+- [x] Add Arabic/English hreflang tags
+- [x] Add Twitter Card meta tags
+- [x] Add meta keywords for Saudi real estate terms (AR + EN)
+- [x] Add geo meta tags (SA-01, Riyadh)
+- [x] Add og:site_name and og:url
+
+### D) SMTP Credential Update
+- [ ] Update SMTP credentials from admin panel (Gmail App Password expired — user to update manually)
+
+### E) Agent Photo Improvements
+- [x] Add professional gradient placeholder avatars for agents without photos (dark navy gradient with initial letter)
+- [x] Ensure agent photo upload works in admin panel
+- [x] Write vitest tests for SEO & compliance (42 tests, all passing)

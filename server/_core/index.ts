@@ -100,6 +100,51 @@ async function startServer() {
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
+  // Dynamic sitemap.xml
+  app.get("/sitemap.xml", async (_req, res) => {
+    try {
+      const { getDb } = await import("../db");
+      const db = await getDb();
+      const baseUrl = process.env.VITE_APP_URL || "https://alqasimreal-fcsdcqdh.manus.space";
+      const now = new Date().toISOString().split("T")[0];
+      let urls = [
+        { loc: "/", priority: "1.0", changefreq: "daily" },
+        { loc: "/properties", priority: "0.9", changefreq: "daily" },
+        { loc: "/projects", priority: "0.8", changefreq: "weekly" },
+        { loc: "/agencies", priority: "0.7", changefreq: "weekly" },
+        { loc: "/about", priority: "0.6", changefreq: "monthly" },
+        { loc: "/services", priority: "0.6", changefreq: "monthly" },
+        { loc: "/contact", priority: "0.6", changefreq: "monthly" },
+        { loc: "/privacy-policy", priority: "0.3", changefreq: "yearly" },
+        { loc: "/iqar-license", priority: "0.3", changefreq: "yearly" },
+      ];
+      // Add property pages
+      if (db) {
+        try {
+          const { properties } = await import("../../drizzle/schema");
+          const { eq } = await import("drizzle-orm");
+          const allProps = await db.select({ id: properties.id }).from(properties).where(eq(properties.status, "active"));
+          allProps.forEach(p => urls.push({ loc: `/properties/${p.id}`, priority: "0.7", changefreq: "weekly" }));
+          const { projects } = await import("../../drizzle/schema");
+          const allProjects = await db.select({ id: projects.id }).from(projects);
+          allProjects.forEach(p => urls.push({ loc: `/projects/${p.id}`, priority: "0.7", changefreq: "weekly" }));
+          const { agencies } = await import("../../drizzle/schema");
+          const allAgencies = await db.select({ slug: agencies.slug }).from(agencies);
+          allAgencies.forEach(a => urls.push({ loc: `/agency/${a.slug}`, priority: "0.6", changefreq: "weekly" }));
+          const { pages } = await import("../../drizzle/schema");
+          const allPages = await db.select({ slug: pages.slug }).from(pages).where(eq(pages.status, "published"));
+          allPages.forEach(p => urls.push({ loc: `/page/${p.slug}`, priority: "0.5", changefreq: "monthly" }));
+        } catch { /* DB not available, serve static urls only */ }
+      }
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(u => `  <url>\n    <loc>${baseUrl}${u.loc}</loc>\n    <lastmod>${now}</lastmod>\n    <changefreq>${u.changefreq}</changefreq>\n    <priority>${u.priority}</priority>\n  </url>`).join("\n")}\n</urlset>`;
+      res.set("Content-Type", "application/xml");
+      res.set("Cache-Control", "public, max-age=3600");
+      res.send(xml);
+    } catch (err) {
+      res.status(500).send("Error generating sitemap");
+    }
+  });
+
   // CSRF token endpoint — SPA fetches this on initialization
   app.get("/api/csrf-token", csrfTokenEndpoint);
 

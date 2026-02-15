@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO settings (settingKey, settingValue, groupName) VALUES \n('fal_number', '', 'company'),\n('cr_number', '', 'company'),\n('company_name', 'القاسم العقارية', 'company'),\n('company_name_en', 'Al-Qasim Real Estate', 'company')\nON DUPLICATE KEY UPDATE settingKey=settingKey;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.4e413a58b2a3 --database FCSdcQDHNngsNZkY5BfGCD --execute INSERT INTO settings (settingKey, settingValue, groupName) VALUES \n('fal_number', '', 'company'),\n('cr_number', '', 'company'),\n('company_name', 'القاسم العقارية', 'company'),\n('company_name_en', 'Al-Qasim Real Estate', 'company')\nON DUPLICATE KEY UPDATE settingKey=settingKey;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1536
+}

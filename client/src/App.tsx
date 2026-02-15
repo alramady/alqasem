@@ -9,6 +9,8 @@ import { SiteConfigProvider } from "./contexts/SiteConfigContext";
 import { CustomerAuthProvider } from "./contexts/CustomerAuthContext";
 import Home from "./pages/Home";
 import { lazy, Suspense } from "react";
+import CookieConsent from "./components/CookieConsent";
+import SEO from "./components/SEO";
 
 // Lazy load public pages
 const AboutPage = lazy(() => import("./pages/About"));
@@ -244,9 +246,11 @@ function App() {
               <CustomerAuthProvider>
                 <a href="#main-content" className="skip-to-content">Skip to content</a>
                 <Toaster position="top-center" richColors />
+                <SEO />
                 <div id="main-content">
                   <Router />
                 </div>
+                <CookieConsent />
               </CustomerAuthProvider>
             </TooltipProvider>
           </ThemeProvider>

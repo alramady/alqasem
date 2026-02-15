@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /login
+Disallow: /register
+
+# Sitemap
+Sitemap: https://alqasimreal-fcsdcqdh.manus.space/sitemap.xml
+
+# Crawl-delay for polite crawling
+Crawl-delay: 1

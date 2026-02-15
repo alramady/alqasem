@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
-import { Save, Phone, Mail, MapPin, MessageCircle, Loader2, Image, Upload, Trash2, Palette, Globe } from "lucide-react";
+import { Save, Phone, Mail, MapPin, MessageCircle, Loader2, Image, Upload, Trash2, Palette, Globe, Building2, Award, FileCheck } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { DEFAULT_LOGO, DEFAULT_ADMIN_LOGO } from "@/lib/branding";
@@ -21,6 +21,7 @@ export default function AdminSettings() {
   const [contact, setContact] = useState({ phone: "", email: "", whatsapp: "", address: "" });
   const [social, setSocial] = useState({ instagram: "", twitter: "", tiktok: "", snapchat: "", linkedin: "" });
   const [branding, setBranding] = useState({ logo: "", adminLogo: "", favicon: "", ogImage: "" });
+  const [company, setCompany] = useState({ company_name: "", company_name_en: "", fal_number: "", cr_number: "", address_en: "", working_hours: "", working_hours_en: "", mobile: "" });
 
   useEffect(() => {
     if (settings) {
@@ -32,6 +33,16 @@ export default function AdminSettings() {
         adminLogo: s.adminLogo || "",
         favicon: s.favicon || "",
         ogImage: s.ogImage || "",
+      });
+      setCompany({
+        company_name: s.company_name || "القاسم العقارية",
+        company_name_en: s.company_name_en || "Al-Qasim Real Estate",
+        fal_number: s.fal_number || "",
+        cr_number: s.cr_number || "",
+        address_en: s.address_en || "",
+        working_hours: s.working_hours || "",
+        working_hours_en: s.working_hours_en || "",
+        mobile: s.mobile || "",
       });
     }
   }, [settings]);
@@ -48,6 +59,9 @@ export default function AdminSettings() {
           <TabsList className="bg-slate-100 p-1 rounded-xl flex-wrap h-auto gap-1">
             <TabsTrigger value="branding" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
               <Palette className="w-4 h-4 ml-1.5" />الهوية البصرية
+            </TabsTrigger>
+            <TabsTrigger value="company" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
+              <Building2 className="w-4 h-4 ml-1.5" />بيانات الشركة
             </TabsTrigger>
             <TabsTrigger value="contact" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">بيانات التواصل</TabsTrigger>
             <TabsTrigger value="social" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">وسائل التواصل</TabsTrigger>
@@ -112,6 +126,74 @@ export default function AdminSettings() {
                     {updateSettings.isPending ? "جاري الحفظ..." : "حفظ الهوية البصرية"}
                   </Button>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ===== COMPANY TAB ===== */}
+          <TabsContent value="company" className="mt-4">
+            <Card className="border border-slate-100 shadow-sm bg-white rounded-xl">
+              <CardHeader className="border-b border-slate-100 pb-4">
+                <CardTitle className="text-base text-slate-700 flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-indigo-500" />
+                  بيانات الشركة والتراخيص
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-5 pt-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="space-y-1.5">
+                    <Label className="text-slate-600 text-sm">اسم الشركة (عربي)</Label>
+                    <Input value={company.company_name} onChange={(e) => setCompany({...company, company_name: e.target.value})} placeholder="القاسم العقارية" className="border-slate-200 rounded-lg" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-slate-600 text-sm">اسم الشركة (إنجليزي)</Label>
+                    <Input value={company.company_name_en} onChange={(e) => setCompany({...company, company_name_en: e.target.value})} dir="ltr" placeholder="Al-Qasim Real Estate" className="border-slate-200 rounded-lg" />
+                  </div>
+                </div>
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Award className="w-5 h-5 text-amber-600" />
+                    <h3 className="font-bold text-sm text-amber-800">التراخيص والاعتمادات</h3>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="space-y-1.5">
+                      <Label className="text-amber-700 text-sm font-semibold">رقم رخصة فال (FAL)</Label>
+                      <Input value={company.fal_number} onChange={(e) => setCompany({...company, fal_number: e.target.value})} dir="ltr" placeholder="مثال: 1200XXXXXX" className="border-amber-200 rounded-lg bg-white" />
+                      <p className="text-xs text-amber-600">رقم ترخيص الهيئة العامة للعقار — يظهر في الفوتر وصفحة التراخيص</p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-amber-700 text-sm font-semibold">رقم السجل التجاري (CR)</Label>
+                      <Input value={company.cr_number} onChange={(e) => setCompany({...company, cr_number: e.target.value})} dir="ltr" placeholder="مثال: 1010XXXXXX" className="border-amber-200 rounded-lg bg-white" />
+                      <p className="text-xs text-amber-600">رقم السجل التجاري — يظهر في صفحة التراخيص</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="space-y-1.5">
+                    <Label className="text-slate-600 text-sm">رقم الجوال</Label>
+                    <Input value={company.mobile} onChange={(e) => setCompany({...company, mobile: e.target.value})} dir="ltr" placeholder="0500051679" className="border-slate-200 rounded-lg" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-slate-600 text-sm">العنوان (إنجليزي)</Label>
+                    <Input value={company.address_en} onChange={(e) => setCompany({...company, address_en: e.target.value})} dir="ltr" placeholder="Riyadh, Saudi Arabia" className="border-slate-200 rounded-lg" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-slate-600 text-sm">ساعات العمل (عربي)</Label>
+                    <Input value={company.working_hours} onChange={(e) => setCompany({...company, working_hours: e.target.value})} placeholder="الأحد - الخميس: 9 ص - 6 م" className="border-slate-200 rounded-lg" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-slate-600 text-sm">ساعات العمل (إنجليزي)</Label>
+                    <Input value={company.working_hours_en} onChange={(e) => setCompany({...company, working_hours_en: e.target.value})} dir="ltr" placeholder="Sun - Thu: 9 AM - 6 PM" className="border-slate-200 rounded-lg" />
+                  </div>
+                </div>
+                <Button
+                  className="bg-indigo-500 text-white hover:bg-indigo-600 rounded-lg"
+                  onClick={() => updateSettings.mutate({ group: "company", values: company })}
+                  disabled={updateSettings.isPending}
+                >
+                  {updateSettings.isPending ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <Save className="w-4 h-4 ml-2" />}
+                  {updateSettings.isPending ? "جاري الحفظ..." : "حفظ بيانات الشركة"}
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>

@@ -1,0 +1,95 @@
+{
+  "query": "SELECT settingKey, LEFT(settingValue, 80) as val, groupName FROM settings ORDER BY groupName, settingKey;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.4e413a58b2a3 --database FCSdcQDHNngsNZkY5BfGCD --execute SELECT settingKey, LEFT(settingValue, 80) as val, groupName FROM settings ORDER BY groupName, settingKey;",
+  "rows": [
+    {
+      "settingKey": "about_image",
+      "val": "https://files.manuscdn.com/user_upload_by_module/session_file/310519663331132774",
+      "groupName": "cms"
+    },
+    {
+      "settingKey": "hero_image",
+      "val": "https://files.manuscdn.com/user_upload_by_module/session_file/310519663331132774",
+      "groupName": "cms"
+    },
+    {
+      "settingKey": "address",
+      "val": "شارع الإمام عبد العزيز بن محمد بن سعود - حي أم سليم، الرياض",
+      "groupName": "contact"
+    },
+    {
+      "settingKey": "address_en",
+      "val": "Imam Abdulaziz bin Mohammed St. - Umm Saleem, Riyadh",
+      "groupName": "contact"
+    },
+    {
+      "settingKey": "email",
+      "val": "info@alqasem.com.sa",
+      "groupName": "contact"
+    },
+    {
+      "settingKey": "mobile",
+      "val": "0500051679",
+      "groupName": "contact"
+    },
+    {
+      "settingKey": "working_hours",
+      "val": "الأحد - الخميس: 9 ص - 6 م",
+      "groupName": "contact"
+    },
+    {
+      "settingKey": "working_hours_en",
+      "val": "Sunday - Thursday: 9 AM - 6 PM",
+      "groupName": "contact"
+    },
+    {
+      "settingKey": "company_name",
+      "val": "القاسم العقارية",
+      "groupName": "general"
+    },
+    {
+      "settingKey": "company_name_en",
+      "val": "Al-Qasim Real Estate",
+      "groupName": "general"
+    },
+    {
+      "settingKey": "phone",
+      "val": "920001911",
+      "groupName": "general"
+    },
+    {
+      "settingKey": "instagram",
+      "val": "https://www.instagram.com/alqasem_sa/",
+      "groupName": "social"
+    },
+    {
+      "settingKey": "linkedin",
+      "val": "https://www.linkedin.com/company/alqasem-sa",
+      "groupName": "social"
+    },
+    {
+      "settingKey": "snapchat",
+      "val": "https://www.snapchat.com/add/alqasem_sa",
+      "groupName": "social"
+    },
+    {
+      "settingKey": "tiktok",
+      "val": "https://www.tiktok.com/@alqasem_sa",
+      "groupName": "social"
+    },
+    {
+      "settingKey": "twitter",
+      "val": "https://x.com/alqasem_sa",
+      "groupName": "social"
+    },
+    {
+      "settingKey": "whatsapp",
+      "val": "+966504466528",
+      "groupName": "social"
+    }
+  ],
+  "messages": [],
+  "stdout": "settingKey\tval\tgroupName\nabout_image\thttps://files.manuscdn.com/user_upload_by_module/session_file/310519663331132774\tcms\nhero_image\thttps://files.manuscdn.com/user_upload_by_module/session_file/310519663331132774\tcms\naddress\tشارع الإمام عبد العزيز بن محمد بن سعود - حي أم سليم، الرياض\tcontact\naddress_en\tImam Abdulaziz bin Mohammed St. - Umm Saleem, Riyadh\tcontact\nemail\tinfo@alqasem.com.sa\tcontact\nmobile\t0500051679\tcontact\nworking_hours\tالأحد - الخميس: 9 ص - 6 م\tcontact\nworking_hours_en\tSunday - Thursday: 9 AM - 6 PM\tcontact\ncompany_name\tالقاسم العقارية\tgeneral\ncompany_name_en\tAl-Qasim Real Estate\tgeneral\nphone\t920001911\tgeneral\ninstagram\thttps://www.instagram.com/alqasem_sa/\tsocial\nlinkedin\thttps://www.linkedin.com/company/alqasem-sa\tsocial\nsnapchat\thttps://www.snapchat.com/add/alqasem_sa\tsocial\ntiktok\thttps://www.tiktok.com/@alqasem_sa\tsocial\ntwitter\thttps://x.com/alqasem_sa\tsocial\nwhatsapp\t+966504466528\tsocial\n",
+  "stderr": "",
+  "execution_time_ms": 1506
+}

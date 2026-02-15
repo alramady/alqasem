@@ -1,11 +1,16 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import SEO from "@/components/SEO";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useSiteConfig } from "@/contexts/SiteConfigContext";
 import { motion } from "framer-motion";
 import { Award, Building2, FileCheck, Scale, Shield, Phone, Mail, MapPin, Globe, CheckCircle2, AlertCircle, BookOpen } from "lucide-react";
 
 export default function IqarLicense() {
   const { isAr } = useLanguage();
+  const { settings } = useSiteConfig();
+  const falNumber = settings.fal_number || "";
+  const crNumber = settings.cr_number || "";
 
   return (
     <div className="min-h-screen bg-white">
@@ -77,7 +82,7 @@ export default function IqarLicense() {
                         {isAr ? "رقم السجل التجاري" : "Commercial Registration No."}
                       </span>
                       <span className="font-semibold text-[#0f1b33] text-sm" dir="ltr">
-                        1010XXXXXX
+                        {crNumber || (isAr ? "يُحدّث من لوحة التحكم" : "Set from admin panel")}
                       </span>
                     </div>
 
@@ -86,7 +91,7 @@ export default function IqarLicense() {
                         {isAr ? "رقم رخصة فال" : "Fal License No."}
                       </span>
                       <span className="font-semibold text-[#c8a45e] text-sm" dir="ltr">
-                        XXXXXXXXXX
+                        {falNumber || (isAr ? "يُحدّث من لوحة التحكم" : "Set from admin panel")}
                       </span>
                     </div>
 

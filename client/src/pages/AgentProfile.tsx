@@ -67,11 +67,11 @@ export default function AgentProfile() {
           >
             <div className="flex flex-col md:flex-row items-start gap-6">
               {/* Photo */}
-              <div className="w-28 h-28 md:w-32 md:h-32 rounded-full bg-white border-4 border-white shadow-lg overflow-hidden shrink-0 mx-auto md:mx-0">
+              <div className="w-28 h-28 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-[#0f1b33] to-[#1a3a5c] border-4 border-white shadow-lg overflow-hidden shrink-0 mx-auto md:mx-0">
                 {agent.photo ? (
                   <img src={agent.photo} alt={agent.nameAr} className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full bg-slate-100 flex items-center justify-center text-4xl font-bold text-slate-300">
+                  <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-white/80">
                     {agent.nameAr?.charAt(0)}
                   </div>
                 )}
