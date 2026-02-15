@@ -1,7 +1,7 @@
 import { publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { sendEmail } from "../email";
-import { customers, otpCodes, customerFavorites, customerSessions } from "../../drizzle/schema";
+import { customers, otpCodes, customerFavorites, customerSessions, inquiries, financingRequests } from "../../drizzle/schema";
 import { eq, and, desc, asc, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
@@ -490,5 +490,31 @@ export const customerRouter = router({
 
     await db.delete(customerFavorites).where(eq(customerFavorites.customerId, customer.id));
     return { success: true };
+  }),
+
+  // ============ MY INQUIRIES ============
+  getMyInquiries: publicProcedure.query(async ({ ctx }) => {
+    const customer = await resolveCustomer(ctx.req);
+    if (!customer) throw new TRPCError({ code: "UNAUTHORIZED", message: "يرجى تسجيل الدخول" });
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const results = await db.select().from(inquiries)
+      .where(eq(inquiries.phone, customer.phone))
+      .orderBy(desc(inquiries.createdAt))
+      .limit(50);
+    return results;
+  }),
+
+  // ============ MY FINANCING REQUESTS ============
+  getMyFinancingRequests: publicProcedure.query(async ({ ctx }) => {
+    const customer = await resolveCustomer(ctx.req);
+    if (!customer) throw new TRPCError({ code: "UNAUTHORIZED", message: "يرجى تسجيل الدخول" });
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const results = await db.select().from(financingRequests)
+      .where(eq(financingRequests.customerPhone, customer.phone))
+      .orderBy(desc(financingRequests.createdAt))
+      .limit(50);
+    return results;
   }),
 });

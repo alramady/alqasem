@@ -585,3 +585,28 @@
 - [x] Cross-tab sync via storage events
 - [x] Backend endpoints: getFavorites, syncFavorites, toggleFavorite, clearFavorites
 - [x] Verify favorites works end-to-end via tests (7 tests passing)
+
+## Major Features Batch (Feb 16, 2026)
+
+### A) Email Drip Campaigns for Financing Leads
+- [x] Add drip_emails table (id, financingRequestId, emailType, scheduledAt, sentAt, status)
+- [x] Add drip campaign settings to DB (drip_enabled, drip_day1/3/7 enabled/subject/body in AR+EN)
+- [x] Create server-side drip scheduler (5-min interval, processes pending emails)
+- [x] Add admin Settings > حملات المتابعة tab to configure email templates
+- [x] Auto-create drip schedule (day 1, 3, 7) when financing request is submitted
+- [x] Track email delivery status (pending, sent, failed, cancelled)
+
+### B) Property Map View
+- [x] Full-screen PropertyMapView page at /properties/map with sidebar filtering
+- [x] Map/list/grid toggle works on Properties page (existing)
+- [x] Property markers show on map with correct coordinates
+- [x] Route added to App.tsx
+
+### C) Customer Dashboard Enhancement
+- [x] Add "inquiries" tab to CustomerAccount page (with status badges, property links)
+- [x] Add "financing" tab to CustomerAccount page (with financial details grid, reference numbers)
+- [x] Create customer.getMyInquiries endpoint (match by phone number)
+- [x] Create customer.getMyFinancingRequests endpoint (match by phone/email)
+- [x] Show inquiry history with status badges and type labels
+- [x] Show financing request history with status, reference numbers, and financial breakdown
+- [x] Write vitest tests for all new endpoints (10 tests, all passing)

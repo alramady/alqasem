@@ -1,0 +1,49 @@
+{
+  "query": "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'drip_emails' ORDER BY ORDINAL_POSITION;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.4e413a58b2a3 --database FCSdcQDHNngsNZkY5BfGCD --execute SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'drip_emails' ORDER BY ORDINAL_POSITION;",
+  "rows": [
+    {
+      "COLUMN_NAME": "id"
+    },
+    {
+      "COLUMN_NAME": "financing_request_id"
+    },
+    {
+      "COLUMN_NAME": "email_type"
+    },
+    {
+      "COLUMN_NAME": "recipient_email"
+    },
+    {
+      "COLUMN_NAME": "recipient_name"
+    },
+    {
+      "COLUMN_NAME": "subject"
+    },
+    {
+      "COLUMN_NAME": "body"
+    },
+    {
+      "COLUMN_NAME": "scheduled_at"
+    },
+    {
+      "COLUMN_NAME": "sent_at"
+    },
+    {
+      "COLUMN_NAME": "status"
+    },
+    {
+      "COLUMN_NAME": "error_message"
+    },
+    {
+      "COLUMN_NAME": "created_at"
+    },
+    {
+      "COLUMN_NAME": "updated_at"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_NAME\nid\nfinancing_request_id\nemail_type\nrecipient_email\nrecipient_name\nsubject\nbody\nscheduled_at\nsent_at\nstatus\nerror_message\ncreated_at\nupdated_at\n",
+  "stderr": "",
+  "execution_time_ms": 1504
+}

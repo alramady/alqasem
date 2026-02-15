@@ -9,10 +9,135 @@ import Footer from "@/components/Footer";
 import { Link } from "wouter";
 import {
   User, Phone, Mail, Lock, Edit3, Heart, LogOut, Loader2,
-  Eye, EyeOff, Save, X, Calendar, Shield, ChevronLeft, ChevronRight
+  Eye, EyeOff, Save, X, Calendar, Shield, ChevronLeft, ChevronRight,
+  MessageSquare, CreditCard, MapPin, Clock, FileText
 } from "lucide-react";
 
-type Tab = "profile" | "password" | "favorites";
+type Tab = "profile" | "password" | "favorites" | "inquiries" | "financing";
+
+function InquiriesTab({ isAr }: { isAr: boolean }) {
+  const { data: inquiries, isLoading } = trpc.customer.getMyInquiries.useQuery();
+  const statusColors: Record<string, string> = {
+    new: "bg-blue-100 text-blue-700",
+    contacted: "bg-yellow-100 text-yellow-700",
+    resolved: "bg-green-100 text-green-700",
+    closed: "bg-gray-100 text-gray-500",
+  };
+  const statusLabels: Record<string, { ar: string; en: string }> = {
+    new: { ar: "جديد", en: "New" },
+    contacted: { ar: "تم التواصل", en: "Contacted" },
+    resolved: { ar: "معالج", en: "Resolved" },
+    closed: { ar: "مغلق", en: "Closed" },
+  };
+  if (isLoading) return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-[#d4a853]" /></div>;
+  return (
+    <div>
+      <h2 className="text-lg font-bold text-[#0f1b33] mb-4">{isAr ? "استفساراتي" : "My Inquiries"}</h2>
+      {(!inquiries || inquiries.length === 0) ? (
+        <div className="text-center py-12">
+          <MessageSquare className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+          <p className="text-gray-500">{isAr ? "لا توجد استفسارات بعد" : "No inquiries yet"}</p>
+          <Link href="/contact" className="inline-block mt-4 text-[#d4a853] hover:underline text-sm font-semibold">
+            {isAr ? "تواصل معنا" : "Contact Us"}
+          </Link>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {inquiries.map((inq: any) => (
+            <div key={inq.id} className="bg-white border border-gray-100 rounded-xl p-4 hover:shadow-sm transition-shadow">
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-[#0f1b33]" />
+                  <span className="font-semibold text-[#0f1b33] text-sm">
+                    {isAr ? (inq.inquiryType === 'buy' ? 'شراء' : inq.inquiryType === 'rent' ? 'إيجار' : inq.inquiryType === 'sell' ? 'بيع' : 'استفسار') : (inq.inquiryType || 'Inquiry')}
+                  </span>
+                </div>
+                <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColors[inq.status] || 'bg-gray-100 text-gray-500'}`}>
+                  {isAr ? statusLabels[inq.status]?.ar || inq.status : statusLabels[inq.status]?.en || inq.status}
+                </span>
+              </div>
+              {inq.message && <p className="text-sm text-gray-600 mb-2 line-clamp-2">{inq.message}</p>}
+              <div className="flex items-center gap-3 text-xs text-gray-400">
+                <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(inq.createdAt).toLocaleDateString(isAr ? 'ar-SA' : 'en-US')}</span>
+                {inq.propertyId && <Link href={`/properties/${inq.propertyId}`} className="text-[#d4a853] hover:underline flex items-center gap-1"><MapPin className="w-3 h-3" />{isAr ? 'عرض العقار' : 'View Property'}</Link>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FinancingTab({ isAr }: { isAr: boolean }) {
+  const { data: requests, isLoading } = trpc.customer.getMyFinancingRequests.useQuery();
+  const statusColors: Record<string, string> = {
+    new: "bg-blue-100 text-blue-700",
+    contacted: "bg-yellow-100 text-yellow-700",
+    approved: "bg-green-100 text-green-700",
+    rejected: "bg-red-100 text-red-700",
+  };
+  const statusLabels: Record<string, { ar: string; en: string }> = {
+    new: { ar: "جديد", en: "New" },
+    contacted: { ar: "تم التواصل", en: "Contacted" },
+    approved: { ar: "موافق", en: "Approved" },
+    rejected: { ar: "مرفوض", en: "Rejected" },
+  };
+  if (isLoading) return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-[#d4a853]" /></div>;
+  return (
+    <div>
+      <h2 className="text-lg font-bold text-[#0f1b33] mb-4">{isAr ? "طلبات التمويل" : "Financing Requests"}</h2>
+      {(!requests || requests.length === 0) ? (
+        <div className="text-center py-12">
+          <CreditCard className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+          <p className="text-gray-500">{isAr ? "لا توجد طلبات تمويل بعد" : "No financing requests yet"}</p>
+          <Link href="/properties" className="inline-block mt-4 text-[#d4a853] hover:underline text-sm font-semibold">
+            {isAr ? "تصفح العقارات" : "Browse Properties"}
+          </Link>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {requests.map((req: any) => (
+            <div key={req.id} className="bg-white border border-gray-100 rounded-xl p-4 hover:shadow-sm transition-shadow">
+              <div className="flex items-start justify-between mb-2">
+                <div>
+                  <span className="text-xs font-mono text-gray-400">{req.requestNumber || `FIN-${String(req.id).padStart(5, '0')}`}</span>
+                  <h3 className="font-semibold text-[#0f1b33] text-sm mt-0.5">{req.propertyTitle || (isAr ? 'طلب تمويل' : 'Financing Request')}</h3>
+                </div>
+                <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColors[req.status] || 'bg-gray-100 text-gray-500'}`}>
+                  {isAr ? statusLabels[req.status]?.ar || req.status : statusLabels[req.status]?.en || req.status}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs text-gray-500 mt-3">
+                <div className="bg-gray-50 rounded-lg p-2">
+                  <span className="block text-gray-400">{isAr ? 'سعر العقار' : 'Property Price'}</span>
+                  <span className="font-bold text-[#0f1b33]">{new Intl.NumberFormat('ar-SA').format(req.propertyPrice || 0)} {isAr ? 'ر.س' : 'SAR'}</span>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-2">
+                  <span className="block text-gray-400">{isAr ? 'مبلغ القرض' : 'Loan Amount'}</span>
+                  <span className="font-bold text-[#0f1b33]">{new Intl.NumberFormat('ar-SA').format(req.loanAmount || 0)} {isAr ? 'ر.س' : 'SAR'}</span>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-2">
+                  <span className="block text-gray-400">{isAr ? 'القسط الشهري' : 'Monthly Payment'}</span>
+                  <span className="font-bold text-[#d4a853]">{new Intl.NumberFormat('ar-SA').format(req.monthlyPayment || 0)} {isAr ? 'ر.س' : 'SAR'}</span>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-2">
+                  <span className="block text-gray-400">{isAr ? 'المدة' : 'Term'}</span>
+                  <span className="font-bold text-[#0f1b33]">{req.termYears || req.term} {isAr ? 'سنة' : 'years'}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 text-xs text-gray-400 mt-3">
+                <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(req.createdAt).toLocaleDateString(isAr ? 'ar-SA' : 'en-US')}</span>
+                <span>{isAr ? 'نسبة الربح' : 'Rate'}: {req.rate}%</span>
+                <span>{isAr ? 'الدفعة' : 'Down'}: {req.downPaymentPct}%</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function CustomerAccount() {
   const { t, isAr } = useLanguage();
@@ -102,6 +227,8 @@ export default function CustomerAccount() {
     { id: "profile", label: t("account.editProfile"), icon: User },
     { id: "password", label: t("account.changePassword"), icon: Lock },
     { id: "favorites", label: t("account.myFavorites"), icon: Heart },
+    { id: "inquiries", label: isAr ? "استفساراتي" : "My Inquiries", icon: MessageSquare },
+    { id: "financing", label: isAr ? "طلبات التمويل" : "Financing Requests", icon: CreditCard },
   ];
 
   return (
@@ -341,6 +468,9 @@ export default function CustomerAccount() {
                     </Link>
                   </div>
                 )}
+
+                {activeTab === "inquiries" && <InquiriesTab isAr={isAr} />}
+                {activeTab === "financing" && <FinancingTab isAr={isAr} />}
               </div>
             </div>
           </div>

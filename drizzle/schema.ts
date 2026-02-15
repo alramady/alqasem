@@ -595,3 +595,23 @@ export const financingRequests = mysqlTable("financing_requests", {
 });
 export type FinancingRequest = typeof financingRequests.$inferSelect;
 export type InsertFinancingRequest = typeof financingRequests.$inferInsert;
+
+
+// Drip email campaigns for financing leads
+export const dripEmails = mysqlTable("drip_emails", {
+  id: int("id").autoincrement().primaryKey(),
+  financingRequestId: int("financing_request_id").notNull(),
+  emailType: varchar("email_type", { length: 50 }).notNull(),
+  recipientEmail: varchar("recipient_email", { length: 320 }).notNull(),
+  recipientName: varchar("recipient_name", { length: 255 }),
+  subject: varchar("subject", { length: 500 }),
+  body: text("body"),
+  scheduledAt: timestamp("scheduled_at").notNull(),
+  sentAt: timestamp("sent_at"),
+  status: mysqlEnum("status", ["pending", "sent", "failed", "cancelled"]).default("pending").notNull(),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type DripEmail = typeof dripEmails.$inferSelect;
+export type InsertDripEmail = typeof dripEmails.$inferInsert;

@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
-import { Save, Phone, Mail, MapPin, MessageCircle, Loader2, Image, Upload, Trash2, Palette, Globe, Building2, Award, FileCheck, Calculator, Eye, EyeOff, Send, BarChart3 } from "lucide-react";
+import { Save, Phone, Mail, MapPin, MessageCircle, Loader2, Image, Upload, Trash2, Palette, Globe, Building2, Award, FileCheck, Calculator, Eye, EyeOff, Send, BarChart3, Timer } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { DEFAULT_LOGO, DEFAULT_ADMIN_LOGO } from "@/lib/branding";
@@ -43,6 +43,19 @@ export default function AdminSettings() {
     financing_cta_subtitle_ar: "سيتواصل معك فريقنا خلال 24 ساعة",
     financing_cta_subtitle_en: "Our team will contact you within 24 hours",
     financing_notification_email: "",
+  });
+  const [drip, setDrip] = useState({
+    drip_enabled: "true",
+    drip_day1_enabled: "true", drip_day1_delay_hours: "24",
+    drip_day1_subject_ar: "", drip_day1_subject_en: "",
+    drip_day1_body_ar: "", drip_day1_body_en: "",
+    drip_day3_enabled: "true", drip_day3_delay_hours: "72",
+    drip_day3_subject_ar: "", drip_day3_subject_en: "",
+    drip_day3_body_ar: "", drip_day3_body_en: "",
+    drip_day7_enabled: "true", drip_day7_delay_hours: "168",
+    drip_day7_subject_ar: "", drip_day7_subject_en: "",
+    drip_day7_body_ar: "", drip_day7_body_en: "",
+    drip_notification_email: "",
   });
   const [analytics, setAnalytics] = useState({
     google_analytics_enabled: "false",
@@ -98,6 +111,28 @@ export default function AdminSettings() {
         google_analytics_id: s.google_analytics_id || "",
         google_tag_manager_id: s.google_tag_manager_id || "",
       });
+      setDrip({
+        drip_enabled: s.drip_enabled || "true",
+        drip_day1_enabled: s.drip_day1_enabled || "true",
+        drip_day1_delay_hours: s.drip_day1_delay_hours || "24",
+        drip_day1_subject_ar: s.drip_day1_subject_ar || "",
+        drip_day1_subject_en: s.drip_day1_subject_en || "",
+        drip_day1_body_ar: s.drip_day1_body_ar || "",
+        drip_day1_body_en: s.drip_day1_body_en || "",
+        drip_day3_enabled: s.drip_day3_enabled || "true",
+        drip_day3_delay_hours: s.drip_day3_delay_hours || "72",
+        drip_day3_subject_ar: s.drip_day3_subject_ar || "",
+        drip_day3_subject_en: s.drip_day3_subject_en || "",
+        drip_day3_body_ar: s.drip_day3_body_ar || "",
+        drip_day3_body_en: s.drip_day3_body_en || "",
+        drip_day7_enabled: s.drip_day7_enabled || "true",
+        drip_day7_delay_hours: s.drip_day7_delay_hours || "168",
+        drip_day7_subject_ar: s.drip_day7_subject_ar || "",
+        drip_day7_subject_en: s.drip_day7_subject_en || "",
+        drip_day7_body_ar: s.drip_day7_body_ar || "",
+        drip_day7_body_en: s.drip_day7_body_en || "",
+        drip_notification_email: s.drip_notification_email || "",
+      });
     }
   }, [settings]);
 
@@ -122,6 +157,9 @@ export default function AdminSettings() {
             <TabsTrigger value="email" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">قوالب البريد</TabsTrigger>
             <TabsTrigger value="analytics" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
               <BarChart3 className="w-4 h-4 ml-1" />التحليلات
+            </TabsTrigger>
+            <TabsTrigger value="drip" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
+              <Timer className="w-4 h-4 ml-1" /> حملات البريد
             </TabsTrigger>
             <TabsTrigger value="mortgage" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
               <Calculator className="w-4 h-4 ml-1.5" />حاسبة التمويل
@@ -620,6 +658,83 @@ export default function AdminSettings() {
                   >
                     {updateSettings.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Save className="w-4 h-4 ml-2" />}
                     حفظ إعدادات التحليلات
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Drip Campaigns Tab */}
+          <TabsContent value="drip" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Timer className="w-5 h-5 text-blue-600" />
+                  حملات البريد الإلكتروني التلقائية
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">إرسال رسائل متابعة تلقائية لطلبات التمويل العقاري</p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Master toggle */}
+                <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div>
+                    <p className="font-semibold">تفعيل حملات البريد</p>
+                    <p className="text-sm text-muted-foreground">إرسال رسائل متابعة للعملاء بعد تقديم طلب التمويل</p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => setDrip(p => ({ ...p, drip_enabled: p.drip_enabled === "true" ? "false" : "true" }))}>
+                    {drip.drip_enabled === "true" ? <><Eye className="w-4 h-4 ml-1" /> مفعل</> : <><EyeOff className="w-4 h-4 ml-1" /> معطل</>}
+                  </Button>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>بريد الإشعارات</Label>
+                  <Input value={drip.drip_notification_email} onChange={e => setDrip(p => ({ ...p, drip_notification_email: e.target.value }))} placeholder="info@alqasem.com.sa" />
+                </div>
+
+                {/* Day 1, 3, 7 email configs */}
+                {(["day1", "day3", "day7"] as const).map(day => {
+                  const dayNum = day === "day1" ? 1 : day === "day3" ? 3 : 7;
+                  const enabled = drip[`drip_${day}_enabled` as keyof typeof drip];
+                  return (
+                    <div key={day} className="border rounded-lg p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-semibold">رسالة اليوم {dayNum}</h4>
+                        <Button variant="outline" size="sm" onClick={() => setDrip(p => ({ ...p, [`drip_${day}_enabled`]: enabled === "true" ? "false" : "true" }))}>
+                          {enabled === "true" ? "مفعل" : "معطل"}
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label>التأخير (ساعات)</Label>
+                          <Input type="number" value={drip[`drip_${day}_delay_hours` as keyof typeof drip]} onChange={e => setDrip(p => ({ ...p, [`drip_${day}_delay_hours`]: e.target.value }))} />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label>العنوان (عربي)</Label>
+                          <Input value={drip[`drip_${day}_subject_ar` as keyof typeof drip]} onChange={e => setDrip(p => ({ ...p, [`drip_${day}_subject_ar`]: e.target.value }))} />
+                        </div>
+                        <div>
+                          <Label>العنوان (English)</Label>
+                          <Input value={drip[`drip_${day}_subject_en` as keyof typeof drip]} onChange={e => setDrip(p => ({ ...p, [`drip_${day}_subject_en`]: e.target.value }))} />
+                        </div>
+                      </div>
+                      <div>
+                        <Label>المحتوى (عربي) - استخدم {'{name}'} {'{ref}'} {'{price}'} {'{loan}'} {'{monthly}'}</Label>
+                        <Textarea rows={4} value={drip[`drip_${day}_body_ar` as keyof typeof drip]} onChange={e => setDrip(p => ({ ...p, [`drip_${day}_body_ar`]: e.target.value }))} />
+                      </div>
+                      <div>
+                        <Label>المحتوى (English)</Label>
+                        <Textarea rows={4} value={drip[`drip_${day}_body_en` as keyof typeof drip]} onChange={e => setDrip(p => ({ ...p, [`drip_${day}_body_en`]: e.target.value }))} />
+                      </div>
+                    </div>
+                  );
+                })}
+
+                <div className="flex justify-end">
+                  <Button onClick={() => updateSettings.mutate({ group: "drip", values: drip })} disabled={updateSettings.isPending}>
+                    {updateSettings.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Save className="w-4 h-4 ml-2" />}
+                    حفظ إعدادات الحملات
                   </Button>
                 </div>
               </CardContent>

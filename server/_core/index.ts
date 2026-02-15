@@ -175,6 +175,11 @@ async function startServer() {
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
+    // Start drip email processor
+    import("../drip").then(({ startDripProcessor }) => {
+      startDripProcessor();
+      console.log("[Drip] Email processor started (5-min interval)");
+    }).catch(err => console.error("[Drip] Failed to start processor:", err));
   });
 }
 

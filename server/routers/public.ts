@@ -4,6 +4,7 @@ import { sanitizeText } from "../sanitize";
 import { sendEmail } from "../email";
 import { notifyOwner } from "../_core/notification";
 import { inquiries, properties, projects, notifications, users, auditLogs, settings, homepageSections, pages, newsletterSubscribers, propertyViews, cities, districts, amenities, propertyAmenities, agencies, agents, financingRequests } from "../../drizzle/schema";
+import { scheduleDripEmails } from "../drip";
 import { eq, desc, asc, and, isNull, like, or, gte, lte, sql, count, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
@@ -1127,6 +1128,15 @@ export const publicRouter = router({
       }
     } catch (e) { console.error("Failed to send financing email:", e); }
     try { await notifyOwner({ title: "طلب تمويل عقاري جديد", content: `${input.customerName} - ${input.customerPhone} | ${priceFormatted} ر.س | ${input.termYears} سنة` }); } catch (e) { /* silent */ }
+    // Schedule drip campaign emails
+    if (input.customerEmail) {
+      try {
+        await scheduleDripEmails(0, input.customerEmail, input.customerName, {
+          requestNumber, propertyPrice: input.propertyPrice, loanAmount: input.loanAmount,
+          monthlyPayment: input.monthlyPayment, rate: input.rate, termYears: input.termYears
+        });
+      } catch (e) { console.error("[Drip] Failed to schedule:", e); }
+    }
     return { success: true, requestNumber };
   }),
 });

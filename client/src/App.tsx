@@ -57,6 +57,7 @@ const AdminCitiesDistricts = lazy(() => import("./pages/admin/CitiesDistricts"))
 const AdminAgencies = lazy(() => import("./pages/admin/Agencies"));
 const AdminAgents = lazy(() => import("./pages/admin/Agents"));
 const AdminFinancingRequests = lazy(() => import("./pages/admin/FinancingRequests"));
+const PropertyMapViewPage = lazy(() => import("./pages/PropertyMapView"));
 const AgenciesPage = lazy(() => import("./pages/Agencies"));
 const AgencyProfilePage = lazy(() => import("./pages/AgencyProfile"));
 const AgentProfilePage = lazy(() => import("./pages/AgentProfile"));
@@ -125,6 +126,9 @@ function Router() {
       </Route>
       <Route path="/compare">
         <Suspense fallback={<PageFallback />}><ComparePage /></Suspense>
+      </Route>
+      <Route path="/properties/map">
+        <Suspense fallback={<PageFallback />}><PropertyMapViewPage /></Suspense>
       </Route>
       <Route path="/privacy-policy">
         <Suspense fallback={<PageFallback />}><PrivacyPolicyPage /></Suspense>
