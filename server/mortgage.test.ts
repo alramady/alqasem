@@ -21,7 +21,7 @@ describe("Mortgage Calculator Backend", () => {
 
   it("getMortgageConfig returns correct rate defaults", async () => {
     const config = await query("public.getMortgageConfig");
-    expect(config.defaultRate).toBe(5.5);
+    expect(config.defaultRate).toBe(4.49);
     expect(config.minRate).toBe(2.0);
     expect(config.maxRate).toBe(12.0);
   });

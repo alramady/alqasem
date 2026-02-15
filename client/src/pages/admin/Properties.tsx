@@ -22,6 +22,7 @@ const statusLabels: Record<string, string> = { active: "نشط", sold: "مباع
 const emptyForm = {
   title: "", titleEn: "", description: "", descriptionEn: "", type: "villa", listingType: "sale", status: "active",
   price: "", area: "", rooms: "", bathrooms: "", city: "الرياض", cityEn: "", district: "", districtEn: "", address: "", addressEn: "", videoUrl: "",
+  virtualTourUrl: "", virtualTourType: "" as string,
   latitude: "", longitude: "",
   agencyId: "", agentId: "",
 };
@@ -78,6 +79,7 @@ export default function AdminProperties() {
       district: prop.district || "", districtEn: prop.districtEn || "",
       address: prop.address || "", addressEn: prop.addressEn || "",
       videoUrl: prop.videoUrl || "",
+      virtualTourUrl: (prop as any).virtualTourUrl || "", virtualTourType: (prop as any).virtualTourType || "",
       latitude: prop.latitude?.toString() || "", longitude: prop.longitude?.toString() || "",
       agencyId: prop.agencyId?.toString() || "", agentId: prop.agentId?.toString() || "",
     });
@@ -94,6 +96,7 @@ export default function AdminProperties() {
       rooms: parseInt(editForm.rooms) || 0, bathrooms: parseInt(editForm.bathrooms) || 0,
       city: editForm.city, cityEn: editForm.cityEn, district: editForm.district, districtEn: editForm.districtEn,
       address: editForm.address, addressEn: editForm.addressEn, videoUrl: editForm.videoUrl,
+      virtualTourUrl: editForm.virtualTourUrl || undefined, virtualTourType: (editForm.virtualTourType || undefined) as "matterport" | "youtube" | "custom" | undefined,
       latitude: editForm.latitude ? parseFloat(editForm.latitude) : undefined,
       longitude: editForm.longitude ? parseFloat(editForm.longitude) : undefined,
       agencyId: editForm.agencyId && editForm.agencyId !== "none" ? Number(editForm.agencyId) : undefined,
@@ -238,6 +241,27 @@ export default function AdminProperties() {
                     </Select>
                   </div>
                   <div className="md:col-span-2">
+                    <Label className="text-slate-600">رابط الجولة الافتراضية 360° (Matterport / YouTube / مخصص)</Label>
+                    <Input value={form.virtualTourUrl} onChange={(e) => {
+                      const url = e.target.value;
+                      let tourType = form.virtualTourType;
+                      if (url.includes('matterport.com') || url.includes('my.matterport')) tourType = 'matterport';
+                      else if (url.includes('youtube.com') || url.includes('youtu.be')) tourType = 'youtube';
+                      else if (url) tourType = 'custom';
+                      else tourType = '';
+                      setForm({...form, virtualTourUrl: url, virtualTourType: tourType});
+                    }} dir="ltr" placeholder="https://my.matterport.com/show/?m=..." className="mt-1" />
+                  </div>
+                  <div>
+                    <Label className="text-slate-600">نوع الجولة الافتراضية</Label>
+                    <select value={form.virtualTourType} onChange={(e) => setForm({...form, virtualTourType: e.target.value})} className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                      <option value="">غير محدد</option>
+                      <option value="matterport">Matterport</option>
+                      <option value="youtube">YouTube 360°</option>
+                      <option value="custom">مخصص (iframe)</option>
+                    </select>
+                  </div>
+                  <div className="md:col-span-2">
                     <Button className="w-full bg-indigo-500 text-white hover:bg-indigo-600" onClick={() => createProp.mutate({
                       ...form, price: parseFloat(form.price) || 0, area: parseFloat(form.area) || 0,
                       rooms: parseInt(form.rooms) || 0, bathrooms: parseInt(form.bathrooms) || 0,
@@ -245,6 +269,8 @@ export default function AdminProperties() {
                       longitude: form.longitude ? parseFloat(form.longitude) : undefined,
                       agencyId: form.agencyId && form.agencyId !== "none" ? Number(form.agencyId) : undefined,
                       agentId: form.agentId && form.agentId !== "none" ? Number(form.agentId) : undefined,
+                      virtualTourUrl: form.virtualTourUrl || undefined,
+                      virtualTourType: (form.virtualTourType || undefined) as "matterport" | "youtube" | "custom" | undefined,
                     })} disabled={createProp.isPending}>
                       {createProp.isPending ? "جاري الإضافة..." : "إضافة العقار"}
                     </Button>
@@ -472,6 +498,27 @@ export default function AdminProperties() {
                 <div className="md:col-span-2">
                   <Label className="text-slate-600">رابط الفيديو (YouTube أو غيره)</Label>
                   <Input value={editForm.videoUrl} onChange={(e) => setEditForm({...editForm, videoUrl: e.target.value})} dir="ltr" placeholder="https://youtube.com/..." className="mt-1" />
+                </div>
+                <div className="md:col-span-2">
+                  <Label className="text-slate-600">رابط الجولة الافتراضية 360° (Matterport / YouTube / مخصص)</Label>
+                  <Input value={editForm.virtualTourUrl} onChange={(e) => {
+                    const url = e.target.value;
+                    let tourType = editForm.virtualTourType;
+                    if (url.includes('matterport.com') || url.includes('my.matterport')) tourType = 'matterport';
+                    else if (url.includes('youtube.com') || url.includes('youtu.be')) tourType = 'youtube';
+                    else if (url) tourType = 'custom';
+                    else tourType = '';
+                    setEditForm({...editForm, virtualTourUrl: url, virtualTourType: tourType});
+                  }} dir="ltr" placeholder="https://my.matterport.com/show/?m=..." className="mt-1" />
+                </div>
+                <div>
+                  <Label className="text-slate-600">نوع الجولة الافتراضية</Label>
+                  <select value={editForm.virtualTourType} onChange={(e) => setEditForm({...editForm, virtualTourType: e.target.value})} className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    <option value="">غير محدد</option>
+                    <option value="matterport">Matterport</option>
+                    <option value="youtube">YouTube 360°</option>
+                    <option value="custom">مخصص (iframe)</option>
+                  </select>
                 </div>
                 <div>
                   <Label className="text-slate-600">خط العرض (Latitude)</Label>

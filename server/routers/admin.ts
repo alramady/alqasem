@@ -570,6 +570,7 @@ export const adminRouter = router({
     city: z.string().optional(), cityEn: z.string().optional(), district: z.string().optional(), districtEn: z.string().optional(),
     address: z.string().optional(), addressEn: z.string().optional(),
     videoUrl: z.string().optional(), images: z.array(z.string()).optional(), features: z.array(z.string()).optional(),
+    virtualTourUrl: z.string().optional(), virtualTourType: z.enum(["matterport", "youtube", "custom"]).optional(),
     latitude: z.number().optional(), longitude: z.number().optional(),
     floor: z.number().int().optional(), direction: z.string().optional(),
     furnishing: z.string().optional(), buildingAge: z.number().int().optional(),
@@ -592,6 +593,7 @@ export const adminRouter = router({
       district: s.district || null, districtEn: s.districtEn || null,
       address: s.address || null, addressEn: s.addressEn || null,
       videoUrl: s.videoUrl || null,
+      virtualTourUrl: s.virtualTourUrl || null, virtualTourType: (input.virtualTourType || null) as any,
       latitude: input.latitude ? String(input.latitude) : null,
       longitude: input.longitude ? String(input.longitude) : null,
       images: input.images || null, features: input.features || null,
@@ -624,6 +626,7 @@ export const adminRouter = router({
     city: z.string().optional(), cityEn: z.string().optional(), district: z.string().optional(), districtEn: z.string().optional(),
     address: z.string().optional(), addressEn: z.string().optional(),
     videoUrl: z.string().optional(), images: z.array(z.string()).optional(), features: z.array(z.string()).optional(),
+    virtualTourUrl: z.string().nullable().optional(), virtualTourType: z.enum(["matterport", "youtube", "custom"]).nullable().optional(),
     latitude: z.number().optional(), longitude: z.number().optional(),
     floor: z.number().int().nullable().optional(), direction: z.string().nullable().optional(),
     furnishing: z.string().nullable().optional(), buildingAge: z.number().int().nullable().optional(),
@@ -655,6 +658,8 @@ export const adminRouter = router({
     if (s.address !== undefined) updateData.address = s.address;
     if (s.addressEn !== undefined) updateData.addressEn = s.addressEn;
     if (s.videoUrl !== undefined) updateData.videoUrl = s.videoUrl;
+    if (s.virtualTourUrl !== undefined) updateData.virtualTourUrl = s.virtualTourUrl;
+    if (input.virtualTourType !== undefined) updateData.virtualTourType = input.virtualTourType;
     if (input.images !== undefined) updateData.images = input.images;
     if (input.features !== undefined) updateData.features = input.features;
     if (input.floor !== undefined) updateData.floor = input.floor;

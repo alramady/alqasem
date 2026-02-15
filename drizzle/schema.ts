@@ -74,6 +74,8 @@ export const properties = mysqlTable("properties", {
   features: json("features"),
   images: json("images"),
   videoUrl: varchar("videoUrl", { length: 1000 }),
+  virtualTourUrl: varchar("virtualTourUrl", { length: 1000 }),
+  virtualTourType: mysqlEnum("virtualTourType", ["matterport", "youtube", "custom"]),
   latitude: decimal("latitude", { precision: 10, scale: 7 }),
   longitude: decimal("longitude", { precision: 10, scale: 7 }),
   floor: int("floor"),

@@ -7,6 +7,7 @@ import { trpc } from "@/lib/trpc";
 import { motion } from "framer-motion";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { MapPin, BedDouble, Bath, Maximize, Car, Phone, MessageCircle, Heart, Share2, ChevronLeft, ChevronRight, CheckCircle, Shield, Building2, Navigation, Loader2, Printer, Eye } from "lucide-react";
+import VirtualTourEmbed, { isValidVirtualTourUrl } from "@/components/VirtualTourEmbed";
 import { Link } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
@@ -279,6 +280,15 @@ export default function PropertyDetail({ id }: { id: string }) {
                   {features.map((f, i) => <div key={i} className="flex items-center gap-2 p-3 bg-[#f8f5f0] rounded-lg"><CheckCircle className="w-4 h-4 text-green-500 shrink-0" /><span className="text-sm text-[#0f1b33]">{String(f)}</span></div>)}
                 </div>
               </motion.div>
+            )}
+
+            {/* Virtual Tour */}
+            {property.virtualTourUrl && property.virtualTourType && isValidVirtualTourUrl(property.virtualTourUrl) && (
+              <VirtualTourEmbed
+                url={property.virtualTourUrl}
+                type={property.virtualTourType as "matterport" | "youtube" | "custom"}
+                propertyTitle={title}
+              />
             )}
 
             {/* Map */}

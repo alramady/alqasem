@@ -610,3 +610,28 @@
 - [x] Show inquiry history with status badges and type labels
 - [x] Show financing request history with status, reference numbers, and financial breakdown
 - [x] Write vitest tests for all new endpoints (10 tests, all passing)
+
+## Virtual Tour Embed (Feb 16, 2026)
+
+### A) Database & Backend
+- [x] Add virtualTourUrl column (varchar 1000, nullable) to properties table
+- [x] Add virtualTourType column (enum: matterport/youtube/custom, nullable) to properties table
+- [x] Update admin createProperty and updateProperty endpoints to accept virtual tour fields
+- [x] Update public getProperty and searchProperties to return virtual tour data
+
+### B) Admin Property Form
+- [x] Add virtual tour URL input field to admin property create/edit form
+- [x] Add virtual tour type selector (Matterport, YouTube, Custom 360)
+- [x] Auto-detect tour type from URL (my.matterport.com → matterport, youtube.com → youtube)
+- [x] URL auto-detection provides instant type feedback in form
+
+### C) Frontend VirtualTourEmbed Component
+- [x] Build VirtualTourEmbed component with iframe embed for Matterport/YouTube/custom
+- [x] Auto-detect and format embed URLs (Matterport showcase, YouTube embed)
+- [x] Add expand/minimize toggle and open-in-new-tab button
+- [x] Bilingual AR/EN labels and navigation hints
+- [x] Integrate into PropertyDetail page (show only when URL is set)
+- [x] Loading skeleton and error fallback with external link
+
+### D) Tests
+- [x] Write 11 vitest tests for virtual tour feature (all passing)

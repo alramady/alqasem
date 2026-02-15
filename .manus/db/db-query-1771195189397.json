@@ -1,0 +1,18 @@
+{
+  "query": "SELECT COLUMN_NAME, COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'properties' AND COLUMN_NAME LIKE 'virtualTour%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.4e413a58b2a3 --database FCSdcQDHNngsNZkY5BfGCD --execute SELECT COLUMN_NAME, COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'properties' AND COLUMN_NAME LIKE 'virtualTour%';",
+  "rows": [
+    {
+      "COLUMN_NAME": "virtualTourUrl",
+      "COLUMN_TYPE": "varchar(1000)"
+    },
+    {
+      "COLUMN_NAME": "virtualTourType",
+      "COLUMN_TYPE": "enum('matterport','youtube','custom')"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_NAME\tCOLUMN_TYPE\nvirtualTourUrl\tvarchar(1000)\nvirtualTourType\tenum('matterport','youtube','custom')\n",
+  "stderr": "",
+  "execution_time_ms": 1507
+}
