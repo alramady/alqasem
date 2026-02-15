@@ -49,12 +49,16 @@ import {
   Monitor,
   Activity,
   MapPin,
+  Landmark,
+  UserCheck,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
+import { DEFAULT_ADMIN_LOGO } from "@/lib/branding";
+import { useSiteConfig } from "@/contexts/SiteConfigContext";
 
 type MenuGroup = {
   label: string;
@@ -76,6 +80,8 @@ const menuGroups: MenuGroup[] = [
       { icon: FileText, label: "الصفحات", path: "/admin/cms" },
       { icon: Image, label: "مكتبة الوسائط", path: "/admin/media" },
       { icon: MapPin, label: "المدن والأحياء", path: "/admin/cities-districts" },
+      { icon: Landmark, label: "المكاتب العقارية", path: "/admin/agencies" },
+      { icon: UserCheck, label: "الوكلاء", path: "/admin/agents" },
     ],
   },
   {
@@ -130,8 +136,8 @@ export default function AdminLayout({
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-100" dir="rtl">
         <div className="flex flex-col items-center gap-8 p-10 max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100">
           <div className="flex flex-col items-center gap-4">
-            <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <Building2 className="w-10 h-10 text-white" />
+            <div className="w-20 h-20 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden bg-gradient-to-br from-indigo-500 to-violet-600">
+              <img src={DEFAULT_ADMIN_LOGO} alt="القاسم العقارية" className="w-14 h-14 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).parentElement!.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>'; }} />
             </div>
             <h1 className="text-2xl font-bold text-slate-800 text-center">
               لوحة تحكم القاسم العقارية
@@ -251,8 +257,8 @@ function AdminLayoutContent({
           {/* Sidebar Header - Logo */}
           <SidebarHeader className="h-16 justify-center bg-white border-b border-slate-100">
             <div className="flex items-center gap-3 px-2 transition-all w-full">
-              <div className="h-9 w-9 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
-                <Building2 className="h-5 w-5 text-white" />
+              <div className="h-9 w-9 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
+                <img src={DEFAULT_ADMIN_LOGO} alt="القاسم" className="w-7 h-7 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).parentElement!.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>'; }} />
               </div>
               {!isCollapsed && (
                 <div className="flex items-center gap-2 min-w-0 flex-1">

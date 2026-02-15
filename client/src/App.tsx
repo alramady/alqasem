@@ -24,6 +24,7 @@ const CMSPage = lazy(() => import("./pages/CMSPage"));
 const FavoritesPage = lazy(() => import("./pages/Favorites"));
 const ComparePage = lazy(() => import("./pages/Compare"));
 const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicy"));
+const IqarLicensePage = lazy(() => import("./pages/IqarLicense"));
 const CustomerLoginPage = lazy(() => import("./pages/CustomerLogin"));
 const CustomerRegisterPage = lazy(() => import("./pages/CustomerRegister"));
 const CustomerAccountPage = lazy(() => import("./pages/CustomerAccount"));
@@ -50,6 +51,11 @@ const AdminResetPassword = lazy(() => import("./pages/admin/ResetPassword"));
 const AdminSessions = lazy(() => import("./pages/admin/Sessions"));
 const AdminActivityDashboard = lazy(() => import("./pages/admin/ActivityDashboard"));
 const AdminCitiesDistricts = lazy(() => import("./pages/admin/CitiesDistricts"));
+const AdminAgencies = lazy(() => import("./pages/admin/Agencies"));
+const AdminAgents = lazy(() => import("./pages/admin/Agents"));
+const AgenciesPage = lazy(() => import("./pages/Agencies"));
+const AgencyProfilePage = lazy(() => import("./pages/AgencyProfile"));
+const AgentProfilePage = lazy(() => import("./pages/AgentProfile"));
 
 function PageFallback() {
   return (
@@ -119,6 +125,9 @@ function Router() {
       <Route path="/privacy-policy">
         <Suspense fallback={<PageFallback />}><PrivacyPolicyPage /></Suspense>
       </Route>
+      <Route path="/iqar-license">
+        <Suspense fallback={<PageFallback />}><IqarLicensePage /></Suspense>
+      </Route>
 
       {/* Customer account routes */}
       <Route path="/login">
@@ -154,6 +163,12 @@ function Router() {
       </Route>
       <Route path="/admin/cities-districts">
         <Suspense fallback={<AdminFallback />}><AdminCitiesDistricts /></Suspense>
+      </Route>
+      <Route path="/admin/agencies">
+        <Suspense fallback={<AdminFallback />}><AdminAgencies /></Suspense>
+      </Route>
+      <Route path="/admin/agents">
+        <Suspense fallback={<AdminFallback />}><AdminAgents /></Suspense>
       </Route>
       <Route path="/admin">
         <Suspense fallback={<AdminFallback />}><AdminDashboard /></Suspense>
@@ -204,6 +219,15 @@ function Router() {
         <Suspense fallback={<AdminFallback />}><AdminProfile /></Suspense>
       </Route>
 
+      <Route path="/agencies">
+        <Suspense fallback={<PageFallback />}><AgenciesPage /></Suspense>
+      </Route>
+      <Route path="/agency/:slug">
+        <Suspense fallback={<PageFallback />}><AgencyProfilePage /></Suspense>
+      </Route>
+      <Route path="/agent/:slug">
+        <Suspense fallback={<PageFallback />}><AgentProfilePage /></Suspense>
+      </Route>
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

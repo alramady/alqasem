@@ -23,6 +23,7 @@ const emptyForm = {
   title: "", titleEn: "", description: "", descriptionEn: "", type: "villa", listingType: "sale", status: "active",
   price: "", area: "", rooms: "", bathrooms: "", city: "الرياض", cityEn: "", district: "", districtEn: "", address: "", addressEn: "", videoUrl: "",
   latitude: "", longitude: "",
+  agencyId: "", agentId: "",
 };
 
 export default function AdminProperties() {
@@ -37,6 +38,8 @@ export default function AdminProperties() {
 
   const { data: properties, refetch } = trpc.admin.listProperties.useQuery({ search, type: typeFilter, status: statusFilter });
   const { data: citiesData } = trpc.public.getCitiesWithDistricts.useQuery();
+  const { data: agenciesList = [] } = trpc.admin.listAgencies.useQuery();
+  const { data: agentsList = [] } = trpc.admin.listAgents.useQuery();
 
   const createProp = trpc.admin.createProperty.useMutation({
     onSuccess: () => { toast.success("تم إضافة العقار بنجاح"); setShowCreate(false); setForm({ ...emptyForm }); refetch(); },
@@ -76,6 +79,7 @@ export default function AdminProperties() {
       address: prop.address || "", addressEn: prop.addressEn || "",
       videoUrl: prop.videoUrl || "",
       latitude: prop.latitude?.toString() || "", longitude: prop.longitude?.toString() || "",
+      agencyId: prop.agencyId?.toString() || "", agentId: prop.agentId?.toString() || "",
     });
     setActiveEditTab("details");
   };
@@ -92,6 +96,8 @@ export default function AdminProperties() {
       address: editForm.address, addressEn: editForm.addressEn, videoUrl: editForm.videoUrl,
       latitude: editForm.latitude ? parseFloat(editForm.latitude) : undefined,
       longitude: editForm.longitude ? parseFloat(editForm.longitude) : undefined,
+      agencyId: editForm.agencyId && editForm.agencyId !== "none" ? Number(editForm.agencyId) : undefined,
+      agentId: editForm.agentId && editForm.agentId !== "none" ? Number(editForm.agentId) : undefined,
     });
   };
 
@@ -211,12 +217,34 @@ export default function AdminProperties() {
                     <Label className="text-slate-600">خط الطول (Longitude)</Label>
                     <Input type="number" step="any" value={form.longitude} onChange={(e) => setForm({...form, longitude: e.target.value})} placeholder="46.6753" dir="ltr" className="mt-1 text-left" />
                   </div>
+                  <div>
+                    <Label className="text-slate-600">المكتب العقاري</Label>
+                    <Select value={form.agencyId} onValueChange={(v) => setForm({...form, agencyId: v, agentId: ""})}>
+                      <SelectTrigger className="mt-1"><SelectValue placeholder="اختياري" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">بدون مكتب</SelectItem>
+                        {agenciesList.filter((a: any) => a.status === "active").map((a: any) => <SelectItem key={a.id} value={String(a.id)}>{a.nameAr}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-slate-600">الوكيل المسؤول</Label>
+                    <Select value={form.agentId} onValueChange={(v) => setForm({...form, agentId: v})}>
+                      <SelectTrigger className="mt-1"><SelectValue placeholder="اختياري" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">بدون وكيل</SelectItem>
+                        {agentsList.filter((a: any) => a.isActive && (!form.agencyId || form.agencyId === "none" || a.agencyId === Number(form.agencyId))).map((a: any) => <SelectItem key={a.id} value={String(a.id)}>{a.nameAr}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="md:col-span-2">
                     <Button className="w-full bg-indigo-500 text-white hover:bg-indigo-600" onClick={() => createProp.mutate({
                       ...form, price: parseFloat(form.price) || 0, area: parseFloat(form.area) || 0,
                       rooms: parseInt(form.rooms) || 0, bathrooms: parseInt(form.bathrooms) || 0,
                       latitude: form.latitude ? parseFloat(form.latitude) : undefined,
                       longitude: form.longitude ? parseFloat(form.longitude) : undefined,
+                      agencyId: form.agencyId && form.agencyId !== "none" ? Number(form.agencyId) : undefined,
+                      agentId: form.agentId && form.agentId !== "none" ? Number(form.agentId) : undefined,
                     })} disabled={createProp.isPending}>
                       {createProp.isPending ? "جاري الإضافة..." : "إضافة العقار"}
                     </Button>
@@ -452,6 +480,26 @@ export default function AdminProperties() {
                 <div>
                   <Label className="text-slate-600">خط الطول (Longitude)</Label>
                   <Input type="number" step="any" value={editForm.longitude} onChange={(e) => setEditForm({...editForm, longitude: e.target.value})} placeholder="46.6753" dir="ltr" className="mt-1 text-left" />
+                </div>
+                <div>
+                  <Label className="text-slate-600">المكتب العقاري</Label>
+                  <Select value={editForm.agencyId} onValueChange={(v) => setEditForm({...editForm, agencyId: v, agentId: ""})}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="اختياري" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">بدون مكتب</SelectItem>
+                      {agenciesList.filter((a: any) => a.status === "active").map((a: any) => <SelectItem key={a.id} value={String(a.id)}>{a.nameAr}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-slate-600">الوكيل المسؤول</Label>
+                  <Select value={editForm.agentId} onValueChange={(v) => setEditForm({...editForm, agentId: v})}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="اختياري" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">بدون وكيل</SelectItem>
+                      {agentsList.filter((a: any) => a.isActive && (!editForm.agencyId || editForm.agencyId === "none" || a.agencyId === Number(editForm.agencyId))).map((a: any) => <SelectItem key={a.id} value={String(a.id)}>{a.nameAr}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="md:col-span-2">
                   <Button className="w-full bg-indigo-500 text-white hover:bg-indigo-600" onClick={saveEdit} disabled={updateProp.isPending}>

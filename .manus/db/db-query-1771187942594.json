@@ -1,0 +1,46 @@
+{
+  "query": "SELECT id, agencyNameAr, agencySlug, agencyStatus FROM agencies; SELECT id, agentNameAr, agentSlug, agentAgencyId FROM agents;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.4e413a58b2a3 --database FCSdcQDHNngsNZkY5BfGCD --execute SELECT id, agencyNameAr, agencySlug, agencyStatus FROM agencies; SELECT id, agentNameAr, agentSlug, agentAgencyId FROM agents;",
+  "rows": [
+    {
+      "id": "1",
+      "agencyNameAr": "شركة محمد بن عبد الرحمن القاسم العقارية",
+      "agencySlug": "alqasem-real-estate",
+      "agencyStatus": "active"
+    },
+    {
+      "id": "id",
+      "agencyNameAr": "agentNameAr",
+      "agencySlug": "agentSlug",
+      "agencyStatus": "agentAgencyId"
+    },
+    {
+      "id": "1",
+      "agencyNameAr": "محمد بن عبد الرحمن القاسم",
+      "agencySlug": "mohammed-alqasem",
+      "agencyStatus": "1"
+    },
+    {
+      "id": "2",
+      "agencyNameAr": "عبد الرحمن الحربي",
+      "agencySlug": "abdulrahman-alharbi",
+      "agencyStatus": "1"
+    },
+    {
+      "id": "3",
+      "agencyNameAr": "فهد المطيري",
+      "agencySlug": "fahad-almutairi",
+      "agencyStatus": "1"
+    },
+    {
+      "id": "4",
+      "agencyNameAr": "سلطان العتيبي",
+      "agencySlug": "sultan-alotaibi",
+      "agencyStatus": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tagencyNameAr\tagencySlug\tagencyStatus\n1\tشركة محمد بن عبد الرحمن القاسم العقارية\talqasem-real-estate\tactive\nid\tagentNameAr\tagentSlug\tagentAgencyId\n1\tمحمد بن عبد الرحمن القاسم\tmohammed-alqasem\t1\n2\tعبد الرحمن الحربي\tabdulrahman-alharbi\t1\n3\tفهد المطيري\tfahad-almutairi\t1\n4\tسلطان العتيبي\tsultan-alotaibi\t1\n",
+  "stderr": "",
+  "execution_time_ms": 1756
+}

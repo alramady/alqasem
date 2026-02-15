@@ -6,9 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
-import { Save, Phone, Mail, MapPin, MessageCircle, Loader2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Save, Phone, Mail, MapPin, MessageCircle, Loader2, Image, Upload, Trash2, Palette, Globe } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
+import { DEFAULT_LOGO, DEFAULT_ADMIN_LOGO } from "@/lib/branding";
 
 export default function AdminSettings() {
   const { data: settings } = trpc.admin.getSettings.useQuery();
@@ -19,12 +20,19 @@ export default function AdminSettings() {
 
   const [contact, setContact] = useState({ phone: "", email: "", whatsapp: "", address: "" });
   const [social, setSocial] = useState({ instagram: "", twitter: "", tiktok: "", snapchat: "", linkedin: "" });
+  const [branding, setBranding] = useState({ logo: "", adminLogo: "", favicon: "", ogImage: "" });
 
   useEffect(() => {
     if (settings) {
       const s = settings as Record<string, string>;
       setContact({ phone: s.phone || "", email: s.email || "", whatsapp: s.whatsapp || "", address: s.address || "" });
       setSocial({ instagram: s.instagram || "", twitter: s.twitter || "", tiktok: s.tiktok || "", snapchat: s.snapchat || "", linkedin: s.linkedin || "" });
+      setBranding({
+        logo: s.logo || "",
+        adminLogo: s.adminLogo || "",
+        favicon: s.favicon || "",
+        ogImage: s.ogImage || "",
+      });
     }
   }, [settings]);
 
@@ -36,13 +44,79 @@ export default function AdminSettings() {
           <p className="text-slate-400 text-sm mt-0.5">إعدادات الموقع العامة</p>
         </div>
 
-        <Tabs defaultValue="contact" dir="rtl">
-          <TabsList className="bg-slate-100 p-1 rounded-xl">
+        <Tabs defaultValue="branding" dir="rtl">
+          <TabsList className="bg-slate-100 p-1 rounded-xl flex-wrap h-auto gap-1">
+            <TabsTrigger value="branding" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
+              <Palette className="w-4 h-4 ml-1.5" />الهوية البصرية
+            </TabsTrigger>
             <TabsTrigger value="contact" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">بيانات التواصل</TabsTrigger>
             <TabsTrigger value="social" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">وسائل التواصل</TabsTrigger>
             <TabsTrigger value="email" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">قوالب البريد</TabsTrigger>
           </TabsList>
 
+          {/* ===== BRANDING TAB ===== */}
+          <TabsContent value="branding" className="mt-4">
+            <Card className="border border-slate-100 shadow-sm bg-white rounded-xl">
+              <CardHeader className="border-b border-slate-100 pb-4">
+                <CardTitle className="text-base text-slate-700 flex items-center gap-2">
+                  <Palette className="w-4 h-4 text-indigo-500" />
+                  الهوية البصرية — الشعارات والأيقونات
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-8 pt-6">
+                {/* Main Logo */}
+                <BrandingField
+                  label="الشعار الرئيسي (Navbar + Footer)"
+                  hint="يظهر في شريط التنقل والفوتر. يُفضل صورة شفافة PNG بعرض 200-400px"
+                  value={branding.logo}
+                  fallback={DEFAULT_LOGO}
+                  onChange={(v) => setBranding({ ...branding, logo: v })}
+                />
+
+                {/* Admin Logo */}
+                <BrandingField
+                  label="شعار لوحة التحكم (Admin Panel)"
+                  hint="يظهر في صفحة تسجيل الدخول والشريط الجانبي. يُفضل صورة شفافة PNG"
+                  value={branding.adminLogo}
+                  fallback={DEFAULT_ADMIN_LOGO}
+                  onChange={(v) => setBranding({ ...branding, adminLogo: v })}
+                />
+
+                {/* Favicon */}
+                <BrandingField
+                  label="أيقونة المتصفح (Favicon)"
+                  hint="تظهر في تبويب المتصفح. يُفضل صورة مربعة 32x32 أو 64x64 بصيغة PNG أو ICO"
+                  value={branding.favicon}
+                  fallback=""
+                  onChange={(v) => setBranding({ ...branding, favicon: v })}
+                  small
+                />
+
+                {/* OG Image */}
+                <BrandingField
+                  label="صورة المشاركة (Open Graph)"
+                  hint="تظهر عند مشاركة الموقع على وسائل التواصل. يُفضل 1200x630px بصيغة PNG أو JPG"
+                  value={branding.ogImage}
+                  fallback=""
+                  onChange={(v) => setBranding({ ...branding, ogImage: v })}
+                  wide
+                />
+
+                <div className="pt-2 border-t border-slate-100">
+                  <Button
+                    className="bg-indigo-500 text-white hover:bg-indigo-600 rounded-lg"
+                    onClick={() => updateSettings.mutate({ group: "branding", values: branding })}
+                    disabled={updateSettings.isPending}
+                  >
+                    {updateSettings.isPending ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <Save className="w-4 h-4 ml-2" />}
+                    {updateSettings.isPending ? "جاري الحفظ..." : "حفظ الهوية البصرية"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ===== CONTACT TAB ===== */}
           <TabsContent value="contact" className="mt-4">
             <Card className="border border-slate-100 shadow-sm bg-white rounded-xl">
               <CardHeader className="border-b border-slate-100 pb-4">
@@ -82,6 +156,7 @@ export default function AdminSettings() {
             </Card>
           </TabsContent>
 
+          {/* ===== SOCIAL TAB ===== */}
           <TabsContent value="social" className="mt-4">
             <Card className="border border-slate-100 shadow-sm bg-white rounded-xl">
               <CardHeader className="border-b border-slate-100 pb-4">
@@ -125,6 +200,7 @@ export default function AdminSettings() {
             </Card>
           </TabsContent>
 
+          {/* ===== EMAIL TEMPLATES TAB ===== */}
           <TabsContent value="email" className="mt-4">
             <Card className="border border-slate-100 shadow-sm bg-white rounded-xl">
               <CardHeader className="border-b border-slate-100 pb-4">
@@ -162,5 +238,86 @@ export default function AdminSettings() {
         </Tabs>
       </div>
     </AdminLayout>
+  );
+}
+
+/** Reusable branding field with URL input + preview */
+function BrandingField({
+  label,
+  hint,
+  value,
+  fallback,
+  onChange,
+  small,
+  wide,
+}: {
+  label: string;
+  hint: string;
+  value: string;
+  fallback: string;
+  onChange: (v: string) => void;
+  small?: boolean;
+  wide?: boolean;
+}) {
+  const previewUrl = value || fallback;
+  const previewSize = small ? "w-12 h-12" : wide ? "w-64 h-32" : "w-24 h-24";
+
+  return (
+    <div className="flex flex-col md:flex-row gap-5 items-start">
+      {/* Preview */}
+      <div className={`${previewSize} rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center bg-slate-50 shrink-0 overflow-hidden`}>
+        {previewUrl ? (
+          <img
+            src={previewUrl}
+            alt={label}
+            className="max-w-full max-h-full object-contain p-1"
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = "none";
+              (e.target as HTMLImageElement).nextElementSibling?.classList.remove("hidden");
+            }}
+          />
+        ) : null}
+        <div className={`flex flex-col items-center gap-1 text-slate-300 ${previewUrl ? "hidden" : ""}`}>
+          <Image className="w-6 h-6" />
+          <span className="text-[10px]">لا يوجد</span>
+        </div>
+      </div>
+
+      {/* Input */}
+      <div className="flex-1 space-y-2 w-full">
+        <Label className="text-slate-700 font-semibold text-sm">{label}</Label>
+        <p className="text-xs text-slate-400">{hint}</p>
+        <div className="flex gap-2">
+          <Input
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            dir="ltr"
+            placeholder="https://example.com/logo.png"
+            className="border-slate-200 rounded-lg flex-1 text-sm"
+          />
+          {value && (
+            <Button
+              variant="outline"
+              size="icon"
+              className="shrink-0 text-red-400 hover:text-red-600 hover:bg-red-50 border-slate-200"
+              onClick={() => onChange("")}
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
+        {value && (
+          <p className="text-[11px] text-green-600 flex items-center gap-1">
+            <Globe className="w-3 h-3" />
+            شعار مخصص — سيتم استخدامه بدلاً من الشعار الافتراضي
+          </p>
+        )}
+        {!value && fallback && (
+          <p className="text-[11px] text-slate-400">
+            يُستخدم الشعار الافتراضي حالياً. أضف رابط صورة لاستبداله.
+          </p>
+        )}
+      </div>
+    </div>
   );
 }

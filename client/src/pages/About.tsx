@@ -2,6 +2,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
 import { Building2, Target, Eye, Award, Users, Home, TrendingUp, Shield, Loader2 } from "lucide-react";
+import { DEFAULT_LOGO } from "@/lib/branding";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSection } from "@/contexts/SiteConfigContext";
 import { trpc } from "@/lib/trpc";
@@ -141,7 +142,7 @@ export default function About() {
             </motion.div>
             <motion.div initial={{ opacity: 0, x: isAr ? -30 : 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="relative">
               <div className="aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl">
-                <img src={content?.image || "https://files.manuscdn.com/user_upload_by_module/session_file/310519663331132774/BEtRgbusNNpRjAtj.png"} alt={isAr ? "القاسم العقارية" : "Al-Qasim Real Estate"} className="w-full h-full object-contain bg-[#0f1b33] p-12" />
+                <img src={content?.image || DEFAULT_LOGO} alt={isAr ? "القاسم العقارية" : "Al-Qasim Real Estate"} className="w-full h-full object-contain bg-[#0f1b33] p-12" />
               </div>
               <div className="absolute -bottom-6 -inset-inline-start-6 w-32 h-32 bg-[#c8a45e]/10 rounded-2xl -z-10" />
               <div className="absolute -top-6 -inset-inline-end-6 w-24 h-24 bg-[#E31E24]/10 rounded-2xl -z-10" />

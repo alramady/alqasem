@@ -1,0 +1,17 @@
+{
+  "query": "SELECT id, agencyNameAr, agencySlug, agencyStatus, agencyLogo FROM agencies LIMIT 5",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.4e413a58b2a3 --database FCSdcQDHNngsNZkY5BfGCD --execute SELECT id, agencyNameAr, agencySlug, agencyStatus, agencyLogo FROM agencies LIMIT 5",
+  "rows": [
+    {
+      "id": "1",
+      "agencyNameAr": "شركة محمد بن عبد الرحمن القاسم العقارية",
+      "agencySlug": "alqasem-real-estate",
+      "agencyStatus": "active",
+      "agencyLogo": "https://files.manuscdn.com/user_upload_by_module/session_file/310519663331132774/BEtRgbusNNpRjAtj.png"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tagencyNameAr\tagencySlug\tagencyStatus\tagencyLogo\n1\tشركة محمد بن عبد الرحمن القاسم العقارية\talqasem-real-estate\tactive\thttps://files.manuscdn.com/user_upload_by_module/session_file/310519663331132774/BEtRgbusNNpRjAtj.png\n",
+  "stderr": "",
+  "execution_time_ms": 1523
+}

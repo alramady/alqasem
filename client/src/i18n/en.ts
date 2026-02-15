@@ -5,6 +5,7 @@ export const en: Record<string, string> = {
   "nav.properties": "Properties",
   "nav.projects": "Projects",
   "nav.services": "Property Management",
+  "nav.agencies": "Real Estate Offices",
   "nav.contact": "Contact Us",
   "nav.addProperty": "List Property",
   "nav.requestProperty": "Request Property",

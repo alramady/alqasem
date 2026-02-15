@@ -6,7 +6,7 @@ import { trpc } from "@/lib/trpc";
 import { useState } from "react";
 import { toast } from "sonner";
 
-const DEFAULT_LOGO = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663331132774/BEtRgbusNNpRjAtj.png";
+import { DEFAULT_LOGO } from "@/lib/branding";
 
 // Map known CMS slugs to existing static routes
 const STATIC_ROUTE_MAP: Record<string, string> = {
@@ -215,6 +215,10 @@ export default function Footer() {
             </p>
             <Link href="/privacy-policy" className="text-white/40 hover:text-[#c8a45e] text-sm transition-colors">
               {isAr ? "سياسة الخصوصية" : "Privacy Policy"}
+            </Link>
+            <span className="text-white/20">|</span>
+            <Link href="/iqar-license" className="text-white/40 hover:text-[#c8a45e] text-sm transition-colors">
+              {isAr ? "التراخيص والاعتمادات" : "Licenses"}
             </Link>
           </div>
           <button onClick={scrollToTop} className="w-10 h-10 bg-[#c8a45e]/20 hover:bg-[#c8a45e] text-[#c8a45e] hover:text-[#0f1b33] rounded-lg flex items-center justify-center transition-all">

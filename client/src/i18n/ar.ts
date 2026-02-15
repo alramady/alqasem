@@ -5,6 +5,7 @@ export const ar: Record<string, string> = {
   "nav.properties": "العقارات",
   "nav.projects": "المشاريع",
   "nav.services": "إدارة الأملاك",
+  "nav.agencies": "المكاتب العقارية",
   "nav.contact": "تواصل معنا",
   "nav.addProperty": "أضف عقارك",
   "nav.requestProperty": "أطلب عقارك",

@@ -1,0 +1,31 @@
+{
+  "query": "SHOW TABLES LIKE 'agencies'; SHOW TABLES LIKE 'agents'; SELECT COUNT(*) as cnt FROM agencies; SELECT COUNT(*) as cnt FROM agents;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.4e413a58b2a3 --database FCSdcQDHNngsNZkY5BfGCD --execute SHOW TABLES LIKE 'agencies'; SHOW TABLES LIKE 'agents'; SELECT COUNT(*) as cnt FROM agencies; SELECT COUNT(*) as cnt FROM agents;",
+  "rows": [
+    {
+      "Tables_in_FCSdcQDHNngsNZkY5BfGCD (agencies)": "agencies"
+    },
+    {
+      "Tables_in_FCSdcQDHNngsNZkY5BfGCD (agencies)": "Tables_in_FCSdcQDHNngsNZkY5BfGCD (agents)"
+    },
+    {
+      "Tables_in_FCSdcQDHNngsNZkY5BfGCD (agencies)": "agents"
+    },
+    {
+      "Tables_in_FCSdcQDHNngsNZkY5BfGCD (agencies)": "cnt"
+    },
+    {
+      "Tables_in_FCSdcQDHNngsNZkY5BfGCD (agencies)": "1"
+    },
+    {
+      "Tables_in_FCSdcQDHNngsNZkY5BfGCD (agencies)": "cnt"
+    },
+    {
+      "Tables_in_FCSdcQDHNngsNZkY5BfGCD (agencies)": "4"
+    }
+  ],
+  "messages": [],
+  "stdout": "Tables_in_FCSdcQDHNngsNZkY5BfGCD (agencies)\nagencies\nTables_in_FCSdcQDHNngsNZkY5BfGCD (agents)\nagents\ncnt\n1\ncnt\n4\n",
+  "stderr": "",
+  "execution_time_ms": 2306
+}

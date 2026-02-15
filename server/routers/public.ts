@@ -3,7 +3,7 @@ import { getDb } from "../db";
 import { sanitizeText } from "../sanitize";
 import { sendEmail } from "../email";
 import { notifyOwner } from "../_core/notification";
-import { inquiries, properties, projects, notifications, users, auditLogs, settings, homepageSections, pages, newsletterSubscribers, propertyViews, cities, districts, amenities, propertyAmenities } from "../../drizzle/schema";
+import { inquiries, properties, projects, notifications, users, auditLogs, settings, homepageSections, pages, newsletterSubscribers, propertyViews, cities, districts, amenities, propertyAmenities, agencies, agents } from "../../drizzle/schema";
 import { eq, desc, asc, and, isNull, like, or, gte, lte, sql, count, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
@@ -912,5 +912,129 @@ export const publicRouter = router({
       totalProperties: propCount?.count || 0,
       totalProjects: projCount?.count || 0,
     };
+  }),
+
+  // ============ AGENCIES & AGENTS (PUBLIC) ============
+  getAgencies: publicProcedure.input(z.object({
+    search: z.string().optional(),
+    city: z.string().optional(),
+    featured: z.boolean().optional(),
+  }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return [];
+    const conditions: any[] = [eq(agencies.status, "active")];
+    if (input?.search) {
+      conditions.push(or(
+        like(agencies.nameAr, `%${input.search}%`),
+        like(agencies.nameEn, `%${input.search}%`),
+      ));
+    }
+    if (input?.city) {
+      conditions.push(or(eq(agencies.city, input.city), eq(agencies.cityEn, input.city)));
+    }
+    if (input?.featured) {
+      conditions.push(eq(agencies.isFeatured, true));
+    }
+    const result = await db.select().from(agencies)
+      .where(and(...conditions))
+      .orderBy(desc(agencies.isFeatured), agencies.sortOrder, agencies.nameAr);
+    const agencyIds = result.map(a => a.id);
+    const agentCounts = agencyIds.length > 0
+      ? await db.select({ agencyId: agents.agencyId, count: count() }).from(agents).where(and(inArray(agents.agencyId, agencyIds), eq(agents.isActive, true))).groupBy(agents.agencyId)
+      : [];
+    const propCounts = agencyIds.length > 0
+      ? await db.select({ agencyId: properties.agencyId, count: count() }).from(properties).where(and(inArray(properties.agencyId, agencyIds), isNull(properties.deletedAt), eq(properties.status, "active"))).groupBy(properties.agencyId)
+      : [];
+    const agentMap = Object.fromEntries(agentCounts.map(r => [r.agencyId, r.count]));
+    const propMap = Object.fromEntries(propCounts.map(r => [r.agencyId!, r.count]));
+    return result.map(a => ({ ...a, agentCount: agentMap[a.id] || 0, propertyCount: propMap[a.id] || 0 }));
+  }),
+
+  getAgencyProfile: publicProcedure.input(z.object({
+    slug: z.string(),
+  })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const [agency] = await db.select().from(agencies)
+      .where(and(eq(agencies.slug, input.slug), eq(agencies.status, "active")));
+    if (!agency) throw new TRPCError({ code: "NOT_FOUND", message: "\u0627\u0644\u0645\u0643\u062a\u0628 \u063a\u064a\u0631 \u0645\u0648\u062c\u0648\u062f" });
+    const agencyAgents = await db.select().from(agents)
+      .where(and(eq(agents.agencyId, agency.id), eq(agents.isActive, true)))
+      .orderBy(agents.sortOrder, agents.nameAr);
+    const agencyProperties = await db.select().from(properties)
+      .where(and(eq(properties.agencyId, agency.id), isNull(properties.deletedAt), eq(properties.status, "active")))
+      .orderBy(desc(properties.createdAt))
+      .limit(20);
+    const [[propCount]] = await Promise.all([
+      db.select({ count: count() }).from(properties).where(and(eq(properties.agencyId, agency.id), isNull(properties.deletedAt), eq(properties.status, "active"))),
+    ]);
+    return {
+      agency,
+      agents: agencyAgents,
+      properties: agencyProperties,
+      totalProperties: propCount?.count || 0,
+    };
+  }),
+
+  getAgentProfile: publicProcedure.input(z.object({
+    slug: z.string(),
+  })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const [result] = await db.select({
+      agent: agents,
+      agencyNameAr: agencies.nameAr,
+      agencyNameEn: agencies.nameEn,
+      agencySlug: agencies.slug,
+      agencyLogo: agencies.logo,
+      agencyPhone: agencies.phone,
+      agencyCity: agencies.city,
+      agencyCityEn: agencies.cityEn,
+    }).from(agents)
+      .leftJoin(agencies, eq(agents.agencyId, agencies.id))
+      .where(and(eq(agents.slug, input.slug), eq(agents.isActive, true)));
+    if (!result) throw new TRPCError({ code: "NOT_FOUND", message: "\u0627\u0644\u0648\u0643\u064a\u0644 \u063a\u064a\u0631 \u0645\u0648\u062c\u0648\u062f" });
+    const agentProperties = await db.select().from(properties)
+      .where(and(eq(properties.agentId, result.agent.id), isNull(properties.deletedAt), eq(properties.status, "active")))
+      .orderBy(desc(properties.createdAt))
+      .limit(20);
+    const [[propCount]] = await Promise.all([
+      db.select({ count: count() }).from(properties).where(and(eq(properties.agentId, result.agent.id), isNull(properties.deletedAt), eq(properties.status, "active"))),
+    ]);
+    return {
+      agent: result.agent,
+      agency: {
+        nameAr: result.agencyNameAr,
+        nameEn: result.agencyNameEn,
+        slug: result.agencySlug,
+        logo: result.agencyLogo,
+        phone: result.agencyPhone,
+        city: result.agencyCity,
+        cityEn: result.agencyCityEn,
+      },
+      properties: agentProperties,
+      totalProperties: propCount?.count || 0,
+    };
+  }),
+
+  getPropertyAgencyAgent: publicProcedure.input(z.object({
+    propertyId: z.number(),
+  })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return null;
+    const [prop] = await db.select({ agencyId: properties.agencyId, agentId: properties.agentId })
+      .from(properties).where(eq(properties.id, input.propertyId));
+    if (!prop || (!prop.agencyId && !prop.agentId)) return null;
+    let agency = null;
+    let agent = null;
+    if (prop.agencyId) {
+      const [a] = await db.select().from(agencies).where(and(eq(agencies.id, prop.agencyId), eq(agencies.status, "active")));
+      agency = a || null;
+    }
+    if (prop.agentId) {
+      const [a] = await db.select().from(agents).where(and(eq(agents.id, prop.agentId), eq(agents.isActive, true)));
+      agent = a || null;
+    }
+    return { agency, agent };
   }),
 });

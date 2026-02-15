@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
-import { Building2, Eye, EyeOff, Loader2, Lock, User, AlertCircle, ShieldCheck, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, Loader2, Lock, User, AlertCircle, ShieldCheck, ArrowRight } from "lucide-react";
+import { DEFAULT_ADMIN_LOGO } from "@/lib/branding";
 import { useEffect, useState, useRef } from "react";
 import { useLocation } from "wouter";
 
@@ -104,7 +105,7 @@ export default function AdminLogin() {
             {show2FA ? (
               <ShieldCheck className="w-12 h-12 text-[#c8a45e]" />
             ) : (
-              <Building2 className="w-12 h-12 text-[#c8a45e]" />
+              <img src={DEFAULT_ADMIN_LOGO} alt="القاسم العقارية" className="w-16 h-16 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
             )}
           </div>
           <div className="text-center">

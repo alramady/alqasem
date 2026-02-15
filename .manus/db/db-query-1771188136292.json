@@ -1,0 +1,26 @@
+{
+  "query": "SHOW COLUMNS FROM properties WHERE Field IN ('agencyId', 'agentId')",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.4e413a58b2a3 --database FCSdcQDHNngsNZkY5BfGCD --execute SHOW COLUMNS FROM properties WHERE Field IN ('agencyId', 'agentId')",
+  "rows": [
+    {
+      "Field": "agencyId",
+      "Type": "int(11)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "agentId",
+      "Type": "int(11)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    }
+  ],
+  "messages": [],
+  "stdout": "Field\tType\tNull\tKey\tDefault\tExtra\nagencyId\tint(11)\tYES\t\tNULL\t\nagentId\tint(11)\tYES\t\tNULL\t\n",
+  "stderr": "",
+  "execution_time_ms": 1550
+}

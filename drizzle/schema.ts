@@ -85,6 +85,8 @@ export const properties = mysqlTable("properties", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   deletedAt: timestamp("deletedAt"),
+  agencyId: int("agencyId"),
+  agentId: int("agentId"),
 });
 export type Property = typeof properties.$inferSelect;
 export type InsertProperty = typeof properties.$inferInsert;
@@ -499,3 +501,70 @@ export const customerSessions = mysqlTable("customer_sessions", {
 });
 export type CustomerSession = typeof customerSessions.$inferSelect;
 export type InsertCustomerSession = typeof customerSessions.$inferInsert;
+
+/**
+ * Real estate agencies (مكاتب عقارية).
+ * External offices that can list properties on the platform.
+ */
+export const agencies = mysqlTable("agencies", {
+  id: int("id").autoincrement().primaryKey(),
+  nameAr: varchar("agencyNameAr", { length: 300 }).notNull(),
+  nameEn: varchar("agencyNameEn", { length: 300 }),
+  slug: varchar("agencySlug", { length: 300 }).notNull().unique(),
+  logo: varchar("agencyLogo", { length: 1000 }),
+  coverImage: varchar("agencyCoverImage", { length: 1000 }),
+  phone: varchar("agencyPhone", { length: 30 }),
+  email: varchar("agencyEmail", { length: 320 }),
+  whatsapp: varchar("agencyWhatsapp", { length: 30 }),
+  website: varchar("agencyWebsite", { length: 500 }),
+  licenseNumber: varchar("agencyLicenseNumber", { length: 100 }),
+  descriptionAr: text("agencyDescriptionAr"),
+  descriptionEn: text("agencyDescriptionEn"),
+  city: varchar("agencyCity", { length: 200 }),
+  cityEn: varchar("agencyCityEn", { length: 200 }),
+  district: varchar("agencyDistrict", { length: 200 }),
+  districtEn: varchar("agencyDistrictEn", { length: 200 }),
+  address: text("agencyAddress"),
+  addressEn: text("agencyAddressEn"),
+  instagram: varchar("agencyInstagram", { length: 500 }),
+  twitter: varchar("agencyTwitter", { length: 500 }),
+  tiktok: varchar("agencyTiktok", { length: 500 }),
+  snapchat: varchar("agencySnapchat", { length: 500 }),
+  linkedin: varchar("agencyLinkedin", { length: 500 }),
+  status: mysqlEnum("agencyStatus", ["active", "inactive", "pending"]).default("pending").notNull(),
+  isFeatured: boolean("agencyIsFeatured").default(false).notNull(),
+  sortOrder: int("agencySortOrder").default(0).notNull(),
+  createdAt: timestamp("agencyCreatedAt").defaultNow().notNull(),
+  updatedAt: timestamp("agencyUpdatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type Agency = typeof agencies.$inferSelect;
+export type InsertAgency = typeof agencies.$inferInsert;
+
+/**
+ * Real estate agents (وكلاء عقاريون).
+ * Individual agents belonging to an agency.
+ */
+export const agents = mysqlTable("agents", {
+  id: int("id").autoincrement().primaryKey(),
+  agencyId: int("agentAgencyId").notNull(),
+  nameAr: varchar("agentNameAr", { length: 300 }).notNull(),
+  nameEn: varchar("agentNameEn", { length: 300 }),
+  slug: varchar("agentSlug", { length: 300 }).notNull().unique(),
+  photo: varchar("agentPhoto", { length: 1000 }),
+  phone: varchar("agentPhone", { length: 30 }),
+  email: varchar("agentEmail", { length: 320 }),
+  whatsapp: varchar("agentWhatsapp", { length: 30 }),
+  titleAr: varchar("agentTitleAr", { length: 200 }),
+  titleEn: varchar("agentTitleEn", { length: 200 }),
+  bioAr: text("agentBioAr"),
+  bioEn: text("agentBioEn"),
+  yearsExperience: int("agentYearsExperience"),
+  specialties: json("agentSpecialties"),
+  languages: json("agentLanguages"),
+  isActive: boolean("agentIsActive").default(true).notNull(),
+  sortOrder: int("agentSortOrder").default(0).notNull(),
+  createdAt: timestamp("agentCreatedAt").defaultNow().notNull(),
+  updatedAt: timestamp("agentUpdatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type Agent = typeof agents.$inferSelect;
+export type InsertAgent = typeof agents.$inferInsert;

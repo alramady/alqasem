@@ -39,6 +39,12 @@ export default function PropertyDetail({ id }: { id: string }) {
   const isFav = isFavorite(propertyId);
   const toggleFav = () => toggleFavorite(propertyId);
 
+  // Agency/Agent info for this property
+  const { data: agencyAgent } = trpc.public.getPropertyAgencyAgent.useQuery(
+    { propertyId },
+    { enabled: !isNaN(propertyId) && propertyId > 0 }
+  );
+
   // Track view
   const trackView = trpc.public.trackPropertyView.useMutation();
   useEffect(() => {
@@ -332,16 +338,54 @@ export default function PropertyDetail({ id }: { id: string }) {
           {/* Sidebar */}
           <div className="space-y-6">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="bg-white rounded-2xl p-6 shadow-sm sticky top-28 print:static">
-              <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-100">
-                <div className="w-14 h-14 bg-[#0f1b33] rounded-xl flex items-center justify-center"><Building2 className="w-7 h-7 text-[#c8a45e]" /></div>
-                <div>
-                  <h4 className="font-bold text-[#0f1b33]">{isAr ? "القاسم العقارية" : "Al-Qasim Real Estate"}</h4>
-                  <div className="flex items-center gap-1 text-xs text-green-600"><Shield className="w-3 h-3" /><span>{isAr ? "معلن معتمد" : "Verified Agent"}</span></div>
+              {/* Agency/Agent Card */}
+              {agencyAgent?.agency ? (
+                <div className="mb-4 pb-4 border-b border-gray-100">
+                  <Link href={`/agency/${agencyAgent.agency.slug}`}>
+                    <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity">
+                      <div className="w-14 h-14 rounded-xl border-2 border-slate-100 overflow-hidden flex items-center justify-center bg-white shrink-0">
+                        {agencyAgent.agency.logo ? (
+                          <img src={agencyAgent.agency.logo} alt={agencyAgent.agency.nameAr} className="w-full h-full object-contain p-1" />
+                        ) : (
+                          <Building2 className="w-7 h-7 text-[#c8a45e]" />
+                        )}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-[#0f1b33]">{isAr ? agencyAgent.agency.nameAr : (agencyAgent.agency.nameEn || agencyAgent.agency.nameAr)}</h4>
+                        <div className="flex items-center gap-1 text-xs text-green-600"><Shield className="w-3 h-3" /><span>{isAr ? "مكتب معتمد" : "Verified Office"}</span></div>
+                      </div>
+                    </div>
+                  </Link>
+                  {agencyAgent?.agent && (
+                    <Link href={`/agent/${agencyAgent.agent.slug}`}>
+                      <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-50 cursor-pointer hover:opacity-80 transition-opacity">
+                        <div className="w-10 h-10 rounded-full border-2 border-slate-100 overflow-hidden flex items-center justify-center bg-slate-50 shrink-0">
+                          {agencyAgent.agent.photo ? (
+                            <img src={agencyAgent.agent.photo} alt={agencyAgent.agent.nameAr} className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-sm font-bold text-slate-300">{agencyAgent.agent.nameAr?.charAt(0)}</span>
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-sm text-[#0f1b33]">{isAr ? agencyAgent.agent.nameAr : (agencyAgent.agent.nameEn || agencyAgent.agent.nameAr)}</p>
+                          {agencyAgent.agent.titleAr && <p className="text-xs text-slate-500">{isAr ? agencyAgent.agent.titleAr : (agencyAgent.agent.titleEn || agencyAgent.agent.titleAr)}</p>}
+                        </div>
+                      </div>
+                    </Link>
+                  )}
                 </div>
-              </div>
+              ) : (
+                <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-100">
+                  <div className="w-14 h-14 bg-[#0f1b33] rounded-xl flex items-center justify-center"><Building2 className="w-7 h-7 text-[#c8a45e]" /></div>
+                  <div>
+                    <h4 className="font-bold text-[#0f1b33]">{isAr ? "القاسم العقارية" : "Al-Qasim Real Estate"}</h4>
+                    <div className="flex items-center gap-1 text-xs text-green-600"><Shield className="w-3 h-3" /><span>{isAr ? "معلن معتمد" : "Verified Agent"}</span></div>
+                  </div>
+                </div>
+              )}
               <div className="space-y-3 mb-6 print:hidden">
-                <a href="tel:920001911" className="w-full flex items-center justify-center gap-2 bg-[#E31E24] hover:bg-[#c91a1f] text-white font-semibold py-3 rounded-lg transition-colors"><Phone className="w-4 h-4" />{t("propertyDetail.callNow")}</a>
-                <a href="https://wa.me/966500051679" target="_blank" rel="noopener noreferrer" className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg transition-colors"><MessageCircle className="w-4 h-4" />{t("propertyDetail.whatsapp")}</a>
+                <a href={agencyAgent?.agent?.phone ? `tel:${agencyAgent.agent.phone}` : (agencyAgent?.agency?.phone ? `tel:${agencyAgent.agency.phone}` : "tel:920001911")} className="w-full flex items-center justify-center gap-2 bg-[#E31E24] hover:bg-[#c91a1f] text-white font-semibold py-3 rounded-lg transition-colors"><Phone className="w-4 h-4" />{t("propertyDetail.callNow")}</a>
+                <a href={agencyAgent?.agent?.whatsapp ? `https://wa.me/${agencyAgent.agent.whatsapp}` : "https://wa.me/966500051679"} target="_blank" rel="noopener noreferrer" className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg transition-colors"><MessageCircle className="w-4 h-4" />{t("propertyDetail.whatsapp")}</a>
               </div>
               <div className="border-t border-gray-100 pt-5 print:hidden">
                 <h4 className="font-bold text-[#0f1b33] mb-3 text-sm">{isAr ? "أرسل استفسارك" : "Send Your Inquiry"}</h4>

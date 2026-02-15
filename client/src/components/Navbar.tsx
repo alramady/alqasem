@@ -7,7 +7,7 @@ import { useSiteConfig } from "@/contexts/SiteConfigContext";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
 
-const DEFAULT_LOGO = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663331132774/BEtRgbusNNpRjAtj.png";
+import { DEFAULT_LOGO } from "@/lib/branding";
 
 export default function Navbar() {
   const { t, lang, toggleLang, isAr } = useLanguage();
@@ -40,6 +40,7 @@ export default function Navbar() {
       ]
     },
     { href: "/projects", label: t("nav.projects") },
+    { href: "/agencies", label: t("nav.agencies") },
     { href: "/services", label: t("nav.services") },
     { href: "/contact", label: t("nav.contact") },
   ];

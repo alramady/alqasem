@@ -9,6 +9,7 @@ import {
   homepageSections, settings, auditLogs, notifications, messages, permissions, guides,
   passwordResetTokens, userSessions, activityLogs, cities, districts,
   amenities, propertyAmenities,
+  agencies, agents,
 } from "../../drizzle/schema";
 import crypto from "crypto";
 import { sendPasswordResetEmail } from "../email";
@@ -573,6 +574,8 @@ export const adminRouter = router({
     floor: z.number().int().optional(), direction: z.string().optional(),
     furnishing: z.string().optional(), buildingAge: z.number().int().optional(),
     amenityIds: z.array(z.number()).optional(),
+    agencyId: z.number().nullable().optional(),
+    agentId: z.number().nullable().optional(),
   })).mutation(async ({ input, ctx }) => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
@@ -594,6 +597,8 @@ export const adminRouter = router({
       images: input.images || null, features: input.features || null,
       floor: input.floor ?? null, direction: (input.direction || null) as any,
       furnishing: (input.furnishing || null) as any, buildingAge: input.buildingAge ?? null,
+      agencyId: input.agencyId ?? null,
+      agentId: input.agentId ?? null,
       createdBy: ctx.user.id,
     });
     // Set amenities if provided
@@ -623,6 +628,8 @@ export const adminRouter = router({
     floor: z.number().int().nullable().optional(), direction: z.string().nullable().optional(),
     furnishing: z.string().nullable().optional(), buildingAge: z.number().int().nullable().optional(),
     amenityIds: z.array(z.number()).optional(),
+    agencyId: z.number().nullable().optional(),
+    agentId: z.number().nullable().optional(),
   })).mutation(async ({ input, ctx }) => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
@@ -654,6 +661,8 @@ export const adminRouter = router({
     if (input.direction !== undefined) updateData.direction = input.direction;
     if (input.furnishing !== undefined) updateData.furnishing = input.furnishing;
     if (input.buildingAge !== undefined) updateData.buildingAge = input.buildingAge;
+    if (input.agencyId !== undefined) updateData.agencyId = input.agencyId;
+    if (input.agentId !== undefined) updateData.agentId = input.agentId;
     await db.update(properties).set(updateData).where(eq(properties.id, input.id));
     // Update amenities if provided
     if (input.amenityIds !== undefined) {
@@ -2058,5 +2067,329 @@ export const adminRouter = router({
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
     const result = await db.select({ amenityId: propertyAmenities.amenityId }).from(propertyAmenities).where(eq(propertyAmenities.propertyId, input.propertyId));
     return result.map(r => r.amenityId);
+  }),
+
+  // ============ AGENCIES (مكاتب عقارية) ============
+  listAgencies: protectedProcedure.input(z.object({
+    search: z.string().optional(),
+    status: z.string().optional(),
+  }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return [];
+    const conditions: any[] = [];
+    if (input?.search) {
+      conditions.push(or(
+        like(agencies.nameAr, `%${input.search}%`),
+        like(agencies.nameEn, `%${input.search}%`),
+        like(agencies.licenseNumber, `%${input.search}%`),
+      ));
+    }
+    if (input?.status) {
+      conditions.push(eq(agencies.status, input.status as any));
+    }
+    const result = await db.select().from(agencies)
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(desc(agencies.createdAt));
+    // Attach agent count and property count
+    const agencyIds = result.map(a => a.id);
+    const agentCounts = agencyIds.length > 0
+      ? await db.select({ agencyId: agents.agencyId, count: count() }).from(agents).where(inArray(agents.agencyId, agencyIds)).groupBy(agents.agencyId)
+      : [];
+    const propCounts = agencyIds.length > 0
+      ? await db.select({ agencyId: properties.agencyId, count: count() }).from(properties).where(and(inArray(properties.agencyId, agencyIds), isNull(properties.deletedAt))).groupBy(properties.agencyId)
+      : [];
+    const agentMap = Object.fromEntries(agentCounts.map(r => [r.agencyId, r.count]));
+    const propMap = Object.fromEntries(propCounts.map(r => [r.agencyId!, r.count]));
+    return result.map(a => ({ ...a, agentCount: agentMap[a.id] || 0, propertyCount: propMap[a.id] || 0 }));
+  }),
+
+  getAgency: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const [agency] = await db.select().from(agencies).where(eq(agencies.id, input.id));
+    if (!agency) throw new TRPCError({ code: "NOT_FOUND", message: "المكتب غير موجود" });
+    return agency;
+  }),
+
+  createAgency: protectedProcedure.input(z.object({
+    nameAr: z.string().min(1), nameEn: z.string().optional(),
+    logo: z.string().optional(), coverImage: z.string().optional(),
+    phone: z.string().optional(), email: z.string().optional(), whatsapp: z.string().optional(),
+    website: z.string().optional(), licenseNumber: z.string().optional(),
+    descriptionAr: z.string().optional(), descriptionEn: z.string().optional(),
+    city: z.string().optional(), cityEn: z.string().optional(),
+    district: z.string().optional(), districtEn: z.string().optional(),
+    address: z.string().optional(), addressEn: z.string().optional(),
+    instagram: z.string().optional(), twitter: z.string().optional(),
+    tiktok: z.string().optional(), snapchat: z.string().optional(), linkedin: z.string().optional(),
+    status: z.string().optional(), isFeatured: z.boolean().optional(),
+  })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const s = sanitizeObject(input, ["descriptionAr", "descriptionEn"]);
+    // Generate slug from nameEn or nameAr
+    const baseName = (s.nameEn || s.nameAr).toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]+/g, "-").replace(/^-|-$/g, "");
+    const slug = `${baseName}-${nanoid(6)}`;
+    await db.insert(agencies).values({
+      nameAr: s.nameAr, nameEn: s.nameEn || null, slug,
+      logo: s.logo || null, coverImage: s.coverImage || null,
+      phone: s.phone || null, email: s.email || null, whatsapp: s.whatsapp || null,
+      website: s.website || null, licenseNumber: s.licenseNumber || null,
+      descriptionAr: s.descriptionAr || null, descriptionEn: s.descriptionEn || null,
+      city: s.city || null, cityEn: s.cityEn || null,
+      district: s.district || null, districtEn: s.districtEn || null,
+      address: s.address || null, addressEn: s.addressEn || null,
+      instagram: s.instagram || null, twitter: s.twitter || null,
+      tiktok: s.tiktok || null, snapchat: s.snapchat || null, linkedin: s.linkedin || null,
+      status: (s.status || "pending") as any,
+      isFeatured: input.isFeatured ?? false,
+    });
+    await logAudit(ctx.user.id, ctx.user.name || null, "create", "agency", null, { name: s.nameAr });
+    await logActivity(ctx.user.id, ctx.user.name || ctx.user.username, "create_agency", "system", `إضافة مكتب عقاري: ${s.nameAr}`, "agency", undefined, { name: s.nameAr });
+    return { success: true };
+  }),
+
+  updateAgency: protectedProcedure.input(z.object({
+    id: z.number(),
+    nameAr: z.string().optional(), nameEn: z.string().optional(),
+    logo: z.string().nullable().optional(), coverImage: z.string().nullable().optional(),
+    phone: z.string().optional(), email: z.string().optional(), whatsapp: z.string().optional(),
+    website: z.string().optional(), licenseNumber: z.string().optional(),
+    descriptionAr: z.string().optional(), descriptionEn: z.string().optional(),
+    city: z.string().optional(), cityEn: z.string().optional(),
+    district: z.string().optional(), districtEn: z.string().optional(),
+    address: z.string().optional(), addressEn: z.string().optional(),
+    instagram: z.string().optional(), twitter: z.string().optional(),
+    tiktok: z.string().optional(), snapchat: z.string().optional(), linkedin: z.string().optional(),
+    status: z.string().optional(), isFeatured: z.boolean().optional(),
+  })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const s = sanitizeObject(input, ["descriptionAr", "descriptionEn"]);
+    const updateData: any = {};
+    if (s.nameAr !== undefined) updateData.nameAr = s.nameAr;
+    if (s.nameEn !== undefined) updateData.nameEn = s.nameEn;
+    if (s.logo !== undefined) updateData.logo = s.logo;
+    if (s.coverImage !== undefined) updateData.coverImage = s.coverImage;
+    if (s.phone !== undefined) updateData.phone = s.phone;
+    if (s.email !== undefined) updateData.email = s.email;
+    if (s.whatsapp !== undefined) updateData.whatsapp = s.whatsapp;
+    if (s.website !== undefined) updateData.website = s.website;
+    if (s.licenseNumber !== undefined) updateData.licenseNumber = s.licenseNumber;
+    if (s.descriptionAr !== undefined) updateData.descriptionAr = s.descriptionAr;
+    if (s.descriptionEn !== undefined) updateData.descriptionEn = s.descriptionEn;
+    if (s.city !== undefined) updateData.city = s.city;
+    if (s.cityEn !== undefined) updateData.cityEn = s.cityEn;
+    if (s.district !== undefined) updateData.district = s.district;
+    if (s.districtEn !== undefined) updateData.districtEn = s.districtEn;
+    if (s.address !== undefined) updateData.address = s.address;
+    if (s.addressEn !== undefined) updateData.addressEn = s.addressEn;
+    if (s.instagram !== undefined) updateData.instagram = s.instagram;
+    if (s.twitter !== undefined) updateData.twitter = s.twitter;
+    if (s.tiktok !== undefined) updateData.tiktok = s.tiktok;
+    if (s.snapchat !== undefined) updateData.snapchat = s.snapchat;
+    if (s.linkedin !== undefined) updateData.linkedin = s.linkedin;
+    if (input.status !== undefined) updateData.status = input.status;
+    if (input.isFeatured !== undefined) updateData.isFeatured = input.isFeatured;
+    await db.update(agencies).set(updateData).where(eq(agencies.id, input.id));
+    await logAudit(ctx.user.id, ctx.user.name || null, "update", "agency", input.id, { changes: Object.keys(updateData) });
+    await logActivity(ctx.user.id, ctx.user.name || ctx.user.username, "update_agency", "system", `تعديل مكتب عقاري #${input.id}`, "agency", input.id, { changes: Object.keys(updateData) });
+    return { success: true };
+  }),
+
+  deleteAgency: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    // Check if agency has agents
+    const agentList = await db.select({ id: agents.id }).from(agents).where(eq(agents.agencyId, input.id));
+    if (agentList.length > 0) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "لا يمكن حذف المكتب لأنه يحتوي على وكلاء. احذف الوكلاء أولاً." });
+    }
+    // Unlink properties
+    await db.update(properties).set({ agencyId: null }).where(eq(properties.agencyId, input.id));
+    await db.delete(agencies).where(eq(agencies.id, input.id));
+    await logAudit(ctx.user.id, ctx.user.name || null, "delete", "agency", input.id, {});
+    await logActivity(ctx.user.id, ctx.user.name || ctx.user.username, "delete_agency", "system", `حذف مكتب عقاري #${input.id}`, "agency", input.id);
+    return { success: true };
+  }),
+
+  toggleAgencyStatus: protectedProcedure.input(z.object({
+    id: z.number(), status: z.enum(["active", "inactive", "pending"]),
+  })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    await db.update(agencies).set({ status: input.status }).where(eq(agencies.id, input.id));
+    await logActivity(ctx.user.id, ctx.user.name || ctx.user.username, "toggle_agency_status", "system", `تغيير حالة مكتب #${input.id} إلى ${input.status}`, "agency", input.id);
+    return { success: true };
+  }),
+
+  // ============ AGENTS (وكلاء عقاريون) ============
+  listAgents: protectedProcedure.input(z.object({
+    search: z.string().optional(),
+    agencyId: z.number().optional(),
+  }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return [];
+    const conditions: any[] = [];
+    if (input?.search) {
+      conditions.push(or(
+        like(agents.nameAr, `%${input.search}%`),
+        like(agents.nameEn, `%${input.search}%`),
+      ));
+    }
+    if (input?.agencyId) {
+      conditions.push(eq(agents.agencyId, input.agencyId));
+    }
+    const result = await db.select({
+      agent: agents,
+      agencyNameAr: agencies.nameAr,
+      agencyNameEn: agencies.nameEn,
+      agencyLogo: agencies.logo,
+    }).from(agents)
+      .leftJoin(agencies, eq(agents.agencyId, agencies.id))
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(desc(agents.createdAt));
+    // Get property counts per agent
+    const agentIds = result.map(r => r.agent.id);
+    const propCounts = agentIds.length > 0
+      ? await db.select({ agentId: properties.agentId, count: count() }).from(properties).where(and(inArray(properties.agentId, agentIds), isNull(properties.deletedAt))).groupBy(properties.agentId)
+      : [];
+    const propMap = Object.fromEntries(propCounts.map(r => [r.agentId!, r.count]));
+    return result.map(r => ({
+      ...r.agent,
+      agencyNameAr: r.agencyNameAr,
+      agencyNameEn: r.agencyNameEn,
+      agencyLogo: r.agencyLogo,
+      propertyCount: propMap[r.agent.id] || 0,
+    }));
+  }),
+
+  getAgent: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const [result] = await db.select({
+      agent: agents,
+      agencyNameAr: agencies.nameAr,
+      agencyNameEn: agencies.nameEn,
+    }).from(agents)
+      .leftJoin(agencies, eq(agents.agencyId, agencies.id))
+      .where(eq(agents.id, input.id));
+    if (!result) throw new TRPCError({ code: "NOT_FOUND", message: "الوكيل غير موجود" });
+    return { ...result.agent, agencyNameAr: result.agencyNameAr, agencyNameEn: result.agencyNameEn };
+  }),
+
+  createAgent: protectedProcedure.input(z.object({
+    agencyId: z.number(),
+    nameAr: z.string().min(1), nameEn: z.string().optional(),
+    photo: z.string().optional(), phone: z.string().optional(), email: z.string().optional(), whatsapp: z.string().optional(),
+    titleAr: z.string().optional(), titleEn: z.string().optional(),
+    bioAr: z.string().optional(), bioEn: z.string().optional(),
+    yearsExperience: z.number().optional(),
+    specialties: z.array(z.string()).optional(),
+    languages: z.array(z.string()).optional(),
+    isActive: z.boolean().optional(),
+  })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    // Verify agency exists
+    const [agency] = await db.select({ id: agencies.id }).from(agencies).where(eq(agencies.id, input.agencyId));
+    if (!agency) throw new TRPCError({ code: "NOT_FOUND", message: "المكتب العقاري غير موجود" });
+    const s = sanitizeObject(input, ["bioAr", "bioEn"]);
+    const baseName = (s.nameEn || s.nameAr).toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]+/g, "-").replace(/^-|-$/g, "");
+    const slug = `${baseName}-${nanoid(6)}`;
+    await db.insert(agents).values({
+      agencyId: input.agencyId,
+      nameAr: s.nameAr, nameEn: s.nameEn || null, slug,
+      photo: s.photo || null, phone: s.phone || null, email: s.email || null, whatsapp: s.whatsapp || null,
+      titleAr: s.titleAr || null, titleEn: s.titleEn || null,
+      bioAr: s.bioAr || null, bioEn: s.bioEn || null,
+      yearsExperience: input.yearsExperience ?? null,
+      specialties: input.specialties || null,
+      languages: input.languages || null,
+      isActive: input.isActive ?? true,
+    });
+    await logAudit(ctx.user.id, ctx.user.name || null, "create", "agent", null, { name: s.nameAr, agencyId: input.agencyId });
+    await logActivity(ctx.user.id, ctx.user.name || ctx.user.username, "create_agent", "system", `إضافة وكيل: ${s.nameAr}`, "agent", undefined, { name: s.nameAr });
+    return { success: true };
+  }),
+
+  updateAgent: protectedProcedure.input(z.object({
+    id: z.number(),
+    agencyId: z.number().optional(),
+    nameAr: z.string().optional(), nameEn: z.string().optional(),
+    photo: z.string().nullable().optional(), phone: z.string().optional(), email: z.string().optional(), whatsapp: z.string().optional(),
+    titleAr: z.string().optional(), titleEn: z.string().optional(),
+    bioAr: z.string().optional(), bioEn: z.string().optional(),
+    yearsExperience: z.number().nullable().optional(),
+    specialties: z.array(z.string()).optional(),
+    languages: z.array(z.string()).optional(),
+    isActive: z.boolean().optional(),
+  })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const s = sanitizeObject(input, ["bioAr", "bioEn"]);
+    const updateData: any = {};
+    if (input.agencyId !== undefined) updateData.agencyId = input.agencyId;
+    if (s.nameAr !== undefined) updateData.nameAr = s.nameAr;
+    if (s.nameEn !== undefined) updateData.nameEn = s.nameEn;
+    if (s.photo !== undefined) updateData.photo = s.photo;
+    if (s.phone !== undefined) updateData.phone = s.phone;
+    if (s.email !== undefined) updateData.email = s.email;
+    if (s.whatsapp !== undefined) updateData.whatsapp = s.whatsapp;
+    if (s.titleAr !== undefined) updateData.titleAr = s.titleAr;
+    if (s.titleEn !== undefined) updateData.titleEn = s.titleEn;
+    if (s.bioAr !== undefined) updateData.bioAr = s.bioAr;
+    if (s.bioEn !== undefined) updateData.bioEn = s.bioEn;
+    if (input.yearsExperience !== undefined) updateData.yearsExperience = input.yearsExperience;
+    if (input.specialties !== undefined) updateData.specialties = input.specialties;
+    if (input.languages !== undefined) updateData.languages = input.languages;
+    if (input.isActive !== undefined) updateData.isActive = input.isActive;
+    await db.update(agents).set(updateData).where(eq(agents.id, input.id));
+    await logAudit(ctx.user.id, ctx.user.name || null, "update", "agent", input.id, { changes: Object.keys(updateData) });
+    await logActivity(ctx.user.id, ctx.user.name || ctx.user.username, "update_agent", "system", `تعديل وكيل #${input.id}`, "agent", input.id);
+    return { success: true };
+  }),
+
+  deleteAgent: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    // Unlink properties from this agent
+    await db.update(properties).set({ agentId: null }).where(eq(properties.agentId, input.id));
+    await db.delete(agents).where(eq(agents.id, input.id));
+    await logAudit(ctx.user.id, ctx.user.name || null, "delete", "agent", input.id, {});
+    await logActivity(ctx.user.id, ctx.user.name || ctx.user.username, "delete_agent", "system", `حذف وكيل #${input.id}`, "agent", input.id);
+    return { success: true };
+  }),
+
+  toggleAgentActive: protectedProcedure.input(z.object({
+    id: z.number(), isActive: z.boolean(),
+  })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    await db.update(agents).set({ isActive: input.isActive }).where(eq(agents.id, input.id));
+    await logActivity(ctx.user.id, ctx.user.name || ctx.user.username, "toggle_agent", "system", `تغيير حالة وكيل #${input.id}`, "agent", input.id);
+    return { success: true };
+  }),
+
+  // Get all agencies for dropdown selectors
+  getAgenciesDropdown: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return [];
+    return db.select({ id: agencies.id, nameAr: agencies.nameAr, nameEn: agencies.nameEn, logo: agencies.logo })
+      .from(agencies)
+      .where(eq(agencies.status, "active"))
+      .orderBy(agencies.nameAr);
+  }),
+
+  // Get agents by agency for dropdown selectors
+  getAgentsByAgency: protectedProcedure.input(z.object({
+    agencyId: z.number(),
+  })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return [];
+    return db.select({ id: agents.id, nameAr: agents.nameAr, nameEn: agents.nameEn, photo: agents.photo, titleAr: agents.titleAr, titleEn: agents.titleEn })
+      .from(agents)
+      .where(and(eq(agents.agencyId, input.agencyId), eq(agents.isActive, true)))
+      .orderBy(agents.nameAr);
   }),
 });

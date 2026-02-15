@@ -430,3 +430,29 @@
 - [x] Global focus-visible ring styles for keyboard accessibility
 - [x] 70 admin panel vitest tests (sessions, activity, 2FA, password reset, cities, properties, projects, inquiries, CMS, media, settings, reports, procedure existence)
 - [x] All 358 tests passing across 17 test files
+
+## Standalone Admin Login for Railway (Feb 16, 2026)
+- [ ] Add username/password fields to users table schema (if not already present)
+- [ ] Create standalone login endpoint (username + password → JWT session) for Railway
+- [ ] Build standalone admin login page (no Manus OAuth dependency)
+- [ ] Insert Admin user (Khalid Abdullah / Hobart / 15001500 / hobarti@protonmail.com) into Railway MySQL
+- [ ] Push changes to GitHub for Railway auto-deploy
+
+## Agency & Agent System (Feb 15, 2026)
+- [x] Add agencies table (nameAr, nameEn, slug, logo, phone, email, whatsapp, website, licenseNumber, description, city, district, address, social links, status, isFeatured, sortOrder)
+- [x] Add agents table (agencyId FK, nameAr, nameEn, slug, photo, titleAr, titleEn, bioAr, bioEn, phone, email, whatsapp, yearsExperience, isActive, sortOrder)
+- [x] Add agencyId and agentId columns to properties table
+- [x] Push database migrations
+- [x] Seed demo agency (شركة محمد بن عبد الرحمن القاسم العقارية) with 4 agents
+- [x] Link all 17 properties to agency and agents
+- [x] Public endpoints: getAgencies (search, city, featured filters), getAgencyProfile (slug), getAgentProfile (slug), getPropertyAgencyAgent
+- [x] Admin endpoints: listAgencies, getAgency, createAgency, updateAgency, deleteAgency, listAgents, getAgent, createAgent, updateAgent, deleteAgent, getAgenciesDropdown, getAgentsByAgency
+- [x] Agencies listing page (/agencies) with search and city filter
+- [x] Agency profile page (/agency/:slug) with agents, properties, contact info
+- [x] Agent profile page (/agent/:slug) with agency info and properties
+- [x] Agency/agent info on property detail page
+- [x] Admin agencies management page (CRUD)
+- [x] Admin agents management page (CRUD)
+- [x] Agency/agent selection in admin property create/edit forms
+- [x] Remove seedDemo debug endpoint (production cleanup)
+- [x] Write vitest tests for agency/agent endpoints (16 tests, all passing)
