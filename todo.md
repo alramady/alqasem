@@ -656,3 +656,7 @@
 - [x] Create comprehensive DEVELOPER_DOCS.md (16 sections, 500+ lines)
 - [x] Document all endpoints (50+ procedures), database schema (30+ tables), admin features
 - [x] Include setup instructions, environment variables, deployment guide, common tasks
+
+## Bug Fix - Unexpected Error on Homepage
+- [x] Diagnose "حدث خطأ غير متوقع" error on homepage (ReferenceError in useFavorites hook)
+- [x] Fix root cause: removed try/catch around React hook call (Rules of Hooks violation)

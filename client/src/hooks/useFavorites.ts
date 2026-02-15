@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useSyncExternalStore, useRef } from "react";
+import { useEffect, useCallback, useSyncExternalStore, useRef } from "react";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { trpc } from "@/lib/trpc";
@@ -61,18 +61,16 @@ export function useFavorites() {
   const { t, isAr } = useLanguage();
   const localFavIds = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
-  // Try to get customer auth state - will be null if not logged in
-  let customerData: any = null;
-  let isCustomerLoggedIn = false;
-  try {
-    // We import useCustomerAuth dynamically to avoid circular deps
-    // Instead, we use trpc.customer.me directly
-    const meQuery = trpc.customer.me.useQuery(undefined, { retry: false, staleTime: 1000 * 60 * 5 });
-    customerData = meQuery.data;
-    isCustomerLoggedIn = !!customerData;
-  } catch {
-    // Not in CustomerAuthProvider context, treat as guest
-  }
+  // Always call hooks unconditionally (React rules of hooks)
+  // customer.me returns null when not logged in — never throws
+  const meQuery = trpc.customer.me.useQuery(undefined, {
+    retry: false,
+    staleTime: 1000 * 60 * 5,
+    refetchOnWindowFocus: false,
+  });
+
+  const customerData = meQuery.data ?? null;
+  const isCustomerLoggedIn = !!customerData;
 
   // DB-based favorites for logged-in customers
   const dbFavsQuery = trpc.customer.getFavorites.useQuery(undefined, {
