@@ -1,0 +1,8 @@
+{
+  "query": "INSERT INTO settings (`key`, `value`, `group`) VALUES \n('google_analytics_enabled', 'false', 'analytics'),\n('google_analytics_id', '', 'analytics'),\n('google_tag_manager_id', '', 'analytics')\nON DUPLICATE KEY UPDATE `value` = VALUES(`value`);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.4e413a58b2a3 --database FCSdcQDHNngsNZkY5BfGCD --execute INSERT INTO settings (`key`, `value`, `group`) VALUES \n('google_analytics_enabled', 'false', 'analytics'),\n('google_analytics_id', '', 'analytics'),\n('google_tag_manager_id', '', 'analytics')\nON DUPLICATE KEY UPDATE `value` = VALUES(`value`);",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'key' in 'field list'"
+  ]
+}

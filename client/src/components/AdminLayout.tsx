@@ -51,6 +51,7 @@ import {
   MapPin,
   Landmark,
   UserCheck,
+  CreditCard,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -88,6 +89,7 @@ const menuGroups: MenuGroup[] = [
     label: "التواصل",
     items: [
       { icon: MessageSquare, label: "الطلبات", path: "/admin/inquiries" },
+      { icon: CreditCard, label: "طلبات التمويل", path: "/admin/financing-requests" },
       { icon: Bell, label: "التنبيهات", path: "/admin/notifications" },
       { icon: Mail, label: "المراسلات", path: "/admin/messages" },
     ],

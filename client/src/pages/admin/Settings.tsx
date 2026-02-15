@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
-import { Save, Phone, Mail, MapPin, MessageCircle, Loader2, Image, Upload, Trash2, Palette, Globe, Building2, Award, FileCheck, Calculator, Eye, EyeOff, Send } from "lucide-react";
+import { Save, Phone, Mail, MapPin, MessageCircle, Loader2, Image, Upload, Trash2, Palette, Globe, Building2, Award, FileCheck, Calculator, Eye, EyeOff, Send, BarChart3 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { DEFAULT_LOGO, DEFAULT_ADMIN_LOGO } from "@/lib/branding";
@@ -43,6 +43,11 @@ export default function AdminSettings() {
     financing_cta_subtitle_ar: "سيتواصل معك فريقنا خلال 24 ساعة",
     financing_cta_subtitle_en: "Our team will contact you within 24 hours",
     financing_notification_email: "",
+  });
+  const [analytics, setAnalytics] = useState({
+    google_analytics_enabled: "false",
+    google_analytics_id: "",
+    google_tag_manager_id: "",
   });
 
   useEffect(() => {
@@ -88,6 +93,11 @@ export default function AdminSettings() {
         financing_cta_subtitle_en: s.financing_cta_subtitle_en || "Our team will contact you within 24 hours",
         financing_notification_email: s.financing_notification_email || "",
       });
+      setAnalytics({
+        google_analytics_enabled: s.google_analytics_enabled || "false",
+        google_analytics_id: s.google_analytics_id || "",
+        google_tag_manager_id: s.google_tag_manager_id || "",
+      });
     }
   }, [settings]);
 
@@ -110,6 +120,9 @@ export default function AdminSettings() {
             <TabsTrigger value="contact" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">بيانات التواصل</TabsTrigger>
             <TabsTrigger value="social" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">وسائل التواصل</TabsTrigger>
             <TabsTrigger value="email" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">قوالب البريد</TabsTrigger>
+            <TabsTrigger value="analytics" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
+              <BarChart3 className="w-4 h-4 ml-1" />التحليلات
+            </TabsTrigger>
             <TabsTrigger value="mortgage" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
               <Calculator className="w-4 h-4 ml-1.5" />حاسبة التمويل
             </TabsTrigger>
@@ -533,6 +546,80 @@ export default function AdminSettings() {
                   >
                     {updateSettings.isPending ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <Save className="w-4 h-4 ml-2" />}
                     حفظ إعدادات الحاسبة
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Analytics Tab */}
+          <TabsContent value="analytics" className="mt-4">
+            <Card className="border-0 shadow-sm">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-indigo-500" />
+                  Google Analytics & Tag Manager
+                </CardTitle>
+                <p className="text-xs text-slate-400 mt-1">ربط حساب Google Analytics و Tag Manager لتتبع زيارات الموقع</p>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                {/* Enable/Disable Toggle */}
+                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                  <div>
+                    <Label className="text-sm font-medium">تفعيل التحليلات</Label>
+                    <p className="text-[11px] text-slate-400 mt-0.5">عند التفعيل، سيتم تحميل سكربت Google Analytics في جميع صفحات الموقع</p>
+                  </div>
+                  <button
+                    onClick={() => setAnalytics(p => ({ ...p, google_analytics_enabled: p.google_analytics_enabled === "true" ? "false" : "true" }))}
+                    className={`w-12 h-6 rounded-full transition-colors flex items-center px-0.5 ${analytics.google_analytics_enabled === "true" ? "bg-indigo-500" : "bg-slate-300"}`}
+                  >
+                    <div className={`w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${analytics.google_analytics_enabled === "true" ? "-translate-x-6" : "translate-x-0"}`} />
+                  </button>
+                </div>
+
+                {/* GA4 Measurement ID */}
+                <div>
+                  <Label className="text-sm">معرّف القياس (Measurement ID)</Label>
+                  <p className="text-[11px] text-slate-400 mb-1.5">معرّف GA4 يبدأ بـ G- (مثال: G-XXXXXXXXXX)</p>
+                  <Input
+                    value={analytics.google_analytics_id}
+                    onChange={(e) => setAnalytics(p => ({ ...p, google_analytics_id: e.target.value }))}
+                    placeholder="G-XXXXXXXXXX"
+                    dir="ltr"
+                    className="font-mono"
+                  />
+                </div>
+
+                {/* GTM Container ID */}
+                <div>
+                  <Label className="text-sm">معرّف Tag Manager (Container ID)</Label>
+                  <p className="text-[11px] text-slate-400 mb-1.5">اختياري — يبدأ بـ GTM- (مثال: GTM-XXXXXXX)</p>
+                  <Input
+                    value={analytics.google_tag_manager_id}
+                    onChange={(e) => setAnalytics(p => ({ ...p, google_tag_manager_id: e.target.value }))}
+                    placeholder="GTM-XXXXXXX"
+                    dir="ltr"
+                    className="font-mono"
+                  />
+                </div>
+
+                {/* Info box */}
+                <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3">
+                  <p className="text-xs text-indigo-700 leading-relaxed">
+                    <strong>كيفية الحصول على معرّف القياس:</strong> اذهب إلى{" "}
+                    <a href="https://analytics.google.com" target="_blank" rel="noopener noreferrer" className="underline">analytics.google.com</a>
+                    {" "}&rarr; الإدارة &rarr; تدفقات البيانات &rarr; انسخ معرّف القياس (Measurement ID).
+                  </p>
+                </div>
+
+                <div className="pt-2">
+                  <Button
+                    onClick={() => updateSettings.mutate({ group: "analytics", values: analytics })}
+                    disabled={updateSettings.isPending}
+                    className="bg-indigo-600 hover:bg-indigo-700"
+                  >
+                    {updateSettings.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Save className="w-4 h-4 ml-2" />}
+                    حفظ إعدادات التحليلات
                   </Button>
                 </div>
               </CardContent>

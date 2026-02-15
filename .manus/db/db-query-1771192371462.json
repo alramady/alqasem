@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO settings (settingKey, settingValue, groupName) VALUES \n('google_analytics_enabled', 'false', 'analytics'),\n('google_analytics_id', '', 'analytics'),\n('google_tag_manager_id', '', 'analytics')\nON DUPLICATE KEY UPDATE settingValue = VALUES(settingValue);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.4e413a58b2a3 --database FCSdcQDHNngsNZkY5BfGCD --execute INSERT INTO settings (settingKey, settingValue, groupName) VALUES \n('google_analytics_enabled', 'false', 'analytics'),\n('google_analytics_id', '', 'analytics'),\n('google_tag_manager_id', '', 'analytics')\nON DUPLICATE KEY UPDATE settingValue = VALUES(settingValue);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1516
+}

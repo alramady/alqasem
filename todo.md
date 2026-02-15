@@ -530,5 +530,33 @@
 - [x] Build financing request dialog/modal in MortgageCalculator (captures name, phone, email, notes + auto-fills calculated scenario)
 - [x] Add financing CTA settings to admin Settings > حاسبة التمويل tab (toggle, titles, subtitles, notification email)
 - [x] Write vitest tests for financing request endpoints (6 tests: config, submission, validation, uniqueness, all passing)
-- [ ] Build admin Financing Requests page (table with status management) — future
-- [ ] Add financing requests link to admin sidebar — future
+- [x] Build admin Financing Requests page (table with status management)
+- [x] Add financing requests link to admin sidebar
+
+## Batch Enhancements (Feb 16, 2026)
+
+### A) Admin Financing Requests Page
+- [x] Add admin endpoint: listFinancingRequests (with pagination, status filter, search)
+- [x] Add admin endpoint: updateFinancingRequestStatus (new/contacted/approved/rejected)
+- [x] Build admin Financing Requests page with table, status badges, filters
+- [x] Add financing requests link to admin sidebar
+- [x] Show request details in expandable row (property info, calculated scenario, notes)
+
+### B) WhatsApp Integration for Financing Notifications
+- [x] Generate WhatsApp click-to-chat link with pre-filled financing request message (auto-converts 05 to 966)
+- [x] Add WhatsApp CTA button in MortgageCalculator success state for direct customer contact
+- [x] Pre-fills message with request number, property price, loan amount, monthly payment, term, rate
+
+### C) Bank Partner Logos Below Calculator
+- [x] Display partner bank logos below mortgage calculator (Al Rajhi, SNB, Riyad Bank, SAB)
+- [x] Inline SVG icons with brand colors (no external image dependencies)
+- [x] Arabic bank names shown on desktop, icons-only on mobile
+
+### D) Google Analytics Integration
+- [x] Add google_analytics_enabled, google_analytics_id, google_tag_manager_id settings to DB
+- [x] Create GoogleAnalytics component (loads GA4 gtag.js dynamically when enabled)
+- [x] Add Google Tag Manager support (optional GTM container ID)
+- [x] Add page view tracking on route changes via wouter location
+- [x] Add admin Settings > التحليلات tab (enable/disable toggle, GA4 ID, GTM ID, setup instructions)
+- [x] IP anonymization enabled by default for privacy compliance
+- [x] Write vitest tests for all enhancements (11 tests, all passing)

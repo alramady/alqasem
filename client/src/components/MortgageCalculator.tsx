@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Calculator, TrendingUp, Banknote, CalendarDays, Info, ChevronDown, ChevronUp, Send, CheckCircle, X, User, Phone, Mail, FileText } from "lucide-react";
+import { Calculator, TrendingUp, Banknote, CalendarDays, Info, ChevronDown, ChevronUp, Send, CheckCircle, X, User, Phone, Mail, FileText, MessageCircle } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { trpc } from "@/lib/trpc";
 
@@ -298,6 +298,46 @@ export default function MortgageCalculator({ defaultPrice, propertyId, propertyT
         </div>
       )}
 
+      {/* Bank Partners */}
+      <div className="mb-4">
+        <p className="text-[10px] text-gray-400 text-center mb-3">{isAr ? "شركاء التمويل العقاري" : "Mortgage Partners"}</p>
+        <div className="flex items-center justify-center gap-6 opacity-50 hover:opacity-80 transition-opacity">
+          {/* Al Rajhi Bank */}
+          <div className="flex items-center gap-1.5" title="مصرف الراجحي">
+            <svg viewBox="0 0 40 40" className="w-7 h-7" fill="none">
+              <path d="M20 4L8 12v16l12 8 12-8V12L20 4z" stroke="#003399" strokeWidth="2" fill="none"/>
+              <path d="M20 12l-6 4v8l6 4 6-4v-8l-6-4z" fill="#003399"/>
+            </svg>
+            <span className="text-[10px] font-bold text-[#003399] hidden sm:inline">الراجحي</span>
+          </div>
+          {/* SNB */}
+          <div className="flex items-center gap-1.5" title="البنك الأهلي السعودي">
+            <svg viewBox="0 0 40 40" className="w-7 h-7" fill="none">
+              <path d="M20 6c-8 0-14 6-14 14s6 14 14 14 14-6 14-14S28 6 20 6z" stroke="#006633" strokeWidth="2" fill="none"/>
+              <path d="M14 20l4 4 8-8" stroke="#006633" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <span className="text-[10px] font-bold text-[#006633] hidden sm:inline">SNB</span>
+          </div>
+          {/* Riyad Bank */}
+          <div className="flex items-center gap-1.5" title="بنك الرياض">
+            <svg viewBox="0 0 40 40" className="w-7 h-7" fill="none">
+              <rect x="6" y="10" width="28" height="20" rx="3" stroke="#008080" strokeWidth="2" fill="none"/>
+              <path d="M6 16h28" stroke="#008080" strokeWidth="2"/>
+              <circle cx="28" cy="24" r="3" fill="#008080"/>
+            </svg>
+            <span className="text-[10px] font-bold text-[#008080] hidden sm:inline">بنك الرياض</span>
+          </div>
+          {/* SAB */}
+          <div className="flex items-center gap-1.5" title="البنك السعودي الأول">
+            <svg viewBox="0 0 40 40" className="w-7 h-7" fill="none">
+              <path d="M8 30V14l12-8 12 8v16" stroke="#CC0000" strokeWidth="2" fill="none"/>
+              <path d="M16 30V22h8v8" stroke="#CC0000" strokeWidth="2" fill="none"/>
+            </svg>
+            <span className="text-[10px] font-bold text-[#CC0000] hidden sm:inline">SAB</span>
+          </div>
+        </div>
+      </div>
+
       {/* Disclaimer */}
       {disclaimer && (
         <div className="flex gap-2 p-3 bg-amber-50 rounded-lg border border-amber-100">
@@ -344,6 +384,23 @@ export default function MortgageCalculator({ defaultPrice, propertyId, propertyT
                     <span className="font-medium">{years} {isAr ? "سنة" : "years"}</span>
                   </div>
                 </div>
+                <a
+                  href={`https://wa.me/${formData.phone.replace(/^0/, '966')}?text=${encodeURIComponent(
+                    `مرحباً ${formData.name}،\n` +
+                    `شكراً لتقديم طلب التمويل رقم: ${requestNumber}\n` +
+                    `سعر العقار: ${fmt(price)} ر.س\n` +
+                    `مبلغ التمويل: ${fmt(result.loanAmount)} ر.س\n` +
+                    `القسط الشهري: ${fmt(result.monthlyPayment)} ر.س\n` +
+                    `المدة: ${years} سنة | الربح: ${rate}%\n` +
+                    `سيتواصل معك فريقنا قريباً`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full bg-[#25D366] text-white rounded-xl py-3 font-medium text-sm hover:bg-[#1da851] transition-colors flex items-center justify-center gap-2 mb-2"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  {isAr ? "تواصل عبر واتساب" : "Chat on WhatsApp"}
+                </a>
                 <button onClick={resetForm} className="w-full bg-[#0f1b33] text-white rounded-xl py-3 font-medium text-sm hover:bg-[#1a2d4d] transition-colors">
                   {isAr ? "إغلاق" : "Close"}
                 </button>

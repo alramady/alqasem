@@ -11,6 +11,7 @@ import Home from "./pages/Home";
 import { lazy, Suspense } from "react";
 import CookieConsent from "./components/CookieConsent";
 import SEO from "./components/SEO";
+import GoogleAnalytics from "./components/GoogleAnalytics";
 
 // Lazy load public pages
 const AboutPage = lazy(() => import("./pages/About"));
@@ -55,6 +56,7 @@ const AdminActivityDashboard = lazy(() => import("./pages/admin/ActivityDashboar
 const AdminCitiesDistricts = lazy(() => import("./pages/admin/CitiesDistricts"));
 const AdminAgencies = lazy(() => import("./pages/admin/Agencies"));
 const AdminAgents = lazy(() => import("./pages/admin/Agents"));
+const AdminFinancingRequests = lazy(() => import("./pages/admin/FinancingRequests"));
 const AgenciesPage = lazy(() => import("./pages/Agencies"));
 const AgencyProfilePage = lazy(() => import("./pages/AgencyProfile"));
 const AgentProfilePage = lazy(() => import("./pages/AgentProfile"));
@@ -172,6 +174,9 @@ function Router() {
       <Route path="/admin/agents">
         <Suspense fallback={<AdminFallback />}><AdminAgents /></Suspense>
       </Route>
+      <Route path="/admin/financing-requests">
+        <Suspense fallback={<AdminFallback />}><AdminFinancingRequests /></Suspense>
+      </Route>
       <Route path="/admin">
         <Suspense fallback={<AdminFallback />}><AdminDashboard /></Suspense>
       </Route>
@@ -247,6 +252,7 @@ function App() {
                 <a href="#main-content" className="skip-to-content">Skip to content</a>
                 <Toaster position="top-center" richColors />
                 <SEO />
+                <GoogleAnalytics />
                 <div id="main-content">
                   <Router />
                 </div>

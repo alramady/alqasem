@@ -9,7 +9,7 @@ import {
   homepageSections, settings, auditLogs, notifications, messages, permissions, guides,
   passwordResetTokens, userSessions, activityLogs, cities, districts,
   amenities, propertyAmenities,
-  agencies, agents,
+  agencies, agents, financingRequests,
 } from "../../drizzle/schema";
 import crypto from "crypto";
 import { sendPasswordResetEmail } from "../email";
@@ -2391,5 +2391,57 @@ export const adminRouter = router({
       .from(agents)
       .where(and(eq(agents.agencyId, input.agencyId), eq(agents.isActive, true)))
       .orderBy(agents.nameAr);
+  }),
+
+  // ============ FINANCING REQUESTS ============
+  listFinancingRequests: adminProcedure.input(z.object({
+    page: z.number().default(1),
+    limit: z.number().default(20),
+    status: z.enum(["all", "new", "contacted", "in_progress", "approved", "rejected", "closed"]).default("all"),
+    search: z.string().optional(),
+  })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { items: [], total: 0 };
+    const conditions: any[] = [];
+    if (input.status !== "all") conditions.push(eq(financingRequests.status, input.status as any));
+    if (input.search) {
+      conditions.push(or(
+        like(financingRequests.customerName, `%${input.search}%`),
+        like(financingRequests.customerPhone, `%${input.search}%`),
+        like(financingRequests.requestNumber, `%${input.search}%`),
+        like(financingRequests.propertyTitle, `%${input.search}%`),
+      ));
+    }
+    const where = conditions.length > 0 ? and(...conditions) : undefined;
+    const [countResult] = await db.select({ total: count() }).from(financingRequests).where(where);
+    const items = await db.select().from(financingRequests)
+      .where(where)
+      .orderBy(desc(financingRequests.createdAt))
+      .limit(input.limit)
+      .offset((input.page - 1) * input.limit);
+    return { items, total: countResult?.total || 0 };
+  }),
+
+  updateFinancingRequestStatus: adminProcedure.input(z.object({
+    id: z.number(),
+    status: z.enum(["new", "contacted", "in_progress", "approved", "rejected", "closed"]),
+  })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const [existing] = await db.select().from(financingRequests).where(eq(financingRequests.id, input.id)).limit(1);
+    if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "طلب التمويل غير موجود" });
+    await db.update(financingRequests).set({ status: input.status as any }).where(eq(financingRequests.id, input.id));
+    await logAudit(ctx.user.id, ctx.user.name || null, "update", "financing_request", input.id, { oldStatus: existing.status, newStatus: input.status });
+    return { success: true };
+  }),
+
+  getFinancingRequestDetail: adminProcedure.input(z.object({
+    id: z.number(),
+  })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const [request] = await db.select().from(financingRequests).where(eq(financingRequests.id, input.id)).limit(1);
+    if (!request) throw new TRPCError({ code: "NOT_FOUND", message: "طلب التمويل غير موجود" });
+    return request;
   }),
 });
