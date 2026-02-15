@@ -43,6 +43,7 @@ const BOOTSTRAP_SAFE_MUTATIONS = [
   "public.submitProperty",
   "public.submitPropertyRequest",
   "public.subscribeNewsletter",
+  "public.submitFinancingRequest",
   "public.trackPropertyView",
 ];
 

@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS `financing_requests` (\n  `id` int AUTO_INCREMENT PRIMARY KEY,\n  `propertyId` int,\n  `propertyTitle` varchar(500),\n  `customerName` varchar(255) NOT NULL,\n  `customerPhone` varchar(30) NOT NULL,\n  `customerEmail` varchar(320),\n  `propertyPrice` int NOT NULL,\n  `downPaymentPct` int NOT NULL,\n  `loanAmount` int NOT NULL,\n  `rate` varchar(10) NOT NULL,\n  `termYears` int NOT NULL,\n  `monthlyPayment` int NOT NULL,\n  `notes` text,\n  `financingStatus` enum('new','contacted','in_progress','approved','rejected','closed') NOT NULL DEFAULT 'new',\n  `requestNumber` varchar(20),\n  `financingCreatedAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `financingUpdatedAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.4e413a58b2a3 --database FCSdcQDHNngsNZkY5BfGCD --execute CREATE TABLE IF NOT EXISTS `financing_requests` (\n  `id` int AUTO_INCREMENT PRIMARY KEY,\n  `propertyId` int,\n  `propertyTitle` varchar(500),\n  `customerName` varchar(255) NOT NULL,\n  `customerPhone` varchar(30) NOT NULL,\n  `customerEmail` varchar(320),\n  `propertyPrice` int NOT NULL,\n  `downPaymentPct` int NOT NULL,\n  `loanAmount` int NOT NULL,\n  `rate` varchar(10) NOT NULL,\n  `termYears` int NOT NULL,\n  `monthlyPayment` int NOT NULL,\n  `notes` text,\n  `financingStatus` enum('new','contacted','in_progress','approved','rejected','closed') NOT NULL DEFAULT 'new',\n  `requestNumber` varchar(20),\n  `financingCreatedAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `financingUpdatedAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1706
+}

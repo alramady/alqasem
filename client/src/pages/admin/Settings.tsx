@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
-import { Save, Phone, Mail, MapPin, MessageCircle, Loader2, Image, Upload, Trash2, Palette, Globe, Building2, Award, FileCheck, Calculator, Eye, EyeOff } from "lucide-react";
+import { Save, Phone, Mail, MapPin, MessageCircle, Loader2, Image, Upload, Trash2, Palette, Globe, Building2, Award, FileCheck, Calculator, Eye, EyeOff, Send } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { DEFAULT_LOGO, DEFAULT_ADMIN_LOGO } from "@/lib/branding";
@@ -37,6 +37,12 @@ export default function AdminSettings() {
     mortgage_title_en: "Mortgage Calculator",
     mortgage_disclaimer_ar: "",
     mortgage_disclaimer_en: "",
+    financing_cta_enabled: "true",
+    financing_cta_title_ar: "اطلب تمويلك العقاري",
+    financing_cta_title_en: "Request Financing",
+    financing_cta_subtitle_ar: "سيتواصل معك فريقنا خلال 24 ساعة",
+    financing_cta_subtitle_en: "Our team will contact you within 24 hours",
+    financing_notification_email: "",
   });
 
   useEffect(() => {
@@ -75,6 +81,12 @@ export default function AdminSettings() {
         mortgage_title_en: s.mortgage_title_en || "Mortgage Calculator",
         mortgage_disclaimer_ar: s.mortgage_disclaimer_ar || "",
         mortgage_disclaimer_en: s.mortgage_disclaimer_en || "",
+        financing_cta_enabled: s.financing_cta_enabled || "true",
+        financing_cta_title_ar: s.financing_cta_title_ar || "اطلب تمويلك العقاري",
+        financing_cta_title_en: s.financing_cta_title_en || "Request Financing",
+        financing_cta_subtitle_ar: s.financing_cta_subtitle_ar || "سيتواصل معك فريقنا خلال 24 ساعة",
+        financing_cta_subtitle_en: s.financing_cta_subtitle_en || "Our team will contact you within 24 hours",
+        financing_notification_email: s.financing_notification_email || "",
       });
     }
   }, [settings]);
@@ -459,6 +471,57 @@ export default function AdminSettings() {
                   <div>
                     <Label className="text-slate-700 text-sm">Disclaimer (English)</Label>
                     <Textarea rows={3} value={mortgage.mortgage_disclaimer_en} onChange={e => setMortgage(p => ({ ...p, mortgage_disclaimer_en: e.target.value }))} className="mt-1 text-sm" dir="ltr" />
+                  </div>
+                </div>
+
+                {/* Financing CTA Section */}
+                <div className="border-t border-slate-200 pt-6 mt-6">
+                  <h4 className="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <Send className="w-4 h-4 text-[#c8a45e]" />
+                    إعدادات طلب التمويل
+                  </h4>
+
+                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg mb-4">
+                    <div>
+                      <p className="font-semibold text-sm text-slate-700">إظهار زر "اطلب تمويلك"</p>
+                      <p className="text-xs text-slate-400 mt-0.5">عند الإيقاف لن يظهر زر طلب التمويل في الحاسبة</p>
+                    </div>
+                    <button
+                      onClick={() => setMortgage(p => ({ ...p, financing_cta_enabled: p.financing_cta_enabled === "true" ? "false" : "true" }))}
+                      className={`relative w-11 h-6 rounded-full transition-colors duration-200 flex items-center ${
+                        mortgage.financing_cta_enabled === "true" ? "bg-emerald-500" : "bg-slate-300"
+                      }`}
+                    >
+                      <span className={`absolute w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${
+                        mortgage.financing_cta_enabled === "true" ? "translate-x-1" : "translate-x-6"
+                      }`} />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <Label className="text-slate-700 text-sm">عنوان الزر (عربي)</Label>
+                      <Input value={mortgage.financing_cta_title_ar} onChange={e => setMortgage(p => ({ ...p, financing_cta_title_ar: e.target.value }))} className="mt-1" />
+                    </div>
+                    <div>
+                      <Label className="text-slate-700 text-sm">CTA Title (English)</Label>
+                      <Input value={mortgage.financing_cta_title_en} onChange={e => setMortgage(p => ({ ...p, financing_cta_title_en: e.target.value }))} className="mt-1" dir="ltr" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <Label className="text-slate-700 text-sm">نص فرعي (عربي)</Label>
+                      <Input value={mortgage.financing_cta_subtitle_ar} onChange={e => setMortgage(p => ({ ...p, financing_cta_subtitle_ar: e.target.value }))} className="mt-1" />
+                    </div>
+                    <div>
+                      <Label className="text-slate-700 text-sm">CTA Subtitle (English)</Label>
+                      <Input value={mortgage.financing_cta_subtitle_en} onChange={e => setMortgage(p => ({ ...p, financing_cta_subtitle_en: e.target.value }))} className="mt-1" dir="ltr" />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-slate-700 text-sm">بريد إشعارات طلبات التمويل</Label>
+                    <Input type="email" value={mortgage.financing_notification_email} onChange={e => setMortgage(p => ({ ...p, financing_notification_email: e.target.value }))} className="mt-1" dir="ltr" placeholder="finance@alqasim.com" />
+                    <p className="text-xs text-slate-400 mt-1">سيتم إرسال إشعار لهذا البريد عند كل طلب تمويل جديد (بالإضافة لإشعار المديرين)</p>
                   </div>
                 </div>
 

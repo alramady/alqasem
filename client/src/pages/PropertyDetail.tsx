@@ -422,7 +422,7 @@ export default function PropertyDetail({ id }: { id: string }) {
             {/* Mortgage Calculator */}
             {property.listingType === "sale" && priceNum > 0 && (
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="print:hidden">
-                <MortgageCalculator defaultPrice={priceNum} />
+                <MortgageCalculator defaultPrice={priceNum} propertyId={property.id} propertyTitle={isAr ? property.title : (property.titleEn || property.title)} />
               </motion.div>
             )}
           </div>

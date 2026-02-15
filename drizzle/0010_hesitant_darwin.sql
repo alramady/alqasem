@@ -1,0 +1,20 @@
+CREATE TABLE `financing_requests` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`propertyId` int,
+	`propertyTitle` varchar(500),
+	`customerName` varchar(255) NOT NULL,
+	`customerPhone` varchar(30) NOT NULL,
+	`customerEmail` varchar(320),
+	`propertyPrice` int NOT NULL,
+	`downPaymentPct` int NOT NULL,
+	`loanAmount` int NOT NULL,
+	`rate` varchar(10) NOT NULL,
+	`termYears` int NOT NULL,
+	`monthlyPayment` int NOT NULL,
+	`notes` text,
+	`financingStatus` enum('new','contacted','in_progress','approved','rejected','closed') NOT NULL DEFAULT 'new',
+	`requestNumber` varchar(20),
+	`financingCreatedAt` timestamp NOT NULL DEFAULT (now()),
+	`financingUpdatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `financing_requests_id` PRIMARY KEY(`id`)
+);

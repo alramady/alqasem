@@ -515,3 +515,20 @@
 - [x] Integrate into PropertyDetail page (conditionally rendered based on admin toggle)
 - [x] Only show for sale properties (not rentals)
 - [x] Write vitest tests for mortgage calculator (10 tests: 7 backend config + 3 math verification, all passing)
+
+## Mortgage Enhancements (Feb 16, 2026)
+
+### A) Update Default Rate to Saudi Bank Rates
+- [x] Update mortgage_default_rate from 5.5% to 4.49% (current SAMA-regulated rate)
+- [x] Make rate editable from admin Settings > حاسبة التمويل tab (already done)
+
+### B) Request Financing CTA Form
+- [x] Add financing_requests table (id, propertyId, propertyTitle, customerName, customerPhone, customerEmail, propertyPrice, downPaymentPct, loanAmount, rate, term, monthlyPayment, notes, status, requestNumber, createdAt)
+- [x] Add financing CTA settings to DB (financing_cta_enabled, financing_cta_title_ar/en, financing_cta_subtitle_ar/en, financing_notification_email)
+- [x] Create submitFinancingRequest public endpoint (saves form + sends admin notification + generates FIN-XXXXX reference)
+- [x] Add CSRF bypass for submitFinancingRequest (first-visit safe)
+- [x] Build financing request dialog/modal in MortgageCalculator (captures name, phone, email, notes + auto-fills calculated scenario)
+- [x] Add financing CTA settings to admin Settings > حاسبة التمويل tab (toggle, titles, subtitles, notification email)
+- [x] Write vitest tests for financing request endpoints (6 tests: config, submission, validation, uniqueness, all passing)
+- [ ] Build admin Financing Requests page (table with status management) — future
+- [ ] Add financing requests link to admin sidebar — future

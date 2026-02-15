@@ -568,3 +568,30 @@ export const agents = mysqlTable("agents", {
 });
 export type Agent = typeof agents.$inferSelect;
 export type InsertAgent = typeof agents.$inferInsert;
+
+
+/**
+ * Financing requests (طلبات التمويل العقاري).
+ * Captures user financing scenarios from the mortgage calculator.
+ */
+export const financingRequests = mysqlTable("financing_requests", {
+  id: int("id").autoincrement().primaryKey(),
+  propertyId: int("propertyId"),
+  propertyTitle: varchar("propertyTitle", { length: 500 }),
+  customerName: varchar("customerName", { length: 255 }).notNull(),
+  customerPhone: varchar("customerPhone", { length: 30 }).notNull(),
+  customerEmail: varchar("customerEmail", { length: 320 }),
+  propertyPrice: int("propertyPrice").notNull(),
+  downPaymentPct: int("downPaymentPct").notNull(),
+  loanAmount: int("loanAmount").notNull(),
+  rate: varchar("rate", { length: 10 }).notNull(),
+  termYears: int("termYears").notNull(),
+  monthlyPayment: int("monthlyPayment").notNull(),
+  notes: text("notes"),
+  status: mysqlEnum("financingStatus", ["new", "contacted", "in_progress", "approved", "rejected", "closed"]).default("new").notNull(),
+  requestNumber: varchar("requestNumber", { length: 20 }),
+  createdAt: timestamp("financingCreatedAt").defaultNow().notNull(),
+  updatedAt: timestamp("financingUpdatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type FinancingRequest = typeof financingRequests.$inferSelect;
+export type InsertFinancingRequest = typeof financingRequests.$inferInsert;

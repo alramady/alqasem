@@ -3,7 +3,7 @@ import { getDb } from "../db";
 import { sanitizeText } from "../sanitize";
 import { sendEmail } from "../email";
 import { notifyOwner } from "../_core/notification";
-import { inquiries, properties, projects, notifications, users, auditLogs, settings, homepageSections, pages, newsletterSubscribers, propertyViews, cities, districts, amenities, propertyAmenities, agencies, agents } from "../../drizzle/schema";
+import { inquiries, properties, projects, notifications, users, auditLogs, settings, homepageSections, pages, newsletterSubscribers, propertyViews, cities, districts, amenities, propertyAmenities, agencies, agents, financingRequests } from "../../drizzle/schema";
 import { eq, desc, asc, and, isNull, like, or, gte, lte, sql, count, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
@@ -1062,6 +1062,71 @@ export const publicRouter = router({
       titleEn: cfg.mortgage_title_en || "Mortgage Calculator",
       disclaimerAr: cfg.mortgage_disclaimer_ar || "",
       disclaimerEn: cfg.mortgage_disclaimer_en || "",
+      // Financing CTA config
+      financingCtaEnabled: cfg.financing_cta_enabled === "true",
+      financingCtaTitleAr: cfg.financing_cta_title_ar || "اطلب تمويلك العقاري",
+      financingCtaTitleEn: cfg.financing_cta_title_en || "Request Financing",
+      financingCtaSubtitleAr: cfg.financing_cta_subtitle_ar || "",
+      financingCtaSubtitleEn: cfg.financing_cta_subtitle_en || "",
     };
+  }),
+  // ============ FINANCING REQUEST ============
+  submitFinancingRequest: publicProcedure.input(z.object({
+    propertyId: z.number().optional(),
+    propertyTitle: z.string().optional(),
+    customerName: z.string().min(2).max(255),
+    customerPhone: z.string().regex(/^05\d{8}$/, "رقم الجوال يجب أن يبدأ بـ 05 ويتكون من 10 أرقام"),
+    customerEmail: z.string().email().optional().or(z.literal("")),
+    propertyPrice: z.number().min(1),
+    downPaymentPct: z.number().min(0).max(100),
+    loanAmount: z.number().min(1),
+    rate: z.string(),
+    termYears: z.number().min(1).max(50),
+    monthlyPayment: z.number().min(1),
+    notes: z.string().max(2000).optional(),
+  })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const requestNumber = `FIN-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    await db.insert(financingRequests).values({
+      propertyId: input.propertyId || null,
+      propertyTitle: sanitizeText(input.propertyTitle || ""),
+      customerName: sanitizeText(input.customerName),
+      customerPhone: input.customerPhone,
+      customerEmail: input.customerEmail || null,
+      propertyPrice: input.propertyPrice,
+      downPaymentPct: input.downPaymentPct,
+      loanAmount: input.loanAmount,
+      rate: input.rate,
+      termYears: input.termYears,
+      monthlyPayment: input.monthlyPayment,
+      notes: input.notes ? sanitizeText(input.notes) : null,
+      requestNumber,
+    });
+    const priceFormatted = new Intl.NumberFormat("ar-SA").format(input.propertyPrice);
+    const monthlyFormatted = new Intl.NumberFormat("ar-SA").format(input.monthlyPayment);
+    await notifyAdmins(
+      "طلب تمويل عقاري جديد",
+      `طلب تمويل من ${input.customerName} - ${input.customerPhone}\nسعر العقار: ${priceFormatted} ر.س | القسط الشهري: ${monthlyFormatted} ر.س | المدة: ${input.termYears} سنة`,
+      "inquiry",
+      "/admin/financing-requests"
+    );
+    try {
+      const allSettings = await db.select().from(settings).where(eq(settings.groupName, "mortgage"));
+      const cfg: Record<string, string> = {};
+      allSettings.forEach(s => { cfg[s.key] = s.value || ""; });
+      const notifEmail = cfg.financing_notification_email;
+      const adminEmails = await db.select({ email: users.email }).from(users).where(eq(users.role, "admin"));
+      const recipients = [notifEmail, ...adminEmails.map(a => a.email)].filter(Boolean) as string[];
+      if (recipients.length > 0) {
+        await sendEmail({
+          to: recipients[0],
+          subject: `طلب تمويل عقاري جديد - ${requestNumber}`,
+          html: `<div dir="rtl" style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;"><div style="background:#1a2332;color:#d4a853;padding:20px;text-align:center;border-radius:8px 8px 0 0;"><h2>طلب تمويل عقاري جديد</h2><p style="color:#fff;">رقم الطلب: ${requestNumber}</p></div><div style="padding:20px;background:#f8f6f0;"><table style="width:100%;border-collapse:collapse;"><tr><td style="padding:8px;font-weight:bold;">الاسم:</td><td style="padding:8px;">${input.customerName}</td></tr><tr><td style="padding:8px;font-weight:bold;">الجوال:</td><td style="padding:8px;">${input.customerPhone}</td></tr>${input.customerEmail ? `<tr><td style="padding:8px;font-weight:bold;">البريد:</td><td style="padding:8px;">${input.customerEmail}</td></tr>` : ""}<tr><td style="padding:8px;font-weight:bold;">العقار:</td><td style="padding:8px;">${input.propertyTitle || "غير محدد"}</td></tr><tr><td style="padding:8px;font-weight:bold;">سعر العقار:</td><td style="padding:8px;">${priceFormatted} ر.س</td></tr><tr><td style="padding:8px;font-weight:bold;">الدفعة المقدمة:</td><td style="padding:8px;">${input.downPaymentPct}%</td></tr><tr><td style="padding:8px;font-weight:bold;">مبلغ التمويل:</td><td style="padding:8px;">${new Intl.NumberFormat("ar-SA").format(input.loanAmount)} ر.س</td></tr><tr><td style="padding:8px;font-weight:bold;">نسبة الربح:</td><td style="padding:8px;">${input.rate}%</td></tr><tr><td style="padding:8px;font-weight:bold;">المدة:</td><td style="padding:8px;">${input.termYears} سنة</td></tr><tr><td style="padding:8px;font-weight:bold;">القسط الشهري:</td><td style="padding:8px;color:#059669;font-weight:bold;">${monthlyFormatted} ر.س</td></tr>${input.notes ? `<tr><td style="padding:8px;font-weight:bold;">ملاحظات:</td><td style="padding:8px;">${input.notes}</td></tr>` : ""}</table></div></div>`,
+        });
+      }
+    } catch (e) { console.error("Failed to send financing email:", e); }
+    try { await notifyOwner({ title: "طلب تمويل عقاري جديد", content: `${input.customerName} - ${input.customerPhone} | ${priceFormatted} ر.س | ${input.termYears} سنة` }); } catch (e) { /* silent */ }
+    return { success: true, requestNumber };
   }),
 });

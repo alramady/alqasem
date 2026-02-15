@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE settings SET settingValue = '4.49' WHERE settingKey = 'mortgage_default_rate';\n\nINSERT INTO settings (settingKey, settingValue, groupName) VALUES \n  ('financing_cta_enabled', 'true', 'mortgage'),\n  ('financing_cta_title_ar', 'اطلب تمويلك العقاري', 'mortgage'),\n  ('financing_cta_title_en', 'Request Financing', 'mortgage'),\n  ('financing_cta_subtitle_ar', 'أرسل طلبك وسيتواصل معك فريقنا لمساعدتك في الحصول على أفضل عرض تمويل', 'mortgage'),\n  ('financing_cta_subtitle_en', 'Submit your request and our team will contact you to help you get the best financing offer', 'mortgage'),\n  ('financing_notification_email', '', 'mortgage')\nON DUPLICATE KEY UPDATE settingValue = VALUES(settingValue), groupName = VALUES(groupName);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.4e413a58b2a3 --database FCSdcQDHNngsNZkY5BfGCD --execute UPDATE settings SET settingValue = '4.49' WHERE settingKey = 'mortgage_default_rate';\n\nINSERT INTO settings (settingKey, settingValue, groupName) VALUES \n  ('financing_cta_enabled', 'true', 'mortgage'),\n  ('financing_cta_title_ar', 'اطلب تمويلك العقاري', 'mortgage'),\n  ('financing_cta_title_en', 'Request Financing', 'mortgage'),\n  ('financing_cta_subtitle_ar', 'أرسل طلبك وسيتواصل معك فريقنا لمساعدتك في الحصول على أفضل عرض تمويل', 'mortgage'),\n  ('financing_cta_subtitle_en', 'Submit your request and our team will contact you to help you get the best financing offer', 'mortgage'),\n  ('financing_notification_email', '', 'mortgage')\nON DUPLICATE KEY UPDATE settingValue = VALUES(settingValue), groupName = VALUES(groupName);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1803
+}
