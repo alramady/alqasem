@@ -1037,4 +1037,31 @@ export const publicRouter = router({
     }
     return { agency, agent };
   }),
+
+  // ============ MORTGAGE CALCULATOR CONFIG ============
+  getMortgageConfig: publicProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return null;
+    const allSettings = await db.select().from(settings).where(eq(settings.groupName, "mortgage"));
+    const cfg: Record<string, string> = {};
+    allSettings.forEach(s => { cfg[s.key] = s.value || ""; });
+    const enabled = cfg.mortgage_enabled === "true";
+    if (!enabled) return { enabled: false };
+    return {
+      enabled: true,
+      defaultRate: parseFloat(cfg.mortgage_default_rate || "5.5"),
+      minRate: parseFloat(cfg.mortgage_min_rate || "2.0"),
+      maxRate: parseFloat(cfg.mortgage_max_rate || "12.0"),
+      defaultTerm: parseInt(cfg.mortgage_default_term || "25"),
+      minTerm: parseInt(cfg.mortgage_min_term || "5"),
+      maxTerm: parseInt(cfg.mortgage_max_term || "30"),
+      defaultDownPayment: parseInt(cfg.mortgage_default_down_payment || "20"),
+      minDownPayment: parseInt(cfg.mortgage_min_down_payment || "10"),
+      maxDownPayment: parseInt(cfg.mortgage_max_down_payment || "90"),
+      titleAr: cfg.mortgage_title_ar || "حاسبة التمويل العقاري",
+      titleEn: cfg.mortgage_title_en || "Mortgage Calculator",
+      disclaimerAr: cfg.mortgage_disclaimer_ar || "",
+      disclaimerEn: cfg.mortgage_disclaimer_en || "",
+    };
+  }),
 });

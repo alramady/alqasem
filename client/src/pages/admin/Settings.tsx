@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
-import { Save, Phone, Mail, MapPin, MessageCircle, Loader2, Image, Upload, Trash2, Palette, Globe, Building2, Award, FileCheck } from "lucide-react";
+import { Save, Phone, Mail, MapPin, MessageCircle, Loader2, Image, Upload, Trash2, Palette, Globe, Building2, Award, FileCheck, Calculator, Eye, EyeOff } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { DEFAULT_LOGO, DEFAULT_ADMIN_LOGO } from "@/lib/branding";
@@ -22,6 +22,22 @@ export default function AdminSettings() {
   const [social, setSocial] = useState({ instagram: "", twitter: "", tiktok: "", snapchat: "", linkedin: "" });
   const [branding, setBranding] = useState({ logo: "", adminLogo: "", favicon: "", ogImage: "" });
   const [company, setCompany] = useState({ company_name: "", company_name_en: "", fal_number: "", cr_number: "", address_en: "", working_hours: "", working_hours_en: "", mobile: "" });
+  const [mortgage, setMortgage] = useState({
+    mortgage_enabled: "true",
+    mortgage_default_rate: "5.5",
+    mortgage_min_rate: "2.0",
+    mortgage_max_rate: "12.0",
+    mortgage_default_term: "25",
+    mortgage_min_term: "5",
+    mortgage_max_term: "30",
+    mortgage_default_down_payment: "20",
+    mortgage_min_down_payment: "10",
+    mortgage_max_down_payment: "90",
+    mortgage_title_ar: "حاسبة التمويل العقاري",
+    mortgage_title_en: "Mortgage Calculator",
+    mortgage_disclaimer_ar: "",
+    mortgage_disclaimer_en: "",
+  });
 
   useEffect(() => {
     if (settings) {
@@ -43,6 +59,22 @@ export default function AdminSettings() {
         working_hours: s.working_hours || "",
         working_hours_en: s.working_hours_en || "",
         mobile: s.mobile || "",
+      });
+      setMortgage({
+        mortgage_enabled: s.mortgage_enabled || "true",
+        mortgage_default_rate: s.mortgage_default_rate || "5.5",
+        mortgage_min_rate: s.mortgage_min_rate || "2.0",
+        mortgage_max_rate: s.mortgage_max_rate || "12.0",
+        mortgage_default_term: s.mortgage_default_term || "25",
+        mortgage_min_term: s.mortgage_min_term || "5",
+        mortgage_max_term: s.mortgage_max_term || "30",
+        mortgage_default_down_payment: s.mortgage_default_down_payment || "20",
+        mortgage_min_down_payment: s.mortgage_min_down_payment || "10",
+        mortgage_max_down_payment: s.mortgage_max_down_payment || "90",
+        mortgage_title_ar: s.mortgage_title_ar || "حاسبة التمويل العقاري",
+        mortgage_title_en: s.mortgage_title_en || "Mortgage Calculator",
+        mortgage_disclaimer_ar: s.mortgage_disclaimer_ar || "",
+        mortgage_disclaimer_en: s.mortgage_disclaimer_en || "",
       });
     }
   }, [settings]);
@@ -66,6 +98,9 @@ export default function AdminSettings() {
             <TabsTrigger value="contact" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">بيانات التواصل</TabsTrigger>
             <TabsTrigger value="social" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">وسائل التواصل</TabsTrigger>
             <TabsTrigger value="email" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">قوالب البريد</TabsTrigger>
+            <TabsTrigger value="mortgage" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
+              <Calculator className="w-4 h-4 ml-1.5" />حاسبة التمويل
+            </TabsTrigger>
           </TabsList>
 
           {/* ===== BRANDING TAB ===== */}
@@ -312,6 +347,129 @@ export default function AdminSettings() {
                 <div className="flex justify-end">
                   <Button onClick={() => toast.success("تم حفظ قوالب البريد")} className="bg-indigo-600 hover:bg-indigo-700">
                     <Save className="w-4 h-4 ml-2" />حفظ القوالب
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          {/* ===== MORTGAGE CALCULATOR TAB ===== */}
+          <TabsContent value="mortgage" className="mt-4">
+            <Card className="border border-slate-100 shadow-sm bg-white rounded-xl">
+              <CardHeader className="border-b border-slate-100 pb-4">
+                <CardTitle className="text-base text-slate-700 flex items-center gap-2">
+                  <Calculator className="w-4 h-4 text-emerald-500" />
+                  إعدادات حاسبة التمويل العقاري
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="py-6 space-y-6">
+                {/* Visibility Toggle */}
+                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
+                  <div>
+                    <p className="font-semibold text-sm text-slate-700">إظهار الحاسبة في صفحة العقار</p>
+                    <p className="text-xs text-slate-400 mt-0.5">عند الإيقاف لن تظهر الحاسبة للزوار في صفحات عقارات البيع</p>
+                  </div>
+                  <button
+                    onClick={() => setMortgage(p => ({ ...p, mortgage_enabled: p.mortgage_enabled === "true" ? "false" : "true" }))}
+                    className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
+                      mortgage.mortgage_enabled === "true" ? "bg-emerald-500" : "bg-slate-300"
+                    }`}
+                  >
+                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform ${
+                      mortgage.mortgage_enabled === "true" ? "translate-x-1" : "translate-x-6"
+                    }`} />
+                    {mortgage.mortgage_enabled === "true" ? <Eye className="w-3 h-3 text-white absolute left-1.5" /> : <EyeOff className="w-3 h-3 text-white absolute right-1.5" />}
+                  </button>
+                </div>
+
+                {/* Titles */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-slate-700 text-sm">عنوان الحاسبة (عربي)</Label>
+                    <Input value={mortgage.mortgage_title_ar} onChange={e => setMortgage(p => ({ ...p, mortgage_title_ar: e.target.value }))} className="mt-1" />
+                  </div>
+                  <div>
+                    <Label className="text-slate-700 text-sm">Calculator Title (English)</Label>
+                    <Input value={mortgage.mortgage_title_en} onChange={e => setMortgage(p => ({ ...p, mortgage_title_en: e.target.value }))} className="mt-1" dir="ltr" />
+                  </div>
+                </div>
+
+                {/* Rate Settings */}
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-3">
+                  <h3 className="font-semibold text-sm text-slate-700">نسبة الربح / معدل الفائدة (%)</h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <Label className="text-xs text-slate-500">الافتراضي</Label>
+                      <Input type="number" step="0.1" value={mortgage.mortgage_default_rate} onChange={e => setMortgage(p => ({ ...p, mortgage_default_rate: e.target.value }))} className="mt-1" dir="ltr" />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-slate-500">الحد الأدنى</Label>
+                      <Input type="number" step="0.1" value={mortgage.mortgage_min_rate} onChange={e => setMortgage(p => ({ ...p, mortgage_min_rate: e.target.value }))} className="mt-1" dir="ltr" />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-slate-500">الحد الأقصى</Label>
+                      <Input type="number" step="0.1" value={mortgage.mortgage_max_rate} onChange={e => setMortgage(p => ({ ...p, mortgage_max_rate: e.target.value }))} className="mt-1" dir="ltr" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Term Settings */}
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-3">
+                  <h3 className="font-semibold text-sm text-slate-700">مدة التمويل (سنوات)</h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <Label className="text-xs text-slate-500">الافتراضي</Label>
+                      <Input type="number" value={mortgage.mortgage_default_term} onChange={e => setMortgage(p => ({ ...p, mortgage_default_term: e.target.value }))} className="mt-1" dir="ltr" />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-slate-500">الحد الأدنى</Label>
+                      <Input type="number" value={mortgage.mortgage_min_term} onChange={e => setMortgage(p => ({ ...p, mortgage_min_term: e.target.value }))} className="mt-1" dir="ltr" />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-slate-500">الحد الأقصى</Label>
+                      <Input type="number" value={mortgage.mortgage_max_term} onChange={e => setMortgage(p => ({ ...p, mortgage_max_term: e.target.value }))} className="mt-1" dir="ltr" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Down Payment Settings */}
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-3">
+                  <h3 className="font-semibold text-sm text-slate-700">الدفعة الأولى (%)</h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <Label className="text-xs text-slate-500">الافتراضي</Label>
+                      <Input type="number" value={mortgage.mortgage_default_down_payment} onChange={e => setMortgage(p => ({ ...p, mortgage_default_down_payment: e.target.value }))} className="mt-1" dir="ltr" />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-slate-500">الحد الأدنى</Label>
+                      <Input type="number" value={mortgage.mortgage_min_down_payment} onChange={e => setMortgage(p => ({ ...p, mortgage_min_down_payment: e.target.value }))} className="mt-1" dir="ltr" />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-slate-500">الحد الأقصى</Label>
+                      <Input type="number" value={mortgage.mortgage_max_down_payment} onChange={e => setMortgage(p => ({ ...p, mortgage_max_down_payment: e.target.value }))} className="mt-1" dir="ltr" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Disclaimers */}
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-slate-700 text-sm">إخلاء المسؤولية (عربي)</Label>
+                    <Textarea rows={3} value={mortgage.mortgage_disclaimer_ar} onChange={e => setMortgage(p => ({ ...p, mortgage_disclaimer_ar: e.target.value }))} className="mt-1 text-sm" />
+                  </div>
+                  <div>
+                    <Label className="text-slate-700 text-sm">Disclaimer (English)</Label>
+                    <Textarea rows={3} value={mortgage.mortgage_disclaimer_en} onChange={e => setMortgage(p => ({ ...p, mortgage_disclaimer_en: e.target.value }))} className="mt-1 text-sm" dir="ltr" />
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <Button
+                    onClick={() => updateSettings.mutate({ group: "mortgage", values: mortgage })}
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                    disabled={updateSettings.isPending}
+                  >
+                    {updateSettings.isPending ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <Save className="w-4 h-4 ml-2" />}
+                    حفظ إعدادات الحاسبة
                   </Button>
                 </div>
               </CardContent>

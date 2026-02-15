@@ -489,3 +489,29 @@
 - [x] Add professional gradient placeholder avatars for agents without photos (dark navy gradient with initial letter)
 - [x] Ensure agent photo upload works in admin panel
 - [x] Write vitest tests for SEO & compliance (42 tests, all passing)
+
+## Mortgage Calculator (Feb 16, 2026)
+
+### Backend Control
+- [x] Add mortgage settings to settings DB (14 keys: enabled, rates, terms, down payment, titles, disclaimers)
+- [x] Add mortgage settings tab in admin Settings page with all configurable fields
+- [x] Add visibility toggle (show/hide calculator globally) with eye icon
+- [x] Expose mortgage config via public endpoint (getMortgageConfig)
+
+### Frontend Calculator Component
+- [x] Build MortgageCalculator component (bilingual AR/EN, SAR currency)
+- [x] Property price pre-filled from property data with slider (100K-20M)
+- [x] Down payment slider (percentage + SAR amount display)
+- [x] Interest rate slider (pre-filled from admin config, within admin-defined range)
+- [x] Loan term slider (years, pre-filled from admin config, within admin-defined range)
+- [x] Real-time monthly payment calculation with emerald highlight card
+- [x] Payment breakdown (loan amount, total interest, total payment)
+- [x] Cost breakdown bar (principal vs interest visual ratio)
+- [x] Amortization summary table (expandable, shows year 1, 5, 10, final)
+- [x] SAMA compliance disclaimer (editable from CMS)
+- [x] Responsive design matching site theme
+
+### Integration
+- [x] Integrate into PropertyDetail page (conditionally rendered based on admin toggle)
+- [x] Only show for sale properties (not rentals)
+- [x] Write vitest tests for mortgage calculator (10 tests: 7 backend config + 3 math verification, all passing)
