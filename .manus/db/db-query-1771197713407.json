@@ -1,0 +1,37 @@
+{
+  "query": "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'homepage_sections' ORDER BY ORDINAL_POSITION;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.4e413a58b2a3 --database FCSdcQDHNngsNZkY5BfGCD --execute SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'homepage_sections' ORDER BY ORDINAL_POSITION;",
+  "rows": [
+    {
+      "COLUMN_NAME": "id"
+    },
+    {
+      "COLUMN_NAME": "sectionKey"
+    },
+    {
+      "COLUMN_NAME": "title"
+    },
+    {
+      "COLUMN_NAME": "subtitle"
+    },
+    {
+      "COLUMN_NAME": "content"
+    },
+    {
+      "COLUMN_NAME": "isVisible"
+    },
+    {
+      "COLUMN_NAME": "displayOrder"
+    },
+    {
+      "COLUMN_NAME": "updatedAt"
+    },
+    {
+      "COLUMN_NAME": "updatedBy"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_NAME\nid\nsectionKey\ntitle\nsubtitle\ncontent\nisVisible\ndisplayOrder\nupdatedAt\nupdatedBy\n",
+  "stderr": "",
+  "execution_time_ms": 1539
+}
