@@ -560,3 +560,28 @@
 - [x] Add admin Settings > التحليلات tab (enable/disable toggle, GA4 ID, GTM ID, setup instructions)
 - [x] IP anonymization enabled by default for privacy compliance
 - [x] Write vitest tests for all enhancements (11 tests, all passing)
+
+## Feature Verification (Feb 16, 2026)
+
+### A) Property Comparison Feature (already exists)
+- [x] Compare button on property cards in Properties listing
+- [x] Floating compare bar at bottom showing selected count
+- [x] Compare page at /compare with side-by-side table
+- [x] Comparison shows: image, price, type, listing, location, area, rooms, bathrooms, parking, features
+- [x] Max 4 properties comparison limit
+- [x] Remove individual properties from comparison
+- [x] Backend getPropertiesForComparison endpoint
+- [x] Bilingual AR/EN support
+- [x] Verify comparison works end-to-end via tests (8 tests passing)
+
+### B) Property Favorites Feature (already exists)
+- [x] Heart icon on property cards and detail page
+- [x] localStorage-based favorites for guest users
+- [x] DB-synced favorites for logged-in customers (customer_favorites table)
+- [x] Favorites page at /favorites with sorting (newest, price asc/desc)
+- [x] Share favorites via URL (/favorites?ids=1,2,3)
+- [x] Clear all favorites with confirmation
+- [x] Favorites count badge in Navbar
+- [x] Cross-tab sync via storage events
+- [x] Backend endpoints: getFavorites, syncFavorites, toggleFavorite, clearFavorites
+- [x] Verify favorites works end-to-end via tests (7 tests passing)
