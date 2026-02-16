@@ -321,7 +321,7 @@ export const ar: Record<string, string> = {
   "account.profile": "حسابي",
   "account.myAccount": "حسابي",
   "account.phone": "رقم الجوال",
-  "account.phonePlaceholder": "05XXXXXXXX",
+  "account.phonePlaceholder": "+966 5x xxx xxxx",
   "account.password": "كلمة المرور",
   "account.passwordPlaceholder": "أدخل كلمة المرور",
   "account.confirmPassword": "تأكيد كلمة المرور",

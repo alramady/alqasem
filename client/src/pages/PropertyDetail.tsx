@@ -362,7 +362,7 @@ export default function PropertyDetail({ id }: { id: string }) {
               {agencyAgent?.agency ? (
                 <div className="mb-4 pb-4 border-b border-gray-100">
                   <Link href={`/agency/${agencyAgent.agency.slug}`}>
-                    <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity">
+                    <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity" dir={isAr ? "rtl" : "ltr"}>
                       <div className="w-14 h-14 rounded-xl border-2 border-slate-100 overflow-hidden flex items-center justify-center bg-white shrink-0">
                         {agencyAgent.agency.logo ? (
                           <img src={agencyAgent.agency.logo} alt={agencyAgent.agency.nameAr} className="w-full h-full object-contain p-1" />
@@ -378,7 +378,7 @@ export default function PropertyDetail({ id }: { id: string }) {
                   </Link>
                   {agencyAgent?.agent && (
                     <Link href={`/agent/${agencyAgent.agent.slug}`}>
-                      <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-50 cursor-pointer hover:opacity-80 transition-opacity">
+                      <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-50 cursor-pointer hover:opacity-80 transition-opacity" dir={isAr ? "rtl" : "ltr"}>
                         <div className="w-10 h-10 rounded-full border-2 border-slate-100 overflow-hidden flex items-center justify-center bg-slate-50 shrink-0">
                           {agencyAgent.agent.photo ? (
                             <img src={agencyAgent.agent.photo} alt={agencyAgent.agent.nameAr} className="w-full h-full object-cover" />
@@ -395,7 +395,7 @@ export default function PropertyDetail({ id }: { id: string }) {
                   )}
                 </div>
               ) : (
-                <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-100">
+                <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-100" dir={isAr ? "rtl" : "ltr"}>
                   <div className="w-14 h-14 bg-[#0f1b33] rounded-xl flex items-center justify-center"><Building2 className="w-7 h-7 text-[#c8a45e]" /></div>
                   <div>
                     <h4 className="font-bold text-[#0f1b33]">{isAr ? "القاسم العقارية" : "Al-Qasim Real Estate"}</h4>
@@ -428,7 +428,7 @@ export default function PropertyDetail({ id }: { id: string }) {
                     });
                   }}>
                     <input type="text" value={inquiryName} onChange={(e) => setInquiryName(e.target.value)} placeholder={t("contact.name")} required className="w-full px-4 py-2.5 bg-[#f8f5f0] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30" />
-                    <input type="tel" value={inquiryPhone} onChange={(e) => setInquiryPhone(e.target.value)} placeholder={t("contact.phone")} required className="w-full px-4 py-2.5 bg-[#f8f5f0] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30" dir="ltr" />
+                    <input type="tel" value={inquiryPhone} onChange={(e) => setInquiryPhone(e.target.value.replace(/[^0-9+\-\s()]/g, ''))} placeholder={isAr ? "رقم الجوال" : "Phone number"} required className="w-full px-4 py-2.5 bg-[#f8f5f0] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30 text-right placeholder:text-right" dir="rtl" />
                     <textarea value={inquiryMessage} onChange={(e) => setInquiryMessage(e.target.value)} placeholder={isAr ? "رسالتك..." : "Your message..."} rows={3} className="w-full px-4 py-2.5 bg-[#f8f5f0] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30 resize-none" />
                     {submitInquiry.error && <p className="text-red-500 text-xs">{isAr ? "حدث خطأ، حاول مرة أخرى" : "An error occurred, please try again"}</p>}
                     <button type="submit" disabled={submitInquiry.isPending} className="w-full bg-[#c8a45e] hover:bg-[#b8944e] text-[#0f1b33] font-semibold py-3 rounded-lg transition-colors disabled:opacity-60">

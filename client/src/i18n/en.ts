@@ -314,7 +314,7 @@ export const en: Record<string, string> = {
   "account.profile": "My Account",
   "account.myAccount": "My Account",
   "account.phone": "Phone Number",
-  "account.phonePlaceholder": "05XXXXXXXX",
+  "account.phonePlaceholder": "+966 5x xxx xxxx",
   "account.password": "Password",
   "account.passwordPlaceholder": "Enter password",
   "account.confirmPassword": "Confirm Password",

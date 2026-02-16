@@ -481,7 +481,7 @@ export const publicRouter = router({
   // ============ CONTACT FORM SUBMISSION ============
   submitInquiry: publicProcedure.input(z.object({
     name: z.string().min(2, "الاسم مطلوب (حرفين على الأقل)"),
-    phone: z.string().min(9, "رقم الجوال مطلوب").refine(v => /^(\+966|05|5)\d{8}$/.test(v.replace(/\s/g, "")), { message: "رقم الجوال يجب أن يبدأ بـ 05 أو +966" }),
+    phone: z.string().min(7, "رقم الجوال مطلوب").refine(v => /^[+]?[0-9\s\-()]{7,20}$/.test(v.trim()), { message: "يرجى إدخال رقم جوال صحيح" }),
     email: z.string().email("البريد الإلكتروني غير صحيح").optional().or(z.literal("")),
     subject: z.string().optional(),
     message: z.string().min(5, "الرسالة مطلوبة (5 أحرف على الأقل)"),
@@ -602,7 +602,7 @@ export const publicRouter = router({
     price: z.string().optional(),
     description: z.string().optional(),
     name: z.string().min(2, "الاسم مطلوب"),
-    phone: z.string().min(9, "رقم الجوال مطلوب").refine(v => /^(\+966|05|5)\d{8}$/.test(v.replace(/\s/g, "")), { message: "رقم الجوال يجب أن يبدأ بـ 05 أو +966" }),
+    phone: z.string().min(7, "رقم الجوال مطلوب").refine(v => /^[+]?[0-9\s\-()]{7,20}$/.test(v.trim()), { message: "يرجى إدخال رقم جوال صحيح" }),
     email: z.string().email("البريد الإلكتروني غير صحيح").optional().or(z.literal("")),
     _hp: z.string().optional(),
   })).mutation(async ({ input }) => {
@@ -716,7 +716,7 @@ export const publicRouter = router({
     minArea: z.string().optional(),
     details: z.string().optional(),
     name: z.string().min(2, "الاسم مطلوب"),
-    phone: z.string().min(9, "رقم الجوال مطلوب").refine(v => /^(\+966|05|5)\d{8}$/.test(v.replace(/\s/g, "")), { message: "رقم الجوال يجب أن يبدأ بـ 05 أو +966" }),
+    phone: z.string().min(7, "رقم الجوال مطلوب").refine(v => /^[+]?[0-9\s\-()]{7,20}$/.test(v.trim()), { message: "يرجى إدخال رقم جوال صحيح" }),
     email: z.string().email("البريد الإلكتروني غير صحيح").optional().or(z.literal("")),
     _hp: z.string().optional(),
   })).mutation(async ({ input }) => {
@@ -1076,7 +1076,7 @@ export const publicRouter = router({
     propertyId: z.number().optional(),
     propertyTitle: z.string().optional(),
     customerName: z.string().min(2).max(255),
-    customerPhone: z.string().regex(/^05\d{8}$/, "رقم الجوال يجب أن يبدأ بـ 05 ويتكون من 10 أرقام"),
+    customerPhone: z.string().min(7, "رقم الجوال مطلوب").refine(v => /^[+]?[0-9\s\-()]{7,20}$/.test(v.trim()), { message: "يرجى إدخال رقم جوال صحيح" }),
     customerEmail: z.string().email().optional().or(z.literal("")),
     propertyPrice: z.number().min(1),
     downPaymentPct: z.number().min(0).max(100),

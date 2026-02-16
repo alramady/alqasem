@@ -295,8 +295,8 @@ export default function Contact() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">{t("contact.phone")} *</label>
-                      <input type="tel" required value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="w-full px-4 py-3 bg-[#f8f5f0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30" placeholder="05XXXXXXXX" dir="ltr" disabled={submitMutation.isPending} />
-                      <p className="text-xs text-gray-400 mt-1" dir="ltr">{isAr ? "مثال: 0512345678 أو +966512345678" : "e.g. 0512345678 or +966512345678"}</p>
+                      <input type="tel" required value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value.replace(/[^0-9+\-\s()]/g, '') })} className="w-full px-4 py-3 bg-[#f8f5f0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30" placeholder="+966 5x xxx xxxx" dir="ltr" disabled={submitMutation.isPending} />
+                      <p className="text-xs text-gray-400 mt-1" dir="ltr">{isAr ? "مثال: 0512345678 أو +966512345678 أو أي رقم دولي" : "e.g. 0512345678, +966512345678, or any international number"}</p>
                     </div>
                   </div>
                   <div>

@@ -119,8 +119,8 @@ export default function MortgageCalculator({ defaultPrice, propertyId, propertyT
     if (!formData.name.trim() || formData.name.trim().length < 2) {
       errors.name = isAr ? "الاسم مطلوب (حرفين على الأقل)" : "Name required (min 2 chars)";
     }
-    if (!/^05\d{8}$/.test(formData.phone)) {
-      errors.phone = isAr ? "رقم الجوال يجب أن يبدأ بـ 05 ويتكون من 10 أرقام" : "Phone must start with 05 and be 10 digits";
+    if (!/^[+]?[0-9\s\-()]{7,20}$/.test(formData.phone.trim())) {
+      errors.phone = isAr ? "يرجى إدخال رقم جوال صحيح" : "Please enter a valid phone number";
     }
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       errors.email = isAr ? "البريد الإلكتروني غير صحيح" : "Invalid email";
@@ -448,8 +448,8 @@ export default function MortgageCalculator({ defaultPrice, propertyId, propertyT
                     <input
                       type="tel"
                       value={formData.phone}
-                      onChange={(e) => { setFormData(p => ({ ...p, phone: e.target.value.replace(/[^0-9]/g, "").slice(0, 10) })); setFormErrors(p => ({ ...p, phone: "" })); }}
-                      placeholder="05XXXXXXXX"
+                      onChange={(e) => { setFormData(p => ({ ...p, phone: e.target.value.replace(/[^0-9+\-\s()]/g, "").slice(0, 20) })); setFormErrors(p => ({ ...p, phone: "" })); }}
+                      placeholder="+966 5x xxx xxxx"
                       dir="ltr"
                       className={`w-full px-3 py-2.5 text-sm rounded-lg border ${formErrors.phone ? "border-red-300 bg-red-50" : "border-slate-200"} focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-colors`}
                     />

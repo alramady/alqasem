@@ -687,3 +687,10 @@
 - [x] Diagnose "حدث خطأ غير متوقع" error on property detail page in production
 - [x] Fix root cause: useMemo(mapCenter) was placed after early returns, violating React Rules of Hooks
 - [x] Verify fix works on dev server — property detail page loads correctly
+
+## Bug Fix - Phone Number Missing on Contact Section
+- [x] Fix agency logo position in RTL — added dir={isAr ? "rtl" : "ltr"} to agency/agent card rows
+- [x] Fix phone input field (رقم الجوال) — RTL aligned, accepts international numbers across all forms
+- [x] Updated phone validation on backend (4 endpoints) to accept international format (7-20 digits, +, -, spaces, parens)
+- [x] Updated phone inputs on Contact, AddProperty, RequestProperty, MortgageCalculator, PropertyDetail
+- [x] Updated i18n phone placeholders from 05XXXXXXXX to +966 5x xxx xxxx
