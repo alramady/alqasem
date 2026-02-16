@@ -694,3 +694,8 @@
 - [x] Updated phone validation on backend (4 endpoints) to accept international format (7-20 digits, +, -, spaces, parens)
 - [x] Updated phone inputs on Contact, AddProperty, RequestProperty, MortgageCalculator, PropertyDetail
 - [x] Updated i18n phone placeholders from 05XXXXXXXX to +966 5x xxx xxxx
+
+## Map Markers Improvement
+- [x] Replace price label markers with simple colored dots (red=sale, blue=rent, gold=cluster)
+- [x] Click on dot navigates directly to property detail page
+- [x] Cluster nearby properties (~100m) with count badge and expandable pagination panel

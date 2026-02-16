@@ -1,8 +1,8 @@
 import { useRef, useCallback, useEffect, useState } from "react";
 import { MapView } from "@/components/Map";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { MapPin, X, BedDouble, Bath, Maximize, ExternalLink } from "lucide-react";
-import { Link } from "wouter";
+import { MapPin, X, BedDouble, Bath, Maximize, ExternalLink, ChevronLeft, ChevronRight } from "lucide-react";
+import { Link, useLocation } from "wouter";
 
 interface Property {
   id: number;
@@ -40,83 +40,121 @@ function formatPrice(price: string | null) {
   return num.toLocaleString("en-US", { maximumFractionDigits: 0 });
 }
 
+// Group properties by proximity (within ~100m)
+function groupByLocation(properties: Property[]): Property[][] {
+  const groups: Property[][] = [];
+  const used = new Set<number>();
+
+  properties.forEach((p, i) => {
+    if (used.has(i)) return;
+    const lat = parseFloat(p.latitude!);
+    const lng = parseFloat(p.longitude!);
+    const group: Property[] = [p];
+    used.add(i);
+
+    properties.forEach((q, j) => {
+      if (used.has(j)) return;
+      const lat2 = parseFloat(q.latitude!);
+      const lng2 = parseFloat(q.longitude!);
+      // ~0.001 degree ≈ 111m
+      if (Math.abs(lat - lat2) < 0.001 && Math.abs(lng - lng2) < 0.001) {
+        group.push(q);
+        used.add(j);
+      }
+    });
+
+    groups.push(group);
+  });
+
+  return groups;
+}
+
 export default function PropertyMapView({ properties, className }: PropertyMapViewProps) {
   const { isAr } = useLanguage();
+  const [, navigate] = useLocation();
   const mapRef = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([]);
-  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<Property[] | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const [mapReady, setMapReady] = useState(false);
 
-  // Filter properties that have lat/lng
   const geoProperties = properties.filter(
     p => p.latitude && p.longitude && parseFloat(p.latitude) !== 0 && parseFloat(p.longitude) !== 0
   );
 
-  // Calculate center from properties or default to Riyadh
   const center = geoProperties.length > 0
     ? {
         lat: geoProperties.reduce((sum, p) => sum + parseFloat(p.latitude!), 0) / geoProperties.length,
         lng: geoProperties.reduce((sum, p) => sum + parseFloat(p.longitude!), 0) / geoProperties.length,
       }
-    : { lat: 24.7136, lng: 46.6753 }; // Riyadh
+    : { lat: 24.7136, lng: 46.6753 };
 
   const handleMapReady = useCallback((map: google.maps.Map) => {
     mapRef.current = map;
     setMapReady(true);
   }, []);
 
-  // Add markers when map is ready or properties change
   useEffect(() => {
     if (!mapReady || !mapRef.current) return;
 
-    // Clear existing markers
     markersRef.current.forEach(m => (m.map = null));
     markersRef.current = [];
 
     if (geoProperties.length === 0) return;
 
     const bounds = new google.maps.LatLngBounds();
+    const groups = groupByLocation(geoProperties);
 
-    geoProperties.forEach(property => {
-      const lat = parseFloat(property.latitude!);
-      const lng = parseFloat(property.longitude!);
+    groups.forEach(group => {
+      const first = group[0];
+      const lat = parseFloat(first.latitude!);
+      const lng = parseFloat(first.longitude!);
       const position = { lat, lng };
       bounds.extend(position);
 
-      // Create custom marker element
+      const isCluster = group.length > 1;
+      const hasRent = group.some(p => p.listingType === "rent");
+      const hasSale = group.some(p => p.listingType !== "rent");
+      const dotColor = isCluster ? "#c8a45e" : (hasRent ? "#2563eb" : "#E31E24");
+      const dotSize = isCluster ? 28 : 16;
+
       const markerEl = document.createElement("div");
-      markerEl.className = "property-marker";
-      const priceFormatted = formatPrice(property.price);
-      const isRent = property.listingType === "rent";
-      
-      markerEl.innerHTML = `
-        <div style="
-          background: ${isRent ? '#2563eb' : '#E31E24'};
-          color: white;
-          padding: 6px 10px;
-          border-radius: 8px;
-          font-size: 12px;
-          font-weight: 700;
-          white-space: nowrap;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-          cursor: pointer;
-          transition: transform 0.2s;
-          font-family: system-ui, -apple-system, sans-serif;
-          direction: ltr;
-        ">
-          ${priceFormatted ? `${priceFormatted} SAR` : typeIcons[property.type] || '🏠'}
-        </div>
-        <div style="
-          width: 0; height: 0;
-          border-left: 6px solid transparent;
-          border-right: 6px solid transparent;
-          border-top: 6px solid ${isRent ? '#2563eb' : '#E31E24'};
-          margin: 0 auto;
-        "></div>
-      `;
+      markerEl.style.cursor = "pointer";
+      markerEl.style.transition = "transform 0.2s";
+
+      if (isCluster) {
+        markerEl.innerHTML = `
+          <div style="
+            width: ${dotSize}px;
+            height: ${dotSize}px;
+            border-radius: 50%;
+            background: ${dotColor};
+            border: 3px solid white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 11px;
+            font-weight: 800;
+            font-family: system-ui, sans-serif;
+          ">${group.length}</div>
+        `;
+      } else {
+        markerEl.innerHTML = `
+          <div style="
+            width: ${dotSize}px;
+            height: ${dotSize}px;
+            border-radius: 50%;
+            background: ${dotColor};
+            border: 2.5px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+          "></div>
+        `;
+      }
 
       markerEl.addEventListener("mouseenter", () => {
-        markerEl.style.transform = "scale(1.15)";
+        markerEl.style.transform = "scale(1.3)";
         markerEl.style.zIndex = "999";
       });
       markerEl.addEventListener("mouseleave", () => {
@@ -128,25 +166,35 @@ export default function PropertyMapView({ properties, className }: PropertyMapVi
         map: mapRef.current!,
         position,
         content: markerEl,
-        title: property.title,
+        title: isCluster
+          ? `${group.length} ${isAr ? "عقارات" : "properties"}`
+          : (isAr ? first.title : (first.titleEn || first.title)),
       });
 
       marker.addListener("click", () => {
-        setSelectedProperty(property);
-        mapRef.current?.panTo(position);
+        if (group.length === 1) {
+          // Single property — navigate directly
+          navigate(`/properties/${first.id}`);
+        } else {
+          // Multiple properties — show group panel
+          setSelectedGroup(group);
+          setSelectedIndex(0);
+          mapRef.current?.panTo(position);
+        }
       });
 
       markersRef.current.push(marker);
     });
 
-    // Fit bounds
     if (geoProperties.length > 1) {
       mapRef.current.fitBounds(bounds, { top: 50, bottom: 50, left: 50, right: 50 });
     } else if (geoProperties.length === 1) {
       mapRef.current.setCenter(bounds.getCenter());
       mapRef.current.setZoom(15);
     }
-  }, [mapReady, geoProperties.length, properties]);
+  }, [mapReady, geoProperties.length, properties, isAr, navigate]);
+
+  const selectedProperty = selectedGroup?.[selectedIndex] || null;
 
   if (geoProperties.length === 0) {
     return (
@@ -176,26 +224,53 @@ export default function PropertyMapView({ properties, className }: PropertyMapVi
 
       {/* Legend */}
       <div className="absolute bottom-3 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-md flex items-center gap-3 text-xs" style={{ insetInlineStart: '0.75rem' }}>
-        <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded-sm bg-[#E31E24]"></span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-full bg-[#E31E24] border border-white shadow-sm"></span>
           {isAr ? "للبيع" : "For Sale"}
         </span>
-        <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded-sm bg-[#2563eb]"></span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-full bg-[#2563eb] border border-white shadow-sm"></span>
           {isAr ? "للإيجار" : "For Rent"}
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-3.5 h-3.5 rounded-full bg-[#c8a45e] border border-white shadow-sm text-white text-[8px] font-bold flex items-center justify-center">+</span>
+          {isAr ? "مجموعة" : "Cluster"}
         </span>
       </div>
 
-      {/* Selected Property Card */}
-      {selectedProperty && (
+      {/* Selected Property/Group Card */}
+      {selectedGroup && selectedProperty && (
         <div className="absolute top-3 bg-white rounded-xl shadow-xl w-72 overflow-hidden" style={{ insetInlineEnd: '0.75rem' }}>
           <button
-            onClick={() => setSelectedProperty(null)}
+            onClick={() => { setSelectedGroup(null); setSelectedIndex(0); }}
             className="absolute top-2 z-10 w-6 h-6 bg-black/40 rounded-full flex items-center justify-center hover:bg-black/60 transition-colors"
             style={{ insetInlineEnd: '0.5rem' }}
           >
             <X className="w-3.5 h-3.5 text-white" />
           </button>
+
+          {/* Cluster pagination header */}
+          {selectedGroup.length > 1 && (
+            <div className="bg-[#0f1b33] text-white px-3 py-2 flex items-center justify-between text-xs">
+              <button
+                onClick={() => setSelectedIndex(i => (i - 1 + selectedGroup.length) % selectedGroup.length)}
+                className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+              <span className="font-medium">
+                {isAr
+                  ? `عقار ${selectedIndex + 1} من ${selectedGroup.length}`
+                  : `Property ${selectedIndex + 1} of ${selectedGroup.length}`}
+              </span>
+              <button
+                onClick={() => setSelectedIndex(i => (i + 1) % selectedGroup.length)}
+                className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
 
           {/* Image */}
           {(() => {

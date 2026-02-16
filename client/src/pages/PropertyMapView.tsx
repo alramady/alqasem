@@ -1,18 +1,50 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { MapView } from "@/components/Map";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
 import { MapPin, Home, BedDouble, Bath, Maximize2, ChevronLeft, ChevronRight, List, X, Filter, Search } from "lucide-react";
 
+// Group properties by proximity (~100m)
+function groupByLocation(properties: any[]): any[][] {
+  const groups: any[][] = [];
+  const used = new Set<number>();
+
+  properties.forEach((p, i) => {
+    if (used.has(i)) return;
+    const lat = parseFloat(p.latitude);
+    const lng = parseFloat(p.longitude);
+    if (isNaN(lat) || isNaN(lng)) return;
+    const group: any[] = [p];
+    used.add(i);
+
+    properties.forEach((q, j) => {
+      if (used.has(j)) return;
+      const lat2 = parseFloat(q.latitude);
+      const lng2 = parseFloat(q.longitude);
+      if (isNaN(lat2) || isNaN(lng2)) return;
+      if (Math.abs(lat - lat2) < 0.001 && Math.abs(lng - lng2) < 0.001) {
+        group.push(q);
+        used.add(j);
+      }
+    });
+
+    groups.push(group);
+  });
+
+  return groups;
+}
+
 export default function PropertyMapView() {
   const { t, isAr } = useLanguage();
+  const [, navigate] = useLocation();
   const mapRef = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([]);
-  const [selectedProperty, setSelectedProperty] = useState<any>(null);
+  const [selectedGroup, setSelectedGroup] = useState<any[] | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [propertyType, setPropertyType] = useState("");
@@ -44,12 +76,6 @@ export default function PropertyMapView() {
     return result;
   }, [properties, searchQuery, propertyType]);
 
-  const formatPrice = (price: number) => {
-    if (price >= 1000000) return `${(price / 1000000).toFixed(1)}M`;
-    if (price >= 1000) return `${(price / 1000).toFixed(0)}K`;
-    return price.toString();
-  };
-
   const handleMapReady = useCallback((map: google.maps.Map) => {
     mapRef.current = map;
   }, []);
@@ -64,44 +90,86 @@ export default function PropertyMapView() {
     markersRef.current = [];
 
     const bounds = new google.maps.LatLngBounds();
+    const groups = groupByLocation(filteredProperties);
 
-    filteredProperties.forEach((property: any) => {
-      const lat = parseFloat(property.latitude);
-      const lng = parseFloat(property.longitude);
+    groups.forEach(group => {
+      const first = group[0];
+      const lat = parseFloat(first.latitude);
+      const lng = parseFloat(first.longitude);
       if (isNaN(lat) || isNaN(lng)) return;
 
       const position = { lat, lng };
       bounds.extend(position);
 
-      const priceLabel = document.createElement("div");
-      priceLabel.className = "property-marker";
-      priceLabel.innerHTML = `
-        <div style="
-          background: ${property.listingType === 'rent' ? '#059669' : '#0f1b33'};
-          color: white;
-          padding: 4px 10px;
-          border-radius: 20px;
-          font-size: 12px;
-          font-weight: 700;
-          white-space: nowrap;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-          cursor: pointer;
-          transition: transform 0.15s;
-          border: 2px solid white;
-        ">${formatPrice(property.price || 0)} ${isAr ? 'ر.س' : 'SAR'}</div>
-      `;
+      const isCluster = group.length > 1;
+      const isRent = first.listingType === "rent";
+      const dotColor = isCluster ? "#c8a45e" : (isRent ? "#2563eb" : "#E31E24");
+      const dotSize = isCluster ? 28 : 16;
+
+      const markerEl = document.createElement("div");
+      markerEl.style.cursor = "pointer";
+      markerEl.style.transition = "transform 0.2s";
+
+      if (isCluster) {
+        markerEl.innerHTML = `
+          <div style="
+            width: ${dotSize}px;
+            height: ${dotSize}px;
+            border-radius: 50%;
+            background: ${dotColor};
+            border: 3px solid white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 11px;
+            font-weight: 800;
+            font-family: system-ui, sans-serif;
+          ">${group.length}</div>
+        `;
+      } else {
+        markerEl.innerHTML = `
+          <div style="
+            width: ${dotSize}px;
+            height: ${dotSize}px;
+            border-radius: 50%;
+            background: ${dotColor};
+            border: 2.5px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+          "></div>
+        `;
+      }
+
+      markerEl.addEventListener("mouseenter", () => {
+        markerEl.style.transform = "scale(1.3)";
+        markerEl.style.zIndex = "999";
+      });
+      markerEl.addEventListener("mouseleave", () => {
+        markerEl.style.transform = "scale(1)";
+        markerEl.style.zIndex = "auto";
+      });
 
       const marker = new google.maps.marker.AdvancedMarkerElement({
         map,
         position,
-        content: priceLabel,
-        title: isAr ? property.title : (property.titleEn || property.title),
+        content: markerEl,
+        title: isCluster
+          ? `${group.length} ${isAr ? "عقارات" : "properties"}`
+          : (isAr ? first.title : (first.titleEn || first.title)),
       });
 
       marker.addListener("click", () => {
-        setSelectedProperty(property);
-        map.panTo(position);
-        map.setZoom(Math.max(map.getZoom() || 14, 14));
+        if (group.length === 1) {
+          // Single property — navigate directly
+          navigate(`/properties/${first.id}`);
+        } else {
+          // Multiple properties — show group panel
+          setSelectedGroup(group);
+          setSelectedIndex(0);
+          map.panTo(position);
+          map.setZoom(Math.max(map.getZoom() || 14, 14));
+        }
       });
 
       markersRef.current.push(marker);
@@ -110,7 +178,7 @@ export default function PropertyMapView() {
     if (markersRef.current.length > 0) {
       map.fitBounds(bounds, { top: 50, right: 50, bottom: 50, left: sidebarOpen ? 420 : 50 });
     }
-  }, [filteredProperties, isAr, sidebarOpen]);
+  }, [filteredProperties, isAr, sidebarOpen, navigate]);
 
   const propertyTypes = useMemo(() => {
     const types = new Set(properties.map((p: any) => p.propertyType).filter(Boolean));
@@ -129,6 +197,8 @@ export default function PropertyMapView() {
     farm: { ar: "مزرعة", en: "Farm" },
     warehouse: { ar: "مستودع", en: "Warehouse" },
   };
+
+  const selectedProperty = selectedGroup?.[selectedIndex] || null;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -153,6 +223,25 @@ export default function PropertyMapView() {
             {isAr ? `${filteredProperties.length} عقار على الخريطة` : `${filteredProperties.length} properties on map`}
           </span>
           <div className="flex-1" />
+
+          {/* Legend inline */}
+          <div className="hidden md:flex items-center gap-3 text-xs text-gray-600">
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-3 rounded-full bg-[#E31E24] border border-white shadow-sm"></span>
+              {isAr ? "بيع" : "Sale"}
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-3 rounded-full bg-[#2563eb] border border-white shadow-sm"></span>
+              {isAr ? "إيجار" : "Rent"}
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-3.5 h-3.5 rounded-full bg-[#c8a45e] border border-white shadow-sm text-white text-[8px] font-bold flex items-center justify-center">+</span>
+              {isAr ? "مجموعة" : "Cluster"}
+            </span>
+          </div>
+
+          <div className="h-5 w-px bg-gray-300 hidden md:block" />
+
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="text-sm text-gray-600 hover:text-[#0f1b33] flex items-center gap-1"
@@ -208,18 +297,10 @@ export default function PropertyMapView() {
 
             <div className="overflow-y-auto" style={{ height: "calc(100% - 110px)" }}>
               {filteredProperties.map((property: any) => (
-                <div
+                <Link
                   key={property.id}
-                  onClick={() => {
-                    setSelectedProperty(property);
-                    const lat = parseFloat(property.latitude);
-                    const lng = parseFloat(property.longitude);
-                    if (mapRef.current && !isNaN(lat) && !isNaN(lng)) {
-                      mapRef.current.panTo({ lat, lng });
-                      mapRef.current.setZoom(15);
-                    }
-                  }}
-                  className={`p-3 border-b cursor-pointer hover:bg-gray-50 transition-colors ${
+                  href={`/properties/${property.id}`}
+                  className={`block p-3 border-b cursor-pointer hover:bg-gray-50 transition-colors ${
                     selectedProperty?.id === property.id ? "bg-blue-50 border-l-4 border-l-[#d4a853]" : ""
                   }`}
                 >
@@ -257,11 +338,11 @@ export default function PropertyMapView() {
                       </div>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
               {filteredProperties.length === 0 && (
                 <div className="p-8 text-center text-gray-400">
-                  <MapPin className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                  <MapPin className="w-8 h-8 mx-auto mb-2 opacity-50" />
                   <p className="text-sm">{isAr ? "لا توجد عقارات بإحداثيات" : "No properties with coordinates"}</p>
                 </div>
               )}
@@ -277,40 +358,67 @@ export default function PropertyMapView() {
             />
           </div>
 
-          {/* Selected property popup */}
-          {selectedProperty && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 bg-white rounded-xl shadow-2xl p-4 w-[360px] max-w-[90vw]">
+          {/* Selected cluster popup */}
+          {selectedGroup && selectedProperty && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 bg-white rounded-xl shadow-2xl w-[360px] max-w-[90vw] overflow-hidden">
               <button
-                onClick={() => setSelectedProperty(null)}
-                className="absolute top-2 right-2 w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200"
+                onClick={() => { setSelectedGroup(null); setSelectedIndex(0); }}
+                className="absolute top-2 z-10 w-6 h-6 bg-black/40 rounded-full flex items-center justify-center hover:bg-black/60 transition-colors"
+                style={{ insetInlineEnd: '0.5rem' }}
               >
-                <X className="w-3 h-3" />
+                <X className="w-3.5 h-3.5 text-white" />
               </button>
-              <div className="flex gap-3">
-                <div className="w-24 h-20 rounded-lg overflow-hidden shrink-0 bg-gray-200">
-                  {selectedProperty.mainImage ? (
-                    <img src={selectedProperty.mainImage} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Home className="w-6 h-6 text-gray-400" />
-                    </div>
-                  )}
+
+              {/* Cluster pagination header */}
+              {selectedGroup.length > 1 && (
+                <div className="bg-[#0f1b33] text-white px-3 py-2 flex items-center justify-between text-xs">
+                  <button
+                    onClick={() => setSelectedIndex(i => (i - 1 + selectedGroup.length) % selectedGroup.length)}
+                    className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30"
+                  >
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="font-medium">
+                    {isAr
+                      ? `عقار ${selectedIndex + 1} من ${selectedGroup.length}`
+                      : `Property ${selectedIndex + 1} of ${selectedGroup.length}`}
+                  </span>
+                  <button
+                    onClick={() => setSelectedIndex(i => (i + 1) % selectedGroup.length)}
+                    className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-bold text-[#0f1b33] truncate">
-                    {isAr ? selectedProperty.title : (selectedProperty.titleEn || selectedProperty.title)}
-                  </h3>
-                  <p className="text-lg font-bold text-[#d4a853] mt-1">
-                    {new Intl.NumberFormat("ar-SA").format(selectedProperty.price || 0)} {isAr ? "ر.س" : "SAR"}
-                  </p>
+              )}
+
+              <div className="p-4">
+                <div className="flex gap-3">
+                  <div className="w-24 h-20 rounded-lg overflow-hidden shrink-0 bg-gray-200">
+                    {selectedProperty.mainImage ? (
+                      <img src={selectedProperty.mainImage} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Home className="w-6 h-6 text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-bold text-[#0f1b33] truncate">
+                      {isAr ? selectedProperty.title : (selectedProperty.titleEn || selectedProperty.title)}
+                    </h3>
+                    <p className="text-lg font-bold text-[#d4a853] mt-1">
+                      {new Intl.NumberFormat("ar-SA").format(selectedProperty.price || 0)} {isAr ? "ر.س" : "SAR"}
+                    </p>
+                  </div>
                 </div>
+                <Link
+                  href={`/properties/${selectedProperty.id}`}
+                  className="block mt-3 text-center bg-[#0f1b33] text-white text-sm font-semibold py-2 rounded-lg hover:bg-[#1a2b4a] transition-colors"
+                >
+                  {isAr ? "عرض التفاصيل" : "View Details"}
+                </Link>
               </div>
-              <Link
-                href={`/properties/${selectedProperty.id}`}
-                className="block mt-3 text-center bg-[#0f1b33] text-white text-sm font-semibold py-2 rounded-lg hover:bg-[#1a2b4a] transition-colors"
-              >
-                {isAr ? "عرض التفاصيل" : "View Details"}
-              </Link>
             </div>
           )}
         </div>
