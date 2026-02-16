@@ -704,3 +704,30 @@
 - [x] Show scrollable list of all properties in cluster popup with price, bedrooms, area, type
 - [x] Each item in list links to property detail page
 - [x] Update both component map and full-screen map page
+
+## Performance & Scalability Optimization
+### Database
+- [x] Add 35 database indexes on frequently queried columns (city, district, listingType, propertyType, status, price, createdAt, etc.)
+- [x] Add composite indexes for common filter combinations (property search, views, favorites)
+- [x] N+1 queries already avoided — Drizzle ORM uses JOIN-based queries
+- [x] Increased pagination limits from 50 to 200 for map and search endpoints
+
+### Server-side
+- [x] Implement in-memory caching layer (MemoryCache class with TTL, prefix invalidation, auto-cleanup)
+- [x] Cache 8 key endpoints: siteConfig (5min), homepageStats (2min), cities/districts/amenities (10min), mortgageConfig (5min)
+- [x] Auto-invalidate caches via logAudit() when admin modifies data (property, project, setting, city, district, amenity, agency, agent)
+- [x] Rate limiting already in place (global + auth + forms) from template
+- [x] Add response compression (gzip/brotli) via compression middleware
+- [x] 9 new vitest tests for cache module (getOrSet, TTL expiry, invalidation, prefix, concurrent, stats)
+
+### Frontend
+- [x] Lazy loading for all 20+ routes already implemented (React.lazy + Suspense)
+- [x] Added loading="lazy" to 45 images across 25 components
+- [x] Increased map property limit from 50 to 200 for full-screen map
+- [x] Map uses clustering to handle dense areas efficiently
+- [x] Bundle already tree-shaken by Vite production build
+
+### Infrastructure
+- [x] Static assets served with aggressive caching via Vite build hashing
+- [x] Cache TTL presets: CONFIG(5min), STATS(2min), LISTINGS(30s), DETAIL(1min), REFERENCE_DATA(10min), SEARCH(15s)
+- [x] Database connection pooling handled by TiDB serverless driver

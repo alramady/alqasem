@@ -68,7 +68,7 @@ export default function ContactSection() {
   return (
     <section id="contact" className="relative py-24 overflow-hidden">
       <div className="absolute inset-0">
-        <img src={CONTACT_BG} alt="" className="w-full h-full object-cover" />
+        <img loading="lazy" src={CONTACT_BG} alt="" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-[#0f1b33]/90" />
       </div>
 

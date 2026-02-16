@@ -84,7 +84,7 @@ export default function VideoShowcase() {
             {videos.map((video, i) => (
               <motion.div key={i} initial={{ opacity: 0, x: 40 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} className="flex-shrink-0 w-80 group cursor-pointer" onClick={() => openVideo(i)}>
                 <div className="relative h-48 rounded-2xl overflow-hidden mb-4">
-                  <img src={video.thumbnail} alt={isAr ? video.titleAr : video.titleEn} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                  <img loading="lazy" src={video.thumbnail} alt={isAr ? video.titleAr : video.titleEn} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                   <div className="absolute inset-0 bg-[#0f1b33]/40 group-hover:bg-[#0f1b33]/60 transition-colors" />
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="w-14 h-14 bg-[#E31E24] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">

@@ -186,7 +186,7 @@ export default function AdminAgencies() {
                     {/* Logo */}
                     <div className="w-16 h-16 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center">
                       {agency.logo ? (
-                        <img src={agency.logo} alt={agency.nameAr} className="w-full h-full object-cover" />
+                        <img loading="lazy" src={agency.logo} alt={agency.nameAr} className="w-full h-full object-cover" />
                       ) : (
                         <Landmark className="w-8 h-8 text-slate-300" />
                       )}
@@ -252,7 +252,7 @@ export default function AdminAgencies() {
                   <div className="mt-1 flex items-center gap-3">
                     {form.logo ? (
                       <div className="relative w-16 h-16 rounded-lg overflow-hidden border">
-                        <img src={form.logo} alt="Logo" className="w-full h-full object-cover" />
+                        <img loading="lazy" src={form.logo} alt="Logo" className="w-full h-full object-cover" />
                         <button onClick={() => setForm({ ...form, logo: "" })} className="absolute top-0 right-0 bg-red-500 text-white rounded-bl p-0.5"><X className="w-3 h-3" /></button>
                       </div>
                     ) : (
@@ -268,7 +268,7 @@ export default function AdminAgencies() {
                   <div className="mt-1 flex items-center gap-3">
                     {form.coverImage ? (
                       <div className="relative w-24 h-16 rounded-lg overflow-hidden border">
-                        <img src={form.coverImage} alt="Cover" className="w-full h-full object-cover" />
+                        <img loading="lazy" src={form.coverImage} alt="Cover" className="w-full h-full object-cover" />
                         <button onClick={() => setForm({ ...form, coverImage: "" })} className="absolute top-0 right-0 bg-red-500 text-white rounded-bl p-0.5"><X className="w-3 h-3" /></button>
                       </div>
                     ) : (

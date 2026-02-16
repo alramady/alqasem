@@ -217,7 +217,7 @@ export default function AdminMedia() {
                     <tr key={m.id} className="border-b border-slate-50 hover:bg-slate-50/50 cursor-pointer transition-colors" onClick={() => setPreviewItem(m)}>
                       <td className="py-2 px-4">
                         {m.mimeType?.startsWith("image") ? (
-                          <img src={m.filePath} alt="" className="w-10 h-10 object-cover rounded-lg" />
+                          <img loading="lazy" src={m.filePath} alt="" className="w-10 h-10 object-cover rounded-lg" />
                         ) : (
                           <div className="w-10 h-10 bg-slate-50 rounded-lg flex items-center justify-center">
                             {getIcon(m.mimeType)}
@@ -278,8 +278,7 @@ export default function AdminMedia() {
             {/* Preview content */}
             <div className="p-4">
               {previewItem.mimeType?.startsWith("image") ? (
-                <img
-                  src={previewItem.filePath}
+                <img loading="lazy" src={previewItem.filePath}
                   alt={previewItem.altText || previewItem.filename}
                   className="w-full max-h-[50vh] object-contain rounded-xl bg-slate-50"
                 />

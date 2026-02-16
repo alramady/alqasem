@@ -61,7 +61,7 @@ export default function AgencyProfile() {
         {/* Cover Image */}
         <div className="h-48 md:h-64 bg-gradient-to-b from-[#0f1b33] to-[#1a2d4d] relative overflow-hidden">
           {agency.coverImage && (
-            <img src={agency.coverImage} alt="" className="w-full h-full object-cover opacity-40" />
+            <img loading="lazy" src={agency.coverImage} alt="" className="w-full h-full object-cover opacity-40" />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-[#0f1b33]/80 to-transparent" />
         </div>
@@ -77,7 +77,7 @@ export default function AgencyProfile() {
               {/* Logo */}
               <div className="w-24 h-24 md:w-28 md:h-28 rounded-xl bg-white border-2 border-slate-100 shadow-md overflow-hidden shrink-0 flex items-center justify-center">
                 {agency.logo ? (
-                  <img src={agency.logo} alt={agency.nameAr} className="w-full h-full object-contain p-2" />
+                  <img loading="lazy" src={agency.logo} alt={agency.nameAr} className="w-full h-full object-contain p-2" />
                 ) : (
                   <Landmark className="w-12 h-12 text-slate-300" />
                 )}
@@ -181,7 +181,7 @@ export default function AgencyProfile() {
                   <div className="bg-white rounded-xl border border-slate-100 hover:shadow-md hover:border-[#c8a45e]/30 transition-all p-5 cursor-pointer text-center group">
                     <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#0f1b33] to-[#1a3a5c] border-2 border-slate-200 overflow-hidden mx-auto mb-3 group-hover:border-[#c8a45e]/50 transition-colors">
                       {agent.photo ? (
-                        <img src={agent.photo} alt={agent.nameAr} className="w-full h-full object-cover" />
+                        <img loading="lazy" src={agent.photo} alt={agent.nameAr} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-white/80">
                           {agent.nameAr?.charAt(0)}
@@ -230,7 +230,7 @@ export default function AgencyProfile() {
                       {/* Image */}
                       <div className="relative h-48 bg-slate-100 overflow-hidden">
                         {coverImage ? (
-                          <img src={coverImage} alt={prop.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                          <img loading="lazy" src={coverImage} alt={prop.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
                             <Building2 className="w-12 h-12 text-slate-300" />

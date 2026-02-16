@@ -69,7 +69,7 @@ export default function AgentProfile() {
               {/* Photo */}
               <div className="w-28 h-28 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-[#0f1b33] to-[#1a3a5c] border-4 border-white shadow-lg overflow-hidden shrink-0 mx-auto md:mx-0">
                 {agent.photo ? (
-                  <img src={agent.photo} alt={agent.nameAr} className="w-full h-full object-cover" />
+                  <img loading="lazy" src={agent.photo} alt={agent.nameAr} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-white/80">
                     {agent.nameAr?.charAt(0)}
@@ -91,7 +91,7 @@ export default function AgentProfile() {
                   <Link href={`/agency/${agency.slug}`}>
                     <div className="inline-flex items-center gap-2 mt-3 bg-slate-50 hover:bg-slate-100 transition-colors rounded-lg px-4 py-2 cursor-pointer">
                       {agency.logo ? (
-                        <img src={agency.logo} alt="" className="w-8 h-8 rounded-md object-contain" />
+                        <img loading="lazy" src={agency.logo} alt="" className="w-8 h-8 rounded-md object-contain" />
                       ) : (
                         <Landmark className="w-5 h-5 text-slate-400" />
                       )}
@@ -167,7 +167,7 @@ export default function AgentProfile() {
                     <div className="bg-white rounded-xl border border-slate-100 hover:shadow-lg transition-all overflow-hidden group cursor-pointer">
                       <div className="relative h-48 bg-slate-100 overflow-hidden">
                         {coverImage ? (
-                          <img src={coverImage} alt={prop.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                          <img loading="lazy" src={coverImage} alt={prop.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
                             <Building2 className="w-12 h-12 text-slate-300" />

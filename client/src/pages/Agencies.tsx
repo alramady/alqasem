@@ -106,7 +106,7 @@ export default function Agencies() {
                       {/* Cover Image */}
                       {agency.coverImage && (
                         <div className="h-32 overflow-hidden">
-                          <img src={agency.coverImage} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                          <img loading="lazy" src={agency.coverImage} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                         </div>
                       )}
                       <div className="p-5">
@@ -114,7 +114,7 @@ export default function Agencies() {
                           {/* Logo */}
                           <div className={`w-16 h-16 rounded-xl bg-slate-50 border-2 border-slate-100 overflow-hidden shrink-0 flex items-center justify-center ${agency.coverImage ? "-mt-10 relative z-10 shadow-md" : ""}`}>
                             {agency.logo ? (
-                              <img src={agency.logo} alt={agency.nameAr} className="w-full h-full object-cover" />
+                              <img loading="lazy" src={agency.logo} alt={agency.nameAr} className="w-full h-full object-cover" />
                             ) : (
                               <Landmark className="w-8 h-8 text-slate-300" />
                             )}

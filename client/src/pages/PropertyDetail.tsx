@@ -198,7 +198,7 @@ export default function PropertyDetail({ id }: { id: string }) {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl overflow-hidden shadow-sm">
               <div className="relative aspect-[16/10]">
                 {images.length > 0 ? (
-                  <img src={images[activeImage]} alt={title} className="w-full h-full object-cover" />
+                  <img loading="lazy" src={images[activeImage]} alt={title} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full bg-gray-200 flex items-center justify-center">
                     <Building2 className="w-16 h-16 text-gray-400" />
@@ -240,7 +240,7 @@ export default function PropertyDetail({ id }: { id: string }) {
                 <div className="flex gap-2 p-3 overflow-x-auto print:hidden">
                   {images.map((img, i) => (
                     <button key={i} onClick={() => setActiveImage(i)} className={`w-16 h-12 rounded-lg overflow-hidden shrink-0 border-2 transition-colors ${i === activeImage ? "border-[#c8a45e]" : "border-transparent opacity-60 hover:opacity-100"}`}>
-                      <img src={img} alt="" className="w-full h-full object-cover" />
+                      <img loading="lazy" src={img} alt="" className="w-full h-full object-cover" />
                     </button>
                   ))}
                 </div>
@@ -330,7 +330,7 @@ export default function PropertyDetail({ id }: { id: string }) {
                       <Link key={sp.id} href={`/properties/${sp.id}`} className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow group">
                         <div className="relative aspect-[16/9]">
                           {spImages[0] ? (
-                            <img src={spImages[0] as string} alt={spTitle} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                            <img loading="lazy" src={spImages[0] as string} alt={spTitle} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                           ) : (
                             <div className="w-full h-full bg-gray-200 flex items-center justify-center"><Building2 className="w-8 h-8 text-gray-400" /></div>
                           )}
@@ -365,7 +365,7 @@ export default function PropertyDetail({ id }: { id: string }) {
                     <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity" dir={isAr ? "rtl" : "ltr"}>
                       <div className="w-14 h-14 rounded-xl border-2 border-slate-100 overflow-hidden flex items-center justify-center bg-white shrink-0">
                         {agencyAgent.agency.logo ? (
-                          <img src={agencyAgent.agency.logo} alt={agencyAgent.agency.nameAr} className="w-full h-full object-contain p-1" />
+                          <img loading="lazy" src={agencyAgent.agency.logo} alt={agencyAgent.agency.nameAr} className="w-full h-full object-contain p-1" />
                         ) : (
                           <Building2 className="w-7 h-7 text-[#c8a45e]" />
                         )}
@@ -381,7 +381,7 @@ export default function PropertyDetail({ id }: { id: string }) {
                       <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-50 cursor-pointer hover:opacity-80 transition-opacity" dir={isAr ? "rtl" : "ltr"}>
                         <div className="w-10 h-10 rounded-full border-2 border-slate-100 overflow-hidden flex items-center justify-center bg-slate-50 shrink-0">
                           {agencyAgent.agent.photo ? (
-                            <img src={agencyAgent.agent.photo} alt={agencyAgent.agent.nameAr} className="w-full h-full object-cover" />
+                            <img loading="lazy" src={agencyAgent.agent.photo} alt={agencyAgent.agent.nameAr} className="w-full h-full object-cover" />
                           ) : (
                             <span className="text-sm font-bold text-slate-300">{agencyAgent.agent.nameAr?.charAt(0)}</span>
                           )}

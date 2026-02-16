@@ -181,7 +181,7 @@ export default function AdminAgents() {
                     {/* Photo */}
                     <div className="w-14 h-14 rounded-full bg-slate-100 border-2 border-slate-200 overflow-hidden shrink-0 flex items-center justify-center">
                       {agent.photo ? (
-                        <img src={agent.photo} alt={agent.nameAr} className="w-full h-full object-cover" />
+                        <img loading="lazy" src={agent.photo} alt={agent.nameAr} className="w-full h-full object-cover" />
                       ) : (
                         <UserCheck className="w-6 h-6 text-slate-300" />
                       )}
@@ -244,7 +244,7 @@ export default function AdminAgents() {
                 <div className="mt-1 flex items-center gap-3">
                   {form.photo ? (
                     <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-slate-200">
-                      <img src={form.photo} alt="Photo" className="w-full h-full object-cover" />
+                      <img loading="lazy" src={form.photo} alt="Photo" className="w-full h-full object-cover" />
                       <button onClick={() => setForm({ ...form, photo: "" })} className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-0.5"><X className="w-3 h-3" /></button>
                     </div>
                   ) : (

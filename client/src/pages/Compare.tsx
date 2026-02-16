@@ -78,7 +78,7 @@ export default function Compare() {
           <Link href={`/properties/${p.id}`}>
             <div className="aspect-[4/3] rounded-lg overflow-hidden mb-2">
               {Array.isArray(p.images) && p.images[0] ? (
-                <img src={p.images[0] as string} alt={title} className="w-full h-full object-cover" />
+                <img loading="lazy" src={p.images[0] as string} alt={title} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full bg-gray-200 flex items-center justify-center"><Building2 className="w-8 h-8 text-gray-400" /></div>
               )}

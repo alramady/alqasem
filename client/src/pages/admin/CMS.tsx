@@ -242,7 +242,7 @@ export default function AdminCMS() {
 
   // Helper to insert image tag into page content
   const insertImageIntoContent = (url: string) => {
-    const imgTag = `<img src="${url}" alt="" class="w-full rounded-lg my-4" />`;
+    const imgTag = `<img loading="lazy" src="${url}" alt="" class="w-full rounded-lg my-4" />`;
     setPageForm(prev => ({
       ...prev,
       content: prev.content + "\n" + imgTag,
@@ -550,7 +550,7 @@ export default function AdminCMS() {
                               className="w-12 h-12 rounded-lg border border-slate-200 overflow-hidden hover:border-indigo-400 hover:ring-2 hover:ring-indigo-200 transition-all"
                               title="اضغط لإدراج في المحتوى"
                             >
-                              <img src={url} alt="" className="w-full h-full object-cover" />
+                              <img loading="lazy" src={url} alt="" className="w-full h-full object-cover" />
                             </button>
                           ))}
                         </div>

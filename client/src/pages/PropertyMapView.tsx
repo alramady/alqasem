@@ -51,7 +51,7 @@ export default function PropertyMapView() {
 
   const { data: propertiesData } = trpc.public.searchProperties.useQuery({
     page: 1,
-    limit: 50,
+    limit: 200,
   });
 
   const properties = useMemo(() => {
@@ -307,7 +307,7 @@ export default function PropertyMapView() {
                   <div className="flex gap-3">
                     <div className="w-24 h-20 rounded-lg overflow-hidden shrink-0 bg-gray-200">
                       {property.mainImage ? (
-                        <img src={property.mainImage} alt="" className="w-full h-full object-cover" />
+                        <img loading="lazy" src={property.mainImage} alt="" className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
                           <Home className="w-6 h-6 text-gray-400" />
@@ -389,7 +389,7 @@ export default function PropertyMapView() {
                       {/* Thumbnail */}
                       <div className="w-20 h-16 rounded-lg overflow-hidden shrink-0 bg-gray-200">
                         {prop.mainImage ? (
-                          <img src={prop.mainImage} alt="" className="w-full h-full object-cover" />
+                          <img loading="lazy" src={prop.mainImage} alt="" className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-[#0f1b33] to-[#1a2b4a] flex items-center justify-center">
                             <Home className="w-5 h-5 text-white/60" />

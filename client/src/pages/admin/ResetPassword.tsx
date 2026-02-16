@@ -212,7 +212,7 @@ export default function ResetPassword() {
         {/* Logo & Title */}
         <div className="flex flex-col items-center gap-4 mb-2">
           <div className="w-24 h-24 bg-gradient-to-br from-[#c8a45e]/30 to-[#c8a45e]/10 rounded-2xl flex items-center justify-center border border-[#c8a45e]/20 shadow-lg shadow-[#c8a45e]/5">
-            <img src={DEFAULT_ADMIN_LOGO} alt="القاسم العقارية" className="w-16 h-16 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+            <img loading="lazy" src={DEFAULT_ADMIN_LOGO} alt="القاسم العقارية" className="w-16 h-16 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
           </div>
           <div className="text-center">
             <h1 className="text-2xl font-bold text-white mb-1">

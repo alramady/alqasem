@@ -171,7 +171,7 @@ export default function ProjectDetail({ id }: { id: string }) {
               {images.length > 0 ? (
                 <>
                   <div className="relative aspect-[16/10] group">
-                    <img src={images[activeImage]} alt={project.title} className="w-full h-full object-cover cursor-pointer" onClick={() => setLightboxOpen(true)} />
+                    <img loading="lazy" src={images[activeImage]} alt={project.title} className="w-full h-full object-cover cursor-pointer" onClick={() => setLightboxOpen(true)} />
                     <div className="absolute top-4 inset-inline-start-4 flex gap-2">
                       <span className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${statusInfo.bg} ${statusInfo.color}`}>{statusLabel}</span>
                       {project.isFeatured && (
@@ -206,7 +206,7 @@ export default function ProjectDetail({ id }: { id: string }) {
                     <div className="p-3 flex gap-2 overflow-x-auto">
                       {images.map((img, i) => (
                         <button key={i} onClick={() => setActiveImage(i)} className={`shrink-0 w-20 h-16 rounded-lg overflow-hidden border-2 transition-all ${i === activeImage ? "border-[#c8a45e] ring-2 ring-[#c8a45e]/30" : "border-transparent opacity-60 hover:opacity-100"}`}>
-                          <img src={img} alt="" className="w-full h-full object-cover" />
+                          <img loading="lazy" src={img} alt="" className="w-full h-full object-cover" />
                         </button>
                       ))}
                     </div>
@@ -331,7 +331,7 @@ export default function ProjectDetail({ id }: { id: string }) {
                   </div>
                 ) : (
                   <div className="aspect-video bg-gradient-to-br from-[#0f1b33] to-[#1a2b4a] flex items-center justify-center cursor-pointer group relative" onClick={() => setShowVideo(true)}>
-                    {images.length > 0 && <img src={images[0]} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30" />}
+                    {images.length > 0 && <img loading="lazy" src={images[0]} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30" />}
                     <div className="relative z-10 flex flex-col items-center gap-3">
                       <div className="w-16 h-16 bg-[#E31E24] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
                         <Play className="w-7 h-7 text-white fill-current" />

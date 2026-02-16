@@ -22,9 +22,27 @@ import { makeRequest } from "../_core/map";
 import { storagePut } from "../storage";
 import { nanoid } from "nanoid";
 import { sanitizeText, sanitizeHtml, sanitizeObject } from "../sanitize";
+import { cache } from "../cache";
+
+// Auto-invalidate caches after admin mutations
+function invalidateCachesForAdmin() {
+  cache.invalidate("siteConfig");
+  cache.invalidate("homepageStats");
+  cache.invalidate("propertyCities");
+  cache.invalidate("citiesWithDistricts");
+  cache.invalidate("amenities");
+  cache.invalidate("mortgageConfig");
+}
+
+// Entity types that should trigger cache invalidation
+const CACHE_INVALIDATION_ENTITIES = new Set(["property", "project", "setting", "section", "page", "city", "district", "amenity", "agency", "agent"]);
 
 // Helper to log audit events with before/after tracking
 async function logAudit(userId: number | null, userName: string | null, action: string, entityType: string, entityId: number | null, details: any, oldValues?: any, newValues?: any) {
+  // Auto-invalidate caches when admin modifies data
+  if (CACHE_INVALIDATION_ENTITIES.has(entityType)) {
+    invalidateCachesForAdmin();
+  }
   const db = await getDb();
   if (!db) return;
   try {

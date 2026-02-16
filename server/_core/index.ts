@@ -4,6 +4,7 @@ import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import rateLimit from "express-rate-limit";
+import compression from "compression";
 import { csrfProtection, csrfTokenEndpoint } from "./csrf";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
@@ -34,6 +35,9 @@ async function startServer() {
 
   // Trust proxy for rate limiting behind reverse proxy
   app.set("trust proxy", 1);
+
+  // Gzip/Brotli compression for all responses
+  app.use(compression({ level: 6, threshold: 1024 }));
 
   // CORS configuration — allowlist-based
   const allowedOrigins = new Set([

@@ -271,7 +271,7 @@ export default function PropertyMapView({ properties, className }: PropertyMapVi
                   {/* Thumbnail */}
                   <div className="w-20 h-16 rounded-lg overflow-hidden shrink-0 bg-gray-200">
                     {cover ? (
-                      <img src={cover} alt="" className="w-full h-full object-cover" />
+                      <img loading="lazy" src={cover} alt="" className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-[#0f1b33] to-[#1a2b4a] flex items-center justify-center">
                         <span className="text-lg">{typeIcons[prop.type] || "🏠"}</span>

@@ -3,6 +3,7 @@ import { getDb } from "../db";
 import { sanitizeText } from "../sanitize";
 import { sendEmail } from "../email";
 import { notifyOwner } from "../_core/notification";
+import { cache, CACHE_TTL } from "../cache";
 import { inquiries, properties, projects, notifications, users, auditLogs, settings, homepageSections, pages, newsletterSubscribers, propertyViews, cities, districts, amenities, propertyAmenities, agencies, agents, financingRequests } from "../../drizzle/schema";
 import { scheduleDripEmails } from "../drip";
 import { eq, desc, asc, and, isNull, like, or, gte, lte, sql, count, inArray } from "drizzle-orm";
@@ -52,21 +53,17 @@ async function logPublicAudit(action: string, entityType: string, entityId: numb
 export const publicRouter = router({
   // ============ SITE CONFIG (settings + CMS) ============
   getSiteConfig: publicProcedure.query(async () => {
-    const db = await getDb();
-    if (!db) return { settings: {}, sections: [] };
-
-    const [allSettings, allSections] = await Promise.all([
-      db.select().from(settings),
-      db.select().from(homepageSections).orderBy(homepageSections.displayOrder),
-    ]);
-
-    const settingsMap: Record<string, string> = {};
-    allSettings.forEach(s => { settingsMap[s.key] = s.value || ""; });
-
-    return {
-      settings: settingsMap,
-      sections: allSections,
-    };
+    return cache.getOrSet("siteConfig", async () => {
+      const db = await getDb();
+      if (!db) return { settings: {}, sections: [] };
+      const [allSettings, allSections] = await Promise.all([
+        db.select().from(settings),
+        db.select().from(homepageSections).orderBy(homepageSections.displayOrder),
+      ]);
+      const settingsMap: Record<string, string> = {};
+      allSettings.forEach(s => { settingsMap[s.key] = s.value || ""; });
+      return { settings: settingsMap, sections: allSections };
+    }, CACHE_TTL.CONFIG);
   }),
 
   // ============ CMS PAGES (PUBLIC) ============
@@ -123,7 +120,7 @@ export const publicRouter = router({
     amenityIds: z.array(z.number().int()).optional(),
     sort: z.enum(["newest", "oldest", "price_asc", "price_desc", "area_asc", "area_desc"]).optional(),
     page: z.number().int().min(1).optional(),
-    limit: z.number().int().min(1).max(50).optional(),
+    limit: z.number().int().min(1).max(200).optional(),
   }).optional()).query(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "خطأ في الاتصال بقاعدة البيانات" });
@@ -314,7 +311,7 @@ export const publicRouter = router({
     status: z.enum(["active", "completed", "upcoming"]).optional(),
     sort: z.enum(["newest", "oldest", "units_asc", "units_desc"]).optional(),
     page: z.number().int().min(1).optional(),
-    limit: z.number().int().min(1).max(50).optional(),
+    limit: z.number().int().min(1).max(200).optional(),
   }).optional()).query(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "خطأ في الاتصال بقاعدة البيانات" });
@@ -371,24 +368,28 @@ export const publicRouter = router({
 
   // Get distinct cities for filter dropdown (from cities table)
   getPropertyCities: publicProcedure.query(async () => {
-    const db = await getDb();
-    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "خطأ في الاتصال بقاعدة البيانات" });
-    const activeCities = await db.select().from(cities).where(eq(cities.isActive, 1 as any)).orderBy(asc(cities.sortOrder), asc(cities.nameAr));
-    return activeCities.map(c => c.nameAr);
+    return cache.getOrSet("propertyCities", async () => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "خطأ في الاتصال بقاعدة البيانات" });
+      const activeCities = await db.select().from(cities).where(eq(cities.isActive, 1 as any)).orderBy(asc(cities.sortOrder), asc(cities.nameAr));
+      return activeCities.map(c => c.nameAr);
+    }, CACHE_TTL.REFERENCE_DATA);
   }),
 
   // Get active cities with their districts for advanced filters
   getCitiesWithDistricts: publicProcedure.query(async () => {
-    const db = await getDb();
-    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "خطأ في الاتصال بقاعدة البيانات" });
-    const activeCities = await db.select().from(cities).where(eq(cities.isActive, 1 as any)).orderBy(asc(cities.sortOrder), asc(cities.nameAr));
-    const activeDistricts = await db.select().from(districts).where(eq(districts.isActive, 1 as any)).orderBy(asc(districts.sortOrder), asc(districts.nameAr));
-    return activeCities.map(city => ({
-      id: city.id,
-      nameAr: city.nameAr,
-      nameEn: city.nameEn,
-      districts: activeDistricts.filter(d => d.cityId === city.id).map(d => ({ id: d.id, nameAr: d.nameAr, nameEn: d.nameEn })),
-    }));
+    return cache.getOrSet("citiesWithDistricts", async () => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "خطأ في الاتصال بقاعدة البيانات" });
+      const activeCities = await db.select().from(cities).where(eq(cities.isActive, 1 as any)).orderBy(asc(cities.sortOrder), asc(cities.nameAr));
+      const activeDistricts = await db.select().from(districts).where(eq(districts.isActive, 1 as any)).orderBy(asc(districts.sortOrder), asc(districts.nameAr));
+      return activeCities.map(city => ({
+        id: city.id,
+        nameAr: city.nameAr,
+        nameEn: city.nameEn,
+        districts: activeDistricts.filter(d => d.cityId === city.id).map(d => ({ id: d.id, nameAr: d.nameAr, nameEn: d.nameEn })),
+      }));
+    }, CACHE_TTL.REFERENCE_DATA);
   }),
 
   // ============ PUBLIC PROJECT QUERIES ============
@@ -413,9 +414,11 @@ export const publicRouter = router({
   }),
 
   getAmenities: publicProcedure.query(async () => {
-    const db = await getDb();
-    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-    return db.select().from(amenities).where(eq(amenities.isActive, 1 as any)).orderBy(asc(amenities.sortOrder));
+    return cache.getOrSet("amenities", async () => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      return db.select().from(amenities).where(eq(amenities.isActive, 1 as any)).orderBy(asc(amenities.sortOrder));
+    }, CACHE_TTL.REFERENCE_DATA);
   }),
 
   getPropertyAmenities: publicProcedure.input(z.object({
@@ -464,7 +467,7 @@ export const publicRouter = router({
     type: z.string().optional(),
     listingType: z.string().optional(),
     city: z.string().optional(),
-    limit: z.number().int().positive().max(50).optional(),
+    limit: z.number().int().positive().max(200).optional(),
   }).optional()).query(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "خطأ في الاتصال بقاعدة البيانات" });
@@ -903,16 +906,18 @@ export const publicRouter = router({
 
   // ============ DYNAMIC HOMEPAGE STATS ============
   getHomepageStats: publicProcedure.query(async () => {
-    const db = await getDb();
-    if (!db) return { totalProperties: 0, totalProjects: 0 };
-    const [[propCount], [projCount]] = await Promise.all([
-      db.select({ count: count() }).from(properties).where(and(isNull(properties.deletedAt), eq(properties.status, "active"))),
-      db.select({ count: count() }).from(projects),
-    ]);
-    return {
-      totalProperties: propCount?.count || 0,
-      totalProjects: projCount?.count || 0,
-    };
+    return cache.getOrSet("homepageStats", async () => {
+      const db = await getDb();
+      if (!db) return { totalProperties: 0, totalProjects: 0 };
+      const [[propCount], [projCount]] = await Promise.all([
+        db.select({ count: count() }).from(properties).where(and(isNull(properties.deletedAt), eq(properties.status, "active"))),
+        db.select({ count: count() }).from(projects),
+      ]);
+      return {
+        totalProperties: propCount?.count || 0,
+        totalProjects: projCount?.count || 0,
+      };
+    }, CACHE_TTL.STATS);
   }),
 
   // ============ AGENCIES & AGENTS (PUBLIC) ============
@@ -1041,6 +1046,7 @@ export const publicRouter = router({
 
   // ============ MORTGAGE CALCULATOR CONFIG ============
   getMortgageConfig: publicProcedure.query(async () => {
+    return cache.getOrSet("mortgageConfig", async () => {
     const db = await getDb();
     if (!db) return null;
     const allSettings = await db.select().from(settings).where(eq(settings.groupName, "mortgage"));
@@ -1070,6 +1076,7 @@ export const publicRouter = router({
       financingCtaSubtitleAr: cfg.financing_cta_subtitle_ar || "",
       financingCtaSubtitleEn: cfg.financing_cta_subtitle_en || "",
     };
+    }, CACHE_TTL.CONFIG);
   }),
   // ============ FINANCING REQUEST ============
   submitFinancingRequest: publicProcedure.input(z.object({

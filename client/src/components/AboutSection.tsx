@@ -92,7 +92,7 @@ export default function AboutSection() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <motion.div initial={{ opacity: 0, x: isAr ? 50 : -50 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }} className="relative">
             <div className="relative rounded-2xl overflow-hidden">
-              <img src={(content?.image) || ABOUT_IMG} alt={isAr ? "شركة القاسم العقارية" : "Al-Qasim Real Estate"} className="w-full h-[480px] object-cover" />
+              <img loading="lazy" src={(content?.image) || ABOUT_IMG} alt={isAr ? "شركة القاسم العقارية" : "Al-Qasim Real Estate"} className="w-full h-[480px] object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-[#0f1b33]/40 to-transparent" />
             </div>
             <motion.div initial={{ opacity: 0, scale: 0.8 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ delay: 0.4 }}

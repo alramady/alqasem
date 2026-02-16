@@ -88,7 +88,7 @@ export default function ProjectsSection() {
   return (
     <section id="projects" className="relative py-24 overflow-hidden">
       <div className="absolute inset-0">
-        <img src={PROJECTS_BG} alt="" className="w-full h-full object-cover" />
+        <img loading="lazy" src={PROJECTS_BG} alt="" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-[#0f1b33]/92" />
       </div>
 
@@ -123,7 +123,7 @@ export default function ProjectsSection() {
                       <Link href={`/projects/${project.id}`}>
                         <div className="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden hover:border-[#c8a45e]/30 transition-all duration-500 cursor-pointer h-full">
                           <div className="relative h-52 overflow-hidden">
-                            <img src={imageUrl} alt={isAr ? project.title : (project.titleEn || project.title)} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                            <img loading="lazy" src={imageUrl} alt={isAr ? project.title : (project.titleEn || project.title)} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                             <div className="absolute inset-0 bg-gradient-to-t from-[#0f1b33]/80 to-transparent" />
                             <div className="absolute top-4" style={{ insetInlineStart: '1rem' }}>
                               <span className={`${badge.color} text-white text-xs px-3 py-1 rounded-lg font-medium`}>{badge.label}</span>

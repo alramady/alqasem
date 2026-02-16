@@ -107,7 +107,7 @@ export default function PropertiesSection() {
                   <Link href={`/properties/${property.id}`}>
                     <div className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer">
                       <div className="relative aspect-[4/3] overflow-hidden">
-                        <img src={imageUrl} alt={property.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                        <img loading="lazy" src={imageUrl} alt={property.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                         <div className="absolute top-3" style={{ insetInlineStart: '0.75rem' }}>
                           <span className={`${badge.color} text-white text-xs px-3 py-1.5 rounded-full font-semibold`}>
                             {badge.label}

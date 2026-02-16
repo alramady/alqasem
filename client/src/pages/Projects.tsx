@@ -213,7 +213,7 @@ export default function Projects() {
                     <Link href={`/projects/${project.id}`} className={`relative rounded-2xl overflow-hidden group cursor-pointer ${i % 2 === 1 ? "lg:col-start-2" : ""}`}>
                       <div className="aspect-[16/10]">
                         {coverImage ? (
-                          <img src={coverImage} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                          <img loading="lazy" src={coverImage} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-[#0f1b33] to-[#1a2b4a] flex items-center justify-center"><Building2 className="w-16 h-16 text-[#c8a45e]/30" /></div>
                         )}
@@ -286,7 +286,7 @@ export default function Projects() {
                       <div className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all group cursor-pointer border border-gray-100">
                         <div className="relative aspect-[16/10] overflow-hidden">
                           {coverImage ? (
-                            <img src={coverImage} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                            <img loading="lazy" src={coverImage} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                           ) : (
                             <div className="w-full h-full bg-gradient-to-br from-[#0f1b33] to-[#1a2b4a] flex items-center justify-center"><Building2 className="w-12 h-12 text-[#c8a45e]/30" /></div>
                           )}

@@ -339,7 +339,7 @@ export default function AdminProperties() {
                         <tr key={p.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
                           <td className="py-2.5 px-4">
                             {coverImage ? (
-                              <img src={coverImage} alt="" className="w-12 h-12 rounded-xl object-cover border border-slate-100" />
+                              <img loading="lazy" src={coverImage} alt="" className="w-12 h-12 rounded-xl object-cover border border-slate-100" />
                             ) : (
                               <div className="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-100">
                                 <ImageIcon className="w-5 h-5 text-slate-300" />
