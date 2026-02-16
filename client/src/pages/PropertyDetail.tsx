@@ -1,7 +1,6 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { MapView } from "@/components/Map";
-import MortgageCalculator from "@/components/MortgageCalculator";
 import ShareModal from "@/components/ShareModal";
 import { trpc } from "@/lib/trpc";
 import { motion } from "framer-motion";
@@ -429,12 +428,7 @@ export default function PropertyDetail({ id }: { id: string }) {
               </div>
             </motion.div>
 
-            {/* Mortgage Calculator */}
-            {property.listingType === "sale" && priceNum > 0 && (
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="print:hidden">
-                <MortgageCalculator defaultPrice={priceNum} propertyId={property.id} propertyTitle={isAr ? property.title : (property.titleEn || property.title)} />
-              </motion.div>
-            )}
+            {/* Mortgage Calculator - hidden per user request */}
           </div>
         </div>
       </div>

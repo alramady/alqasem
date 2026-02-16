@@ -660,3 +660,8 @@
 ## Bug Fix - Unexpected Error on Homepage
 - [x] Diagnose "حدث خطأ غير متوقع" error on homepage (ReferenceError in useFavorites hook)
 - [x] Fix root cause: removed try/catch around React hook call (Rules of Hooks violation)
+
+## Bug Fix - Property Detail Page Error & Hide Mortgage Calculator
+- [x] Diagnose property detail page crash — MortgageCalculator had React hooks violation (early return before useMemo)
+- [x] Hide حاسبة التمويل العقاري (mortgage calculator) from property detail page
+- [x] Verify property detail page loads without errors (confirmed on dev server)
