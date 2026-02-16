@@ -149,14 +149,14 @@ export default function ProjectDetail({ id }: { id: string }) {
       <Navbar />
 
       {/* Breadcrumb */}
-      <div className="pt-28 pb-4 bg-white border-b border-gray-100">
+      <div className="pt-32 pb-4 bg-[#0f1b33] border-b border-[#1a2d4d]">
         <div className="container">
-          <div className="flex items-center gap-2 text-sm text-gray-500">
+          <div className="flex items-center gap-2 text-sm text-white/70">
             <Link href="/" className="hover:text-[#c8a45e] transition-colors">{t("nav.home")}</Link>
             <ChevronLeft className="w-3 h-3" />
             <Link href="/projects" className="hover:text-[#c8a45e] transition-colors">{t("nav.projects")}</Link>
             <ChevronLeft className="w-3 h-3" />
-            <span className="text-[#0f1b33] font-medium">{isAr ? project.title : (project.titleEn || project.title)}</span>
+            <span className="text-[#c8a45e] font-medium">{isAr ? project.title : (project.titleEn || project.title)}</span>
           </div>
         </div>
       </div>

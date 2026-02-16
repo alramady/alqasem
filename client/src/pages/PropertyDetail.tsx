@@ -179,14 +179,14 @@ export default function PropertyDetail({ id }: { id: string }) {
   return (
     <div className="min-h-screen bg-[#f8f5f0]">
       <Navbar />
-      <div className="pt-28 pb-4 bg-white border-b border-gray-100 print:hidden">
+      <div className="pt-32 pb-4 bg-[#0f1b33] border-b border-[#1a2d4d] print:hidden">
         <div className="container">
-          <div className="flex items-center gap-2 text-sm text-gray-500">
+          <div className="flex items-center gap-2 text-sm text-white/70">
             <Link href="/" className="hover:text-[#c8a45e]">{t("nav.home")}</Link>
             <ChevronLeft className="w-3 h-3" />
             <Link href="/properties" className="hover:text-[#c8a45e]">{t("nav.properties")}</Link>
             <ChevronLeft className="w-3 h-3" />
-            <span className="text-[#0f1b33]">{title}</span>
+            <span className="text-[#c8a45e]">{title}</span>
           </div>
         </div>
       </div>

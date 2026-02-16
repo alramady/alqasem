@@ -731,3 +731,8 @@
 - [x] Static assets served with aggressive caching via Vite build hashing
 - [x] Cache TTL presets: CONFIG(5min), STATS(2min), LISTINGS(30s), DETAIL(1min), REFERENCE_DATA(10min), SEARCH(15s)
 - [x] Database connection pooling handled by TiDB serverless driver
+
+## Breadcrumb Visibility Fix + SMTP
+- [x] Fix breadcrumb text (الرئيسية > العقارات) — dark navy bg (#0f1b33) with white/gold text for high contrast
+- [x] Fix breadcrumb hidden behind sticky header — increased pt-28 to pt-32 on PropertyDetail and ProjectDetail
+- [ ] Update SMTP credentials for email functionality (skipped — user will handle later)
