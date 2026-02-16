@@ -6,7 +6,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
-import { MapPin, Home, BedDouble, Bath, Maximize2, ChevronLeft, ChevronRight, List, X, Filter, Search } from "lucide-react";
+import { MapPin, Home, BedDouble, Bath, Maximize2, List, X, Filter, Search } from "lucide-react";
 
 // Group properties by proximity (~100m)
 function groupByLocation(properties: any[]): any[][] {
@@ -358,66 +358,79 @@ export default function PropertyMapView() {
             />
           </div>
 
-          {/* Selected cluster popup */}
-          {selectedGroup && selectedProperty && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 bg-white rounded-xl shadow-2xl w-[360px] max-w-[90vw] overflow-hidden">
-              <button
-                onClick={() => { setSelectedGroup(null); setSelectedIndex(0); }}
-                className="absolute top-2 z-10 w-6 h-6 bg-black/40 rounded-full flex items-center justify-center hover:bg-black/60 transition-colors"
-                style={{ insetInlineEnd: '0.5rem' }}
-              >
-                <X className="w-3.5 h-3.5 text-white" />
-              </button>
-
-              {/* Cluster pagination header */}
-              {selectedGroup.length > 1 && (
-                <div className="bg-[#0f1b33] text-white px-3 py-2 flex items-center justify-between text-xs">
-                  <button
-                    onClick={() => setSelectedIndex(i => (i - 1 + selectedGroup.length) % selectedGroup.length)}
-                    className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30"
-                  >
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
-                  <span className="font-medium">
-                    {isAr
-                      ? `عقار ${selectedIndex + 1} من ${selectedGroup.length}`
-                      : `Property ${selectedIndex + 1} of ${selectedGroup.length}`}
-                  </span>
-                  <button
-                    onClick={() => setSelectedIndex(i => (i + 1) % selectedGroup.length)}
-                    className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30"
-                  >
-                    <ChevronLeft className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
-
-              <div className="p-4">
-                <div className="flex gap-3">
-                  <div className="w-24 h-20 rounded-lg overflow-hidden shrink-0 bg-gray-200">
-                    {selectedProperty.mainImage ? (
-                      <img src={selectedProperty.mainImage} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Home className="w-6 h-6 text-gray-400" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-bold text-[#0f1b33] truncate">
-                      {isAr ? selectedProperty.title : (selectedProperty.titleEn || selectedProperty.title)}
-                    </h3>
-                    <p className="text-lg font-bold text-[#d4a853] mt-1">
-                      {new Intl.NumberFormat("ar-SA").format(selectedProperty.price || 0)} {isAr ? "ر.س" : "SAR"}
-                    </p>
-                  </div>
-                </div>
-                <Link
-                  href={`/properties/${selectedProperty.id}`}
-                  className="block mt-3 text-center bg-[#0f1b33] text-white text-sm font-semibold py-2 rounded-lg hover:bg-[#1a2b4a] transition-colors"
+          {/* Selected cluster property list */}
+          {selectedGroup && selectedGroup.length > 0 && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 bg-white rounded-xl shadow-2xl w-[400px] max-w-[90vw] overflow-hidden">
+              {/* Header */}
+              <div className="bg-[#0f1b33] text-white px-4 py-2.5 flex items-center justify-between">
+                <span className="font-semibold text-sm">
+                  {isAr
+                    ? `${selectedGroup.length} عقارات في هذا الموقع`
+                    : `${selectedGroup.length} properties at this location`}
+                </span>
+                <button
+                  onClick={() => { setSelectedGroup(null); setSelectedIndex(0); }}
+                  className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors"
                 >
-                  {isAr ? "عرض التفاصيل" : "View Details"}
-                </Link>
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Scrollable property list */}
+              <div className="max-h-[350px] overflow-y-auto divide-y divide-gray-100">
+                {selectedGroup.map((prop: any) => {
+                  const isRent = prop.listingType === "rent";
+                  return (
+                    <Link
+                      key={prop.id}
+                      href={`/properties/${prop.id}`}
+                      className="flex gap-3 p-3 hover:bg-gray-50 transition-colors cursor-pointer group"
+                    >
+                      {/* Thumbnail */}
+                      <div className="w-20 h-16 rounded-lg overflow-hidden shrink-0 bg-gray-200">
+                        {prop.mainImage ? (
+                          <img src={prop.mainImage} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-[#0f1b33] to-[#1a2b4a] flex items-center justify-center">
+                            <Home className="w-5 h-5 text-white/60" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-xs font-bold text-[#0f1b33] truncate group-hover:text-[#c8a45e] transition-colors">
+                          {isAr ? prop.title : (prop.titleEn || prop.title)}
+                        </h4>
+
+                        {/* Specs row */}
+                        <div className="flex items-center gap-2 mt-1 text-[10px] text-gray-500">
+                          {prop.bedrooms && prop.bedrooms > 0 && (
+                            <span className="flex items-center gap-0.5"><BedDouble className="w-2.5 h-2.5" />{prop.bedrooms}</span>
+                          )}
+                          {prop.bathrooms && prop.bathrooms > 0 && (
+                            <span className="flex items-center gap-0.5"><Bath className="w-2.5 h-2.5" />{prop.bathrooms}</span>
+                          )}
+                          {prop.area && (
+                            <span className="flex items-center gap-0.5"><Maximize2 className="w-2.5 h-2.5" />{prop.area}م²</span>
+                          )}
+                        </div>
+
+                        {/* Price + type badge */}
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs font-bold text-[#d4a853]">
+                            {new Intl.NumberFormat("ar-SA").format(prop.price || 0)} {isAr ? "ر.س" : "SAR"}
+                          </span>
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${
+                            isRent ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"
+                          }`}>
+                            {isRent ? (isAr ? "إيجار" : "Rent") : (isAr ? "بيع" : "Sale")}
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           )}

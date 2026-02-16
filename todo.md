@@ -699,3 +699,8 @@
 - [x] Replace price label markers with simple colored dots (red=sale, blue=rent, gold=cluster)
 - [x] Click on dot navigates directly to property detail page
 - [x] Cluster nearby properties (~100m) with count badge and expandable pagination panel
+
+## Cluster Popup Improvement
+- [x] Show scrollable list of all properties in cluster popup with price, bedrooms, area, type
+- [x] Each item in list links to property detail page
+- [x] Update both component map and full-screen map page
