@@ -39,6 +39,19 @@ async function startServer() {
   // Gzip/Brotli compression for all responses
   app.use(compression({ level: 6, threshold: 1024 }));
 
+  // Security headers
+  app.use((_req, res, next) => {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "SAMEORIGIN");
+    res.setHeader("X-XSS-Protection", "1; mode=block");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(self)");
+    if (_req.secure || _req.headers["x-forwarded-proto"] === "https") {
+      res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+    }
+    next();
+  });
+
   // CORS configuration — allowlist-based
   const allowedOrigins = new Set([
     // Production domains
@@ -100,9 +113,22 @@ async function startServer() {
   app.use("/api/trpc/admin.requestPasswordReset", authLimiter);
   app.use("/api/trpc/admin.resetPassword", authLimiter);
 
-  // Configure body parser with larger size limit for file uploads
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  // OTP rate limiter: 5 OTP requests per 15 minutes per IP
+  const otpLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many OTP requests, please try again later." },
+  });
+  app.use("/api/trpc/customer.sendOTP", otpLimiter);
+  app.use("/api/trpc/customer.verifyOTPAndRegister", otpLimiter);
+  app.use("/api/trpc/customer.verifyOTPAndLogin", otpLimiter);
+  app.use("/api/trpc/customer.verifyOTPAndResetPassword", otpLimiter);
+
+  // Configure body parser — 15MB covers base64-encoded 10MB files
+  app.use(express.json({ limit: "15mb" }));
+  app.use(express.urlencoded({ limit: "15mb", extended: true }));
 
   // Dynamic sitemap.xml
   app.get("/sitemap.xml", async (_req, res) => {
@@ -161,6 +187,12 @@ async function startServer() {
     createExpressMiddleware({
       router: appRouter,
       createContext,
+      onError({ error, path }) {
+        // Log server errors but never expose stack traces to clients
+        if (error.code === "INTERNAL_SERVER_ERROR") {
+          console.error(`[tRPC] ${path}:`, error.message);
+        }
+      },
     })
   );
   // development mode uses Vite, production mode uses static files

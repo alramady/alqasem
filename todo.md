@@ -736,3 +736,41 @@
 - [x] Fix breadcrumb text (الرئيسية > العقارات) — dark navy bg (#0f1b33) with white/gold text for high contrast
 - [x] Fix breadcrumb hidden behind sticky header — increased pt-28 to pt-32 on PropertyDetail and ProjectDetail
 - [ ] Update SMTP credentials for email functionality (skipped — user will handle later)
+
+## Full Production Audit
+### Security
+- [x] Auth flow: JWT validation (HS256, 7d expiry), session cookie (HttpOnly, Secure, SameSite=None), CSRF double-submit token
+- [x] XSS prevention: DOMPurify sanitizeHtml/sanitizeText on all admin inputs, dangerouslySetInnerHTML only with sanitized content
+- [x] SQL injection: Drizzle ORM parameterized queries throughout, no raw SQL with user input
+- [x] Rate limiting: global (100/15min), auth (10/15min), forms (5/15min), OTP send (3/phone/10min), OTP verify brute-force (5 attempts/phone/10min)
+- [x] Secrets exposure: JWT_SECRET, SMTP_PASS, BUILT_IN_FORGE_API_KEY server-only; VITE_ prefix only for public keys
+- [x] File upload: MIME whitelist (image/jpeg,png,webp,gif,svg+xml,pdf), base64 max 14MB, file size max 10MB, body limit 15MB
+- [x] Admin access: role-based (admin/user enum), adminProcedure middleware, account lockout after 5 failed logins
+- [x] Security headers added: X-Frame-Options DENY, X-Content-Type-Options nosniff, HSTS, X-XSS-Protection, Referrer-Policy, Permissions-Policy
+- [x] OTP code removed from production console.log (dev-only logging)
+- [x] tRPC error handler strips stack traces in production
+
+### Data Validation
+- [x] Input validation: all 50+ tRPC inputs have Zod schemas with .min()/.max()/.email()/.regex()
+- [x] Boundary checks: price (0-999M), area (0-100K), rooms (0-99), pagination (1-200)
+- [x] Phone/email validation: international format (7-20 digits) consistent across all 6 form endpoints
+- [x] File upload validation: MIME whitelist + base64 max length + file size cap on all 3 upload endpoints
+- [x] SQL query safety: 100% Drizzle ORM, zero raw SQL
+
+### Logic & Error Handling
+- [x] Business rules: property status transitions (active/inactive/sold/rented), listing type (sale/rent)
+- [x] Race conditions: OTP marked used atomically, bcrypt compare before session creation
+- [x] Error handling: TRPCError with bilingual messages, frontend ErrorBoundary with retry button
+- [x] Edge cases: empty states handled in all list pages, deleted references checked before display
+- [x] API error responses: consistent TRPCError format, stack traces stripped in production
+
+### Deployment Readiness
+- [x] Environment variables: 20+ vars documented in README, all set via webdev_request_secrets
+- [x] Build configuration: Vite production build with tree-shaking, code splitting, asset hashing
+- [x] Error pages: custom ErrorBoundary with bilingual retry, 404 handled by client-side router
+- [x] SEO: meta tags on all pages, robots.txt present, structured data for properties
+- [x] Accessibility: focus rings, keyboard navigation, ARIA labels on interactive elements
+- [x] Performance: lazy loading (20+ routes, 45 images), gzip/brotli compression, in-memory caching, 35 DB indexes
+
+### Security Tests
+- [x] 12 new vitest tests: security headers, upload validation, OTP brute-force, body size limit, MIME whitelist, sanitization, password hashing

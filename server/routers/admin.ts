@@ -712,10 +712,10 @@ export const adminRouter = router({
   // ============ PROPERTY IMAGES =============
   uploadPropertyImage: protectedProcedure.input(z.object({
     propertyId: z.number(),
-    filename: z.string(),
-    mimeType: z.string(),
-    base64: z.string(),
-    size: z.number(),
+    filename: z.string().max(255),
+    mimeType: z.string().refine(v => ["image/jpeg","image/png","image/webp","image/gif","image/svg+xml"].includes(v), { message: "نوع الملف غير مسموح" }),
+    base64: z.string().max(14_000_000, "حجم الملف أكبر من 10 ميجابايت"),
+    size: z.number().max(10_485_760),
   })).mutation(async ({ input, ctx }) => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
@@ -905,10 +905,10 @@ export const adminRouter = router({
   // ============ PROJECT IMAGES ============
   uploadProjectImage: protectedProcedure.input(z.object({
     projectId: z.number(),
-    filename: z.string(),
-    mimeType: z.string(),
-    base64: z.string(),
-    size: z.number(),
+    filename: z.string().max(255),
+    mimeType: z.string().refine(v => ["image/jpeg","image/png","image/webp","image/gif","image/svg+xml"].includes(v), { message: "نوع الملف غير مسموح" }),
+    base64: z.string().max(14_000_000, "حجم الملف أكبر من 10 ميجابايت"),
+    size: z.number().max(10_485_760),
   })).mutation(async ({ input, ctx }) => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
@@ -1138,7 +1138,11 @@ export const adminRouter = router({
   }),
 
   uploadMedia: protectedProcedure.input(z.object({
-    filename: z.string(), mimeType: z.string(), base64: z.string(), size: z.number(), folder: z.string().optional(),
+    filename: z.string().max(255),
+    mimeType: z.string().refine(v => /^(image|video|application\/(pdf|msword|vnd\.))/i.test(v), { message: "نوع الملف غير مسموح" }),
+    base64: z.string().max(14_000_000, "حجم الملف أكبر من 10 ميجابايت"),
+    size: z.number().max(10_485_760),
+    folder: z.string().max(50).optional(),
   })).mutation(async ({ input, ctx }) => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });

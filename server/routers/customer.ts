@@ -65,6 +65,33 @@ function generateOTP(): string {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
+// In-memory OTP verification attempt tracker (brute-force protection)
+const otpAttempts = new Map<string, { count: number; firstAttempt: number }>();
+function checkOTPAttempts(phone: string): void {
+  const key = `otp:${phone}`;
+  const now = Date.now();
+  const record = otpAttempts.get(key);
+  if (record && now - record.firstAttempt < 10 * 60 * 1000) {
+    if (record.count >= 5) {
+      throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "محاولات كثيرة. انتظر 10 دقائق" });
+    }
+    record.count++;
+  } else {
+    otpAttempts.set(key, { count: 1, firstAttempt: now });
+  }
+}
+function clearOTPAttempts(phone: string): void {
+  otpAttempts.delete(`otp:${phone}`);
+}
+// Cleanup old entries every 15 minutes
+setInterval(() => {
+  const now = Date.now();
+  const entries = Array.from(otpAttempts.entries());
+  for (const [key, val] of entries) {
+    if (now - val.firstAttempt > 10 * 60 * 1000) otpAttempts.delete(key);
+  }
+}, 15 * 60 * 1000);
+
 export const customerRouter = router({
   // ============ SEND OTP ============
   sendOTP: publicProcedure.input(z.object({
@@ -117,7 +144,10 @@ export const customerRouter = router({
     // Send OTP via email (since we have SMTP configured, not SMS)
     // In production, this would be SMS via Twilio/etc.
     // For now, we log it and also try to send via email if customer has email
-    console.log(`[OTP] Code ${code} sent to ${phone} for ${input.purpose}`);
+    // OTP code intentionally NOT logged in production for security
+    if (process.env.NODE_ENV === "development") {
+      console.log(`[OTP] Code sent to ${phone} for ${input.purpose}`);
+    }
 
     // Try to find customer email for email-based OTP delivery
     const [customer] = await db.select({ email: customers.email }).from(customers).where(eq(customers.phone, phone)).limit(1);
@@ -155,6 +185,9 @@ export const customerRouter = router({
 
     const phone = input.phone.replace(/\s+/g, "").replace(/^00/, "+");
 
+    // Brute-force protection
+    checkOTPAttempts(phone);
+
     // Verify OTP
     const [otp] = await db.select().from(otpCodes)
       .where(and(
@@ -176,8 +209,9 @@ export const customerRouter = router({
       throw new TRPCError({ code: "CONFLICT", message: "رقم الجوال مسجل مسبقاً" });
     }
 
-    // Mark OTP as used
+    // Mark OTP as used and clear brute-force counter
     await db.update(otpCodes).set({ isUsed: true as any }).where(eq(otpCodes.id, otp.id));
+    clearOTPAttempts(phone);
 
     // Create customer
     const passwordHash = await bcrypt.hash(input.password, 12);
@@ -287,6 +321,9 @@ export const customerRouter = router({
 
     const phone = input.phone.replace(/\s+/g, "").replace(/^00/, "+");
 
+    // Brute-force protection
+    checkOTPAttempts(phone);
+
     // Verify OTP
     const [otp] = await db.select().from(otpCodes)
       .where(and(
@@ -307,8 +344,9 @@ export const customerRouter = router({
       throw new TRPCError({ code: "NOT_FOUND", message: "الحساب غير موجود" });
     }
 
-    // Mark OTP used
+    // Mark OTP used and clear brute-force counter
     await db.update(otpCodes).set({ isUsed: true as any }).where(eq(otpCodes.id, otp.id));
+    clearOTPAttempts(phone);
     await db.update(customers).set({ lastLoginAt: new Date() }).where(eq(customers.id, customer.id));
 
     const token = await createCustomerToken(customer.id, phone);
