@@ -128,8 +128,8 @@ export default function PropertyDetail({ id }: { id: string }) {
     );
   }
 
-  const handleMapReady = (map: google.maps.Map) => {
-    mapRef.current = map;
+  // Compute map center from property coordinates
+  const mapCenter = useMemo(() => {
     const defaultCoords: Record<string, { lat: number; lng: number }> = {
       "الرياض": { lat: 24.7136, lng: 46.6753 },
       "جدة": { lat: 21.4858, lng: 39.1925 },
@@ -138,10 +138,15 @@ export default function PropertyDetail({ id }: { id: string }) {
       "مكة المكرمة": { lat: 21.3891, lng: 39.8579 },
       "الخبر": { lat: 26.2172, lng: 50.1971 },
     };
-    const cityCoords = defaultCoords[property.city || "الرياض"] || { lat: 24.7136, lng: 46.6753 };
-    // Use actual property coordinates if available, otherwise fall back to city center
-    const lat = property.latitude ? parseFloat(property.latitude) : cityCoords.lat;
-    const lng = property.longitude ? parseFloat(property.longitude) : cityCoords.lng;
+    if (property?.latitude && property?.longitude) {
+      return { lat: parseFloat(property.latitude), lng: parseFloat(property.longitude) };
+    }
+    return defaultCoords[property?.city || "الرياض"] || { lat: 24.7136, lng: 46.6753 };
+  }, [property?.latitude, property?.longitude, property?.city]);
+
+  const handleMapReady = (map: google.maps.Map) => {
+    mapRef.current = map;
+    const { lat, lng } = mapCenter;
 
     const marker = new google.maps.marker.AdvancedMarkerElement({ map, position: { lat, lng }, title });
     const iw = new google.maps.InfoWindow({
@@ -300,7 +305,11 @@ export default function PropertyDetail({ id }: { id: string }) {
                 <p className="text-sm text-gray-500 flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" />{loc}</p>
               </div>
               <div className="h-[300px]">
-                <MapView onMapReady={handleMapReady} />
+                <MapView
+                  onMapReady={handleMapReady}
+                  initialCenter={mapCenter}
+                  initialZoom={15}
+                />
               </div>
             </motion.div>
 

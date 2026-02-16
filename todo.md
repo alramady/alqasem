@@ -673,3 +673,12 @@
 - [x] Verified property detail page map shows correct location with marker and nearby amenities
 - [x] Fixed /properties/map route conflict (moved before /:id in App.tsx)
 - [x] Added admin geocodeProperties and geocodeSingleProperty endpoints
+
+## Map Fix - Wrong Location & Empty Info Window
+- [x] Fix property detail map showing wrong location (in the sea for Jeddah properties)
+- [x] Fix empty info window popup on map marker click
+- [x] Re-geocode all 103 properties with city-validated coordinates (43 were wrong, now 0 wrong)
+- [x] Verify map displays correctly for properties in all cities (Riyadh, Jeddah, Dammam, Khobar, Makkah, Madinah)
+- [x] Improved geocoding endpoint with city range validation and retry logic
+- [x] Added initialCenter and initialZoom props to PropertyDetail map
+- [x] 17 new vitest tests for geocoding validation, address format, map center computation

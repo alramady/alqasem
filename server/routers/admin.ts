@@ -2452,9 +2452,69 @@ export const adminRouter = router({
   }),
 
   // ============ GEOCODING ============
+  // Known city coordinate ranges for validation
+  // Ensures geocoded results actually fall within the correct city
   geocodeProperties: adminProcedure.mutation(async () => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+    const CITY_RANGES: Record<string, { lat: number; lng: number; latMin: number; latMax: number; lngMin: number; lngMax: number }> = {
+      "الرياض": { lat: 24.7136, lng: 46.6753, latMin: 24.4, latMax: 25.1, lngMin: 46.4, lngMax: 47.1 },
+      "جدة": { lat: 21.5433, lng: 39.1728, latMin: 21.3, latMax: 21.8, lngMin: 39.0, lngMax: 39.4 },
+      "الدمام": { lat: 26.3927, lng: 50.0888, latMin: 26.2, latMax: 26.6, lngMin: 49.9, lngMax: 50.3 },
+      "الخبر": { lat: 26.2172, lng: 50.1971, latMin: 26.1, latMax: 26.5, lngMin: 50.0, lngMax: 50.4 },
+      "مكة المكرمة": { lat: 21.4225, lng: 39.8262, latMin: 21.3, latMax: 21.5, lngMin: 39.7, lngMax: 40.0 },
+      "المدينة المنورة": { lat: 24.4672, lng: 39.6024, latMin: 24.3, latMax: 24.7, lngMin: 39.4, lngMax: 39.8 },
+    };
+
+    function isInCity(lat: number, lng: number, city: string): boolean {
+      const range = CITY_RANGES[city];
+      if (!range) return true;
+      return lat >= range.latMin && lat <= range.latMax && lng >= range.lngMin && lng <= range.lngMax;
+    }
+
+    async function geocodeWithValidation(city: string, district: string | null, address: string | null) {
+      // Build address: "district, city, المملكة العربية السعودية"
+      const parts = [];
+      if (address) parts.push(address);
+      else if (district) parts.push(district);
+      parts.push(city || "الرياض");
+      parts.push("المملكة العربية السعودية");
+      const addr = parts.join(", ");
+
+      const result = await makeRequest<any>("/maps/api/geocode/json", {
+        address: addr, language: "ar", region: "sa", components: "country:SA",
+      });
+
+      if (result.status === "OK" && result.results?.[0]) {
+        const loc = result.results[0].geometry.location;
+        if (isInCity(loc.lat, loc.lng, city || "الرياض")) {
+          return { lat: loc.lat, lng: loc.lng };
+        }
+        // Retry with simpler address if result was in wrong city
+        if (district) {
+          const cleanDistrict = district.replace(/^حي /, "");
+          const retryAddr = `حي ${cleanDistrict}, ${city}, المملكة العربية السعودية`;
+          const retry = await makeRequest<any>("/maps/api/geocode/json", {
+            address: retryAddr, language: "ar", region: "sa", components: "country:SA",
+          });
+          if (retry.status === "OK" && retry.results?.[0]) {
+            const loc2 = retry.results[0].geometry.location;
+            if (isInCity(loc2.lat, loc2.lng, city || "الرياض")) {
+              return { lat: loc2.lat, lng: loc2.lng };
+            }
+          }
+        }
+      }
+      // Fallback to city center with small offset
+      const cityData = CITY_RANGES[city || "الرياض"];
+      if (cityData) {
+        const offset = () => (Math.random() - 0.5) * 0.02;
+        return { lat: cityData.lat + offset(), lng: cityData.lng + offset() };
+      }
+      return null;
+    }
+
     const allProps = await db.select({
       id: properties.id, city: properties.city, district: properties.district,
       address: properties.address, latitude: properties.latitude, longitude: properties.longitude,
@@ -2463,11 +2523,9 @@ export const adminRouter = router({
     let updated = 0;
     for (const prop of toGeocode) {
       try {
-        const addr = `${prop.district || ""} ${prop.city || ""} السعودية`.trim();
-        const result = await makeRequest<any>("/maps/api/geocode/json", { address: addr, language: "ar" });
-        if (result.status === "OK" && result.results?.[0]) {
-          const loc = result.results[0].geometry.location;
-          await db.update(properties).set({ latitude: String(loc.lat), longitude: String(loc.lng) }).where(eq(properties.id, prop.id));
+        const coords = await geocodeWithValidation(prop.city || "الرياض", prop.district, prop.address);
+        if (coords) {
+          await db.update(properties).set({ latitude: String(coords.lat), longitude: String(coords.lng) }).where(eq(properties.id, prop.id));
           updated++;
         }
       } catch (e) { console.error(`Geocode failed for property ${prop.id}:`, e); }
@@ -2480,8 +2538,17 @@ export const adminRouter = router({
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
     const [prop] = await db.select().from(properties).where(eq(properties.id, input.id)).limit(1);
     if (!prop) throw new TRPCError({ code: "NOT_FOUND" });
-    const addr = `${prop.district || ""} ${prop.city || ""} السعودية`.trim();
-    const result = await makeRequest<any>("/maps/api/geocode/json", { address: addr, language: "ar" });
+
+    const parts = [];
+    if (prop.address) parts.push(prop.address);
+    else if (prop.district) parts.push(prop.district);
+    parts.push(prop.city || "الرياض");
+    parts.push("المملكة العربية السعودية");
+    const addr = parts.join(", ");
+
+    const result = await makeRequest<any>("/maps/api/geocode/json", {
+      address: addr, language: "ar", region: "sa", components: "country:SA",
+    });
     if (result.status !== "OK" || !result.results?.[0]) throw new TRPCError({ code: "BAD_REQUEST", message: "فشل تحديد الإحداثيات" });
     const loc = result.results[0].geometry.location;
     await db.update(properties).set({ latitude: String(loc.lat), longitude: String(loc.lng) }).where(eq(properties.id, input.id));
