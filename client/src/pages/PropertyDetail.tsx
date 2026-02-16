@@ -94,6 +94,23 @@ export default function PropertyDetail({ id }: { id: string }) {
   const baths = property?.bathrooms || 0;
   const hasParking = property?.hasParking || false;
 
+  // Compute map center from property coordinates
+  // MUST be before any early returns to satisfy Rules of Hooks
+  const mapCenter = useMemo(() => {
+    const defaultCoords: Record<string, { lat: number; lng: number }> = {
+      "الرياض": { lat: 24.7136, lng: 46.6753 },
+      "جدة": { lat: 21.4858, lng: 39.1925 },
+      "الدمام": { lat: 26.4207, lng: 50.0888 },
+      "المدينة المنورة": { lat: 24.4672, lng: 39.6112 },
+      "مكة المكرمة": { lat: 21.3891, lng: 39.8579 },
+      "الخبر": { lat: 26.2172, lng: 50.1971 },
+    };
+    if (property?.latitude && property?.longitude) {
+      return { lat: parseFloat(property.latitude), lng: parseFloat(property.longitude) };
+    }
+    return defaultCoords[property?.city || "الرياض"] || { lat: 24.7136, lng: 46.6753 };
+  }, [property?.latitude, property?.longitude, property?.city]);
+
   const handlePrint = () => {
     window.print();
   };
@@ -127,22 +144,6 @@ export default function PropertyDetail({ id }: { id: string }) {
       </div>
     );
   }
-
-  // Compute map center from property coordinates
-  const mapCenter = useMemo(() => {
-    const defaultCoords: Record<string, { lat: number; lng: number }> = {
-      "الرياض": { lat: 24.7136, lng: 46.6753 },
-      "جدة": { lat: 21.4858, lng: 39.1925 },
-      "الدمام": { lat: 26.4207, lng: 50.0888 },
-      "المدينة المنورة": { lat: 24.4672, lng: 39.6112 },
-      "مكة المكرمة": { lat: 21.3891, lng: 39.8579 },
-      "الخبر": { lat: 26.2172, lng: 50.1971 },
-    };
-    if (property?.latitude && property?.longitude) {
-      return { lat: parseFloat(property.latitude), lng: parseFloat(property.longitude) };
-    }
-    return defaultCoords[property?.city || "الرياض"] || { lat: 24.7136, lng: 46.6753 };
-  }, [property?.latitude, property?.longitude, property?.city]);
 
   const handleMapReady = (map: google.maps.Map) => {
     mapRef.current = map;

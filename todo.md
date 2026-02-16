@@ -682,3 +682,8 @@
 - [x] Improved geocoding endpoint with city range validation and retry logic
 - [x] Added initialCenter and initialZoom props to PropertyDetail map
 - [x] 17 new vitest tests for geocoding validation, address format, map center computation
+
+## Bug Fix - Property Detail Page Error (/properties/3)
+- [x] Diagnose "حدث خطأ غير متوقع" error on property detail page in production
+- [x] Fix root cause: useMemo(mapCenter) was placed after early returns, violating React Rules of Hooks
+- [x] Verify fix works on dev server — property detail page loads correctly
