@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Search, MapPin, ChevronDown, Building2, Home, Landmark, Store } from "lucide-react";
+import { Search, MapPin, ChevronDown, Building2, Home, Landmark, Store, BedDouble, Bath } from "lucide-react";
 import { Link } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSiteConfig, useSection } from "@/contexts/SiteConfigContext";
@@ -16,6 +16,10 @@ export default function HeroSection() {
   const [searchQuery, setSearchQuery] = useState("");
   const [propertyType, setPropertyType] = useState("all");
   const [city, setCity] = useState("all");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [bedrooms, setBedrooms] = useState("");
+  const [bathrooms, setBathrooms] = useState("");
 
   const { data: citiesWithDistricts } = trpc.public.getCitiesWithDistricts.useQuery();
   const { data: liveStats } = trpc.public.getHomepageStats.useQuery(undefined, {
@@ -99,6 +103,10 @@ export default function HeroSection() {
     if (city !== "all") params.set("city", city);
     const listingType = activeTab === 0 ? "sale" : activeTab === 1 ? "rent" : "";
     if (listingType) params.set("listing", listingType);
+    if (minPrice) params.set("minPrice", minPrice);
+    if (maxPrice) params.set("maxPrice", maxPrice);
+    if (bedrooms) params.set("rooms", bedrooms);
+    if (bathrooms) params.set("bathrooms", bathrooms);
     if (activeTab === 2) return "/projects";
     const qs = params.toString();
     return `/properties${qs ? `?${qs}` : ""}`;
@@ -176,6 +184,51 @@ export default function HeroSection() {
                     <Search className="w-4 h-4" />{t("hero.searchBtn")}
                   </button>
                 </Link>
+              </div>
+
+              {/* Price Range, Bedrooms, Bathrooms Row */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
+                {/* Price Range */}
+                <div className="flex gap-2 col-span-2">
+                  <div className="relative flex-1">
+                    <input type="number" placeholder={isAr ? "أقل سعر" : "Min Price"} value={minPrice}
+                      onChange={(e) => setMinPrice(e.target.value)}
+                      className="w-full ps-3 pe-12 py-2.5 bg-[#f8f5f0] rounded-lg text-[#0f1b33] text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                    <span className="absolute inset-inline-end-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">{isAr ? "ر.س" : "SAR"}</span>
+                  </div>
+                  <div className="relative flex-1">
+                    <input type="number" placeholder={isAr ? "أعلى سعر" : "Max Price"} value={maxPrice}
+                      onChange={(e) => setMaxPrice(e.target.value)}
+                      className="w-full ps-3 pe-12 py-2.5 bg-[#f8f5f0] rounded-lg text-[#0f1b33] text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                    <span className="absolute inset-inline-end-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">{isAr ? "ر.س" : "SAR"}</span>
+                  </div>
+                </div>
+
+                {/* Bedrooms */}
+                <div className="relative">
+                  <BedDouble className="absolute inset-inline-start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <select value={bedrooms} onChange={(e) => setBedrooms(e.target.value)}
+                    className="w-full ps-10 pe-8 py-2.5 bg-[#f8f5f0] rounded-lg text-[#0f1b33] text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30">
+                    <option value="">{isAr ? "الغرف" : "Bedrooms"}</option>
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map(n => (
+                      <option key={n} value={n}>{n}+ {isAr ? "غرف" : "Rooms"}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute inset-inline-end-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                </div>
+
+                {/* Bathrooms */}
+                <div className="relative">
+                  <Bath className="absolute inset-inline-start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <select value={bathrooms} onChange={(e) => setBathrooms(e.target.value)}
+                    className="w-full ps-10 pe-8 py-2.5 bg-[#f8f5f0] rounded-lg text-[#0f1b33] text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30">
+                    <option value="">{isAr ? "دورات المياه" : "Bathrooms"}</option>
+                    {[1, 2, 3, 4, 5, 6].map(n => (
+                      <option key={n} value={n}>{n}+ {isAr ? "حمامات" : "Baths"}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute inset-inline-end-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                </div>
               </div>
 
               <div className="flex items-center gap-3 mt-4 pt-4 border-t border-gray-100">

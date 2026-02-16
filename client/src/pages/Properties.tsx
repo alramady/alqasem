@@ -49,6 +49,10 @@ export default function Properties() {
   const urlListing = urlParams.get("listing") as ListingType | null;
   const urlCity = urlParams.get("city");
   const urlQuery = urlParams.get("q");
+  const urlMinPrice = urlParams.get("minPrice");
+  const urlMaxPrice = urlParams.get("maxPrice");
+  const urlRooms = urlParams.get("rooms");
+  const urlBathrooms = urlParams.get("bathrooms");
 
   const [query, setQuery] = useState(urlQuery || "");
   const [debouncedQuery, setDebouncedQuery] = useState(urlQuery || "");
@@ -56,12 +60,12 @@ export default function Properties() {
   const [selectedListing, setSelectedListing] = useState<ListingType | undefined>(urlListing || undefined);
   const [selectedCity, setSelectedCity] = useState<string | undefined>(urlCity || undefined);
   const [selectedDistrict, setSelectedDistrict] = useState<string | undefined>(undefined);
-  const [minPrice, setMinPrice] = useState<string>("");
-  const [maxPrice, setMaxPrice] = useState<string>("");
+  const [minPrice, setMinPrice] = useState<string>(urlMinPrice || "");
+  const [maxPrice, setMaxPrice] = useState<string>(urlMaxPrice || "");
   const [minArea, setMinArea] = useState<string>("");
   const [maxArea, setMaxArea] = useState<string>("");
-  const [minRooms, setMinRooms] = useState<string>("");
-  const [minBathrooms, setMinBathrooms] = useState<string>("");
+  const [minRooms, setMinRooms] = useState<string>(urlRooms || "");
+  const [minBathrooms, setMinBathrooms] = useState<string>(urlBathrooms || "");
   const [selectedDirection, setSelectedDirection] = useState<DirectionType | undefined>(undefined);
   const [selectedFurnishing, setSelectedFurnishing] = useState<FurnishingType | undefined>(undefined);
   const [maxBuildingAge, setMaxBuildingAge] = useState<string>("");
@@ -86,6 +90,10 @@ export default function Properties() {
     if (urlListing) setSelectedListing(urlListing);
     if (urlCity) setSelectedCity(urlCity);
     if (urlQuery) { setQuery(urlQuery); setDebouncedQuery(urlQuery); }
+    if (urlMinPrice) setMinPrice(urlMinPrice);
+    if (urlMaxPrice) setMaxPrice(urlMaxPrice);
+    if (urlRooms) setMinRooms(urlRooms);
+    if (urlBathrooms) setMinBathrooms(urlBathrooms);
   }, [searchParams]);
 
   // Close amenity dropdown on outside click
@@ -339,6 +347,62 @@ export default function Properties() {
                   className={`px-3 py-2 rounded-md text-sm font-medium transition-all ${selectedListing === "rent" ? "bg-[#E31E24] text-white shadow-sm" : "text-gray-600 hover:text-[#0f1b33]"}`}>
                   {t("filter.forRent")}
                 </button>
+              </div>
+            </div>
+
+            {/* Quick Filters Row: Price Range, Bedrooms, Bathrooms */}
+            <div className="flex flex-wrap items-center gap-2 mt-3 w-full">
+              {/* Price Range */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-gray-500 font-medium whitespace-nowrap">{t("filter.priceRange")}:</span>
+                <input type="number" placeholder={t("filter.minPrice")} value={minPrice}
+                  onChange={(e) => { setMinPrice(e.target.value); setPage(1); }}
+                  className="w-28 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                <span className="text-xs text-gray-400">-</span>
+                <input type="number" placeholder={t("filter.maxPrice")} value={maxPrice}
+                  onChange={(e) => { setMaxPrice(e.target.value); setPage(1); }}
+                  className="w-28 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#c8a45e]/30 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                <span className="text-xs text-gray-400">{t("filter.sar")}</span>
+              </div>
+
+              <div className="w-px h-6 bg-gray-200 hidden sm:block" />
+
+              {/* Bedrooms */}
+              <div className="flex items-center gap-1.5">
+                <BedDouble className="w-4 h-4 text-gray-400" />
+                <span className="text-xs text-gray-500 font-medium whitespace-nowrap">{t("filter.roomsRange")}:</span>
+                <div className="flex items-center gap-0.5 bg-gray-50 rounded-lg p-0.5">
+                  <button onClick={() => { setMinRooms(""); setPage(1); }}
+                    className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${!minRooms ? "bg-[#0f1b33] text-white shadow-sm" : "text-gray-500 hover:text-[#0f1b33]"}`}>
+                    {t("filter.allPurposes")}
+                  </button>
+                  {[1, 2, 3, 4, 5, 6].map(n => (
+                    <button key={n} onClick={() => { setMinRooms(String(n)); setPage(1); }}
+                      className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${minRooms === String(n) ? "bg-[#0f1b33] text-white shadow-sm" : "text-gray-500 hover:text-[#0f1b33]"}`}>
+                      {n}+
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="w-px h-6 bg-gray-200 hidden sm:block" />
+
+              {/* Bathrooms */}
+              <div className="flex items-center gap-1.5">
+                <Bath className="w-4 h-4 text-gray-400" />
+                <span className="text-xs text-gray-500 font-medium whitespace-nowrap">{t("filter.bathrooms")}:</span>
+                <div className="flex items-center gap-0.5 bg-gray-50 rounded-lg p-0.5">
+                  <button onClick={() => { setMinBathrooms(""); setPage(1); }}
+                    className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${!minBathrooms ? "bg-[#0f1b33] text-white shadow-sm" : "text-gray-500 hover:text-[#0f1b33]"}`}>
+                    {t("filter.allPurposes")}
+                  </button>
+                  {[1, 2, 3, 4, 5].map(n => (
+                    <button key={n} onClick={() => { setMinBathrooms(String(n)); setPage(1); }}
+                      className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${minBathrooms === String(n) ? "bg-[#0f1b33] text-white shadow-sm" : "text-gray-500 hover:text-[#0f1b33]"}`}>
+                      {n}+
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 

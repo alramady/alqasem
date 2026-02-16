@@ -781,3 +781,10 @@
 - [x] Fix "More Details" link text showing in English instead of Arabic (المزيد)
 - [x] Fix "Featured Properties" / "Latest Properties" heading showing in English instead of Arabic
 - [x] Fix property type filter buttons (Buildings, Commercial, Offices, etc.) showing in English instead of Arabic
+
+## Enhanced Property Search Filters
+- [x] Add price range filter (min/max) to property search UI
+- [x] Add bedrooms filter to property search UI
+- [x] Add bathrooms filter to property search UI
+- [x] Bilingual AR/EN support for all new filters
+- [x] Filters work on both homepage search and properties page
