@@ -1,0 +1,17 @@
+{
+  "query": "SELECT id, sectionKey, title, subtitle, content FROM homepage_sections WHERE sectionKey = 'services';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.4e413a58b2a3 --database FCSdcQDHNngsNZkY5BfGCD --execute SELECT id, sectionKey, title, subtitle, content FROM homepage_sections WHERE sectionKey = 'services';",
+  "rows": [
+    {
+      "id": "3",
+      "sectionKey": "services",
+      "title": "خدماتنا",
+      "subtitle": "نقدم لكم أفضل الخدمات العقارية",
+      "content": "{\"badgeAr\": \"خدماتنا\", \"badgeEn\": \"Our Services\", \"services\": [{\"description\": \"إدارة شاملة تتضمن الإشراف على صيانة العقار، تحصيل الإيجارات، والتواصل مع المستأجرين لرفع قيمة العقار وتعظيم العوائد.\", \"features\": [\"تحصيل الإيجارات\", \"الصيانة الدورية\", \"إدارة العقود\", \"التقارير المالية\"], \"title\": \"إدارة الأملاك\"}, {\"description\": \"تسويق العقار عبر القنوات الرقمية والمنصات العقارية وجذب المستأجرين والمشترين المناسبين في أسرع وقت ممكن.\", \"features\": [\"تصوير احترافي\", \"منصات رقمية\", \"حملات تسويقية\", \"تقارير الأداء\"], \"title\": \"التسويق العقاري\"}, {\"description\": \"فرص استثمارية مدروسة بعناية مع تحليل شامل للعوائد والمخاطر في السوق العقاري السعودي وتقييم احترافي للعقارات.\", \"features\": [\"تقييم العقارات\", \"تحليل العوائد\", \"دراسات الجدوى\", \"الاستشارات القانونية\"], \"title\": \"الاستشارات العقارية\"}], \"subtitleAr\": \"نقدم مجموعة شاملة من الخدمات العقارية المتميزة\", \"subtitleEn\": \"We offer a complete range of distinguished real estate services\", \"titleAr\": \"خدمات عقارية متكاملة\", \"titleEn\": \"Comprehensive Real Estate Services\"}"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tsectionKey\ttitle\tsubtitle\tcontent\n3\tservices\tخدماتنا\tنقدم لكم أفضل الخدمات العقارية\t{\"badgeAr\": \"خدماتنا\", \"badgeEn\": \"Our Services\", \"services\": [{\"description\": \"إدارة شاملة تتضمن الإشراف على صيانة العقار، تحصيل الإيجارات، والتواصل مع المستأجرين لرفع قيمة العقار وتعظيم العوائد.\", \"features\": [\"تحصيل الإيجارات\", \"الصيانة الدورية\", \"إدارة العقود\", \"التقارير المالية\"], \"title\": \"إدارة الأملاك\"}, {\"description\": \"تسويق العقار عبر القنوات الرقمية والمنصات العقارية وجذب المستأجرين والمشترين المناسبين في أسرع وقت ممكن.\", \"features\": [\"تصوير احترافي\", \"منصات رقمية\", \"حملات تسويقية\", \"تقارير الأداء\"], \"title\": \"التسويق العقاري\"}, {\"description\": \"فرص استثمارية مدروسة بعناية مع تحليل شامل للعوائد والمخاطر في السوق العقاري السعودي وتقييم احترافي للعقارات.\", \"features\": [\"تقييم العقارات\", \"تحليل العوائد\", \"دراسات الجدوى\", \"الاستشارات القانونية\"], \"title\": \"الاستشارات العقارية\"}], \"subtitleAr\": \"نقدم مجموعة شاملة من الخدمات العقارية المتميزة\", \"subtitleEn\": \"We offer a complete range of distinguished real estate services\", \"titleAr\": \"خدمات عقارية متكاملة\", \"titleEn\": \"Comprehensive Real Estate Services\"}\n",
+  "stderr": "",
+  "execution_time_ms": 1541
+}

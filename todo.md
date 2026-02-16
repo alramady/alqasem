@@ -774,3 +774,10 @@
 
 ### Security Tests
 - [x] 12 new vitest tests: security headers, upload validation, OTP brute-force, body size limit, MIME whitelist, sanitization, password hashing
+
+## Bug Fix - Services & Properties Section English Text in Arabic Mode
+- [x] Fix Services section heading showing "Comprehensive Real Estate Services" instead of Arabic when in Arabic mode
+- [x] Fix Services section subtitle showing English instead of Arabic
+- [x] Fix "More Details" link text showing in English instead of Arabic (المزيد)
+- [x] Fix "Featured Properties" / "Latest Properties" heading showing in English instead of Arabic
+- [x] Fix property type filter buttons (Buildings, Commercial, Offices, etc.) showing in English instead of Arabic
