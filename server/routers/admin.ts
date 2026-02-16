@@ -18,6 +18,7 @@ import QRCode from "qrcode";
 import { eq, like, and, or, desc, asc, sql, isNull, count, ne, lt, gt, gte, lte, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { makeRequest } from "../_core/map";
 import { storagePut } from "../storage";
 import { nanoid } from "nanoid";
 import { sanitizeText, sanitizeHtml, sanitizeObject } from "../sanitize";
@@ -2448,5 +2449,42 @@ export const adminRouter = router({
     const [request] = await db.select().from(financingRequests).where(eq(financingRequests.id, input.id)).limit(1);
     if (!request) throw new TRPCError({ code: "NOT_FOUND", message: "طلب التمويل غير موجود" });
     return request;
+  }),
+
+  // ============ GEOCODING ============
+  geocodeProperties: adminProcedure.mutation(async () => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const allProps = await db.select({
+      id: properties.id, city: properties.city, district: properties.district,
+      address: properties.address, latitude: properties.latitude, longitude: properties.longitude,
+    }).from(properties).where(isNull(properties.deletedAt));
+    const toGeocode = allProps.filter(p => !p.latitude || !p.longitude);
+    let updated = 0;
+    for (const prop of toGeocode) {
+      try {
+        const addr = `${prop.district || ""} ${prop.city || ""} السعودية`.trim();
+        const result = await makeRequest<any>("/maps/api/geocode/json", { address: addr, language: "ar" });
+        if (result.status === "OK" && result.results?.[0]) {
+          const loc = result.results[0].geometry.location;
+          await db.update(properties).set({ latitude: String(loc.lat), longitude: String(loc.lng) }).where(eq(properties.id, prop.id));
+          updated++;
+        }
+      } catch (e) { console.error(`Geocode failed for property ${prop.id}:`, e); }
+    }
+    return { total: allProps.length, geocoded: updated, skipped: allProps.length - toGeocode.length };
+  }),
+
+  geocodeProperty: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const [prop] = await db.select().from(properties).where(eq(properties.id, input.id)).limit(1);
+    if (!prop) throw new TRPCError({ code: "NOT_FOUND" });
+    const addr = `${prop.district || ""} ${prop.city || ""} السعودية`.trim();
+    const result = await makeRequest<any>("/maps/api/geocode/json", { address: addr, language: "ar" });
+    if (result.status !== "OK" || !result.results?.[0]) throw new TRPCError({ code: "BAD_REQUEST", message: "فشل تحديد الإحداثيات" });
+    const loc = result.results[0].geometry.location;
+    await db.update(properties).set({ latitude: String(loc.lat), longitude: String(loc.lng) }).where(eq(properties.id, input.id));
+    return { latitude: loc.lat, longitude: loc.lng };
   }),
 });

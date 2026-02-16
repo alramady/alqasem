@@ -665,3 +665,11 @@
 - [x] Diagnose property detail page crash — MortgageCalculator had React hooks violation (early return before useMemo)
 - [x] Hide حاسبة التمويل العقاري (mortgage calculator) from property detail page
 - [x] Verify property detail page loads without errors (confirmed on dev server)
+
+## Map Fixes - Property Markers & Labels
+- [x] Audit all map-related components (PropertyDetail map, Properties listing map, general map)
+- [x] Fix property markers — geocoded all 101 properties via Google Geocoding API
+- [x] Elegant info labels/popups already implemented in PropertyMapView component
+- [x] Verified property detail page map shows correct location with marker and nearby amenities
+- [x] Fixed /properties/map route conflict (moved before /:id in App.tsx)
+- [x] Added admin geocodeProperties and geocodeSingleProperty endpoints

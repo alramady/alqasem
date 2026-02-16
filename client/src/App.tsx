@@ -102,6 +102,9 @@ function Router() {
       <Route path="/properties">
         <Suspense fallback={<PageFallback />}><PropertiesPage /></Suspense>
       </Route>
+      <Route path="/properties/map">
+        <Suspense fallback={<PageFallback />}><PropertyMapViewPage /></Suspense>
+      </Route>
       <Route path="/properties/:id">
         {(params) => <Suspense fallback={<PageFallback />}><ErrorBoundary fallbackMode="inline"><PropertyDetailPage id={params.id} /></ErrorBoundary></Suspense>}
       </Route>
@@ -126,9 +129,6 @@ function Router() {
       </Route>
       <Route path="/compare">
         <Suspense fallback={<PageFallback />}><ComparePage /></Suspense>
-      </Route>
-      <Route path="/properties/map">
-        <Suspense fallback={<PageFallback />}><PropertyMapViewPage /></Suspense>
       </Route>
       <Route path="/privacy-policy">
         <Suspense fallback={<PageFallback />}><PrivacyPolicyPage /></Suspense>

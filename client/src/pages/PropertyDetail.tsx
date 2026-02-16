@@ -139,8 +139,9 @@ export default function PropertyDetail({ id }: { id: string }) {
       "الخبر": { lat: 26.2172, lng: 50.1971 },
     };
     const cityCoords = defaultCoords[property.city || "الرياض"] || { lat: 24.7136, lng: 46.6753 };
-    const lat = cityCoords.lat;
-    const lng = cityCoords.lng;
+    // Use actual property coordinates if available, otherwise fall back to city center
+    const lat = property.latitude ? parseFloat(property.latitude) : cityCoords.lat;
+    const lng = property.longitude ? parseFloat(property.longitude) : cityCoords.lng;
 
     const marker = new google.maps.marker.AdvancedMarkerElement({ map, position: { lat, lng }, title });
     const iw = new google.maps.InfoWindow({
